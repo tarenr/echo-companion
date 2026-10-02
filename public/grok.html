@@ -290,6 +290,7 @@
       constructor(canvas) {
         this.c = canvas;
         this.x = canvas.getContext('2d');
+        // Apenas propriedades numéricas interpoláveis em s e tg
         this.s = {
           yaw: 0, pitch: 0, roll: 0, tilt: 0,
           open: 1, sx: 1, sy: 1, oy: 0, ox: 0,
@@ -297,9 +298,7 @@
           es: 1, badgeS: 0,
           paperY: 0,
           glasses: 0,
-          mouthOpen: 0,
-          speaking: false,
-          customMode: 'none'
+          mouthOpen: 0
         };
         this.tg = { ...this.s };
         this.tw = [];
@@ -320,6 +319,10 @@
         this.t0 = NOW();
         this.last = NOW();
         
+        // Estados lógicos separados para não corromper o lerp matemático com NaN
+        this.speaking = false;
+        this.customMode = 'none';
+
         const dpr = Math.min(2, window.devicePixelRatio || 1);
         canvas.width = 240 * dpr;
         canvas.height = 240 * dpr;
@@ -469,13 +472,13 @@
         tg.sx = 1 - Math.sin(t * 1.8) * 0.015;
 
         // Se estiver falando, articula boca e cabeça
-        if (s.speaking) {
+        if (this.speaking) {
           s.mouthOpen = (Math.sin(t * 15) + 1) / 2;
           tg.tilt = Math.sin(t * 6) * 0.06;
           s.hands = 1;
         } else {
           s.mouthOpen = 0;
-          if (s.customMode === 'none') s.hands = 0;
+          if (this.customMode === 'none') s.hands = 0;
         }
 
         const kLook = 1 - Math.pow(0.002, dt), kGen = 1 - Math.pow(0.0008, dt);
@@ -523,8 +526,8 @@
           }
           path.closePath();
         } else {
-          // Morfagem para retângulo 2D arredondado
-          const w = lerp(rx, R * 1.15, m), h = lerp(ry, R * 0.88, m), r = lerp(Math.min(rx, ry), R * 0.32, m);
+          // Morfagem suave para chassi 2D retangular arredondado
+          const w = lerp(rx, R * 1.18, m), h = lerp(ry, R * 0.94, m), r = lerp(Math.min(rx, ry), R * 0.28, m);
           path.moveTo(-w + r, -h);
           path.arcTo(w, -h, w, h, r);
           path.arcTo(w, h, -w, h, r);
@@ -533,12 +536,12 @@
           path.closePath();
         }
 
-        // Cor Base Oficial Estratégia Nerd
+        // Cores Base por modo de transformação
         let c0 = hexRgb(P.base[0]), c1 = hexRgb(P.base[1]);
-        if (s.customMode === 'pc90s') {
-          c0 = [228, 222, 208]; c1 = [200, 192, 174]; // Bege retrô
-        } else if (s.customMode === 'printer') {
-          c0 = [14, 22, 36]; c1 = [6, 11, 20]; // Chassi escuro high-tech com cyan
+        if (this.customMode === 'pc90s') {
+          c0 = [232, 226, 212]; c1 = [204, 196, 180]; // Bege clássico 90s
+        } else if (this.customMode === 'printer') {
+          c0 = [10, 18, 30]; c1 = [4, 8, 16]; // Dark Ink Estratégia Nerd
         }
 
         const g = x.createLinearGradient(0, -ry, 0, ry);
@@ -550,7 +553,7 @@
         // ==========================================
         // 2. ILUMINAÇÃO DE ESTADO (COUCOU TINT WASH)
         // ==========================================
-        if (s.tint > 0.01) {
+        if (s.tint > 0.01 && this.customMode === 'none') {
           const tg2 = x.createLinearGradient(0, ry, 0, -ry * 0.3);
           tg2.addColorStop(0, rgba(this.col, 0.88 * s.tint));
           tg2.addColorStop(1, rgba(this.col, 0));
@@ -558,16 +561,16 @@
           x.fill(path);
         }
 
-        // Borda sutil cyan Estratégia Nerd
-        x.strokeStyle = s.customMode === 'printer' ? '#00d4ff' : 'rgba(0, 212, 255, 0.15)';
-        x.lineWidth = s.customMode === 'printer' ? 2 : 1.5;
+        // Borda e contorno 2D
+        x.strokeStyle = this.customMode === 'printer' ? '#00d4ff' : this.customMode === 'pc90s' ? '#8a8275' : 'rgba(0, 212, 255, 0.18)';
+        x.lineWidth = this.customMode === 'printer' ? 2 : 1.5;
         x.stroke(path);
 
         // ==========================================
-        // 3. BOCHECHAS MAGENTA NEON (ESTRATÉGIA NERD)
+        // 3. BOCHECHAS MAGENTA NEON (MODO PADRÃO)
         // ==========================================
         const bl = Math.max(s.blush, 0.32) * (1 - m);
-        if (bl > 0.01) {
+        if (bl > 0.01 && this.customMode === 'none') {
           x.save();
           x.clip(path);
           const yo = Math.sin(s.yaw) * rx * 0.7;
@@ -583,7 +586,7 @@
         // ==========================================
         // 4. MÃOS GESTICULANDO (COUCOU HANDS)
         // ==========================================
-        if (s.hands > 0.05) {
+        if (s.hands > 0.05 && this.customMode === 'none') {
           const hr = R * 0.18 * s.hands;
           const t = NOW() / 1000;
           x.fillStyle = '#7fe3f5';
@@ -603,7 +606,7 @@
         // ==========================================
         // 5. BOCA FALANTE DINÂMICA
         // ==========================================
-        if (s.mouthOpen > 0.05) {
+        if (s.mouthOpen > 0.05 && this.customMode === 'none') {
           x.fillStyle = P.ink;
           x.beginPath();
           x.ellipse(0, ry * 0.28, 6, 2 + s.mouthOpen * 7, 0, 0, Math.PI * 2);
@@ -611,95 +614,170 @@
         }
 
         // ==========================================
-        // 6. MORPH 2D: IMPRESSORA (ALIMENTADOR & PAPEL)
+        // 6. MORPH 2D: IMPRESSORA ESTRATÉGIA NERD
         // ==========================================
-        if (s.customMode === 'printer') {
+        if (this.customMode === 'printer' && m > 0.2) {
           x.save();
-          // Bandeja de alimentação superior com folha branca
-          x.fillStyle = '#1e293b';
-          rr(x, -R * 0.55, -ry - R * 0.28, R * 1.1, R * 0.35, 4);
+          
+          // Bandeja de alimentação superior de papel
+          x.fillStyle = '#0f172a';
+          rr(x, -R * 0.6, -ry - R * 0.32, R * 1.2, R * 0.35, 4);
           x.fill();
-          x.fillStyle = '#ffffff';
-          rr(x, -R * 0.45, -ry - R * 0.25, R * 0.9, R * 0.26, 2);
+          
+          // Folha em espera na bandeja superior
+          x.fillStyle = '#f8fafc';
+          x.strokeStyle = '#94a3b8';
+          x.lineWidth = 1;
+          rr(x, -R * 0.5, -ry - R * 0.38, R * 1.0, R * 0.38, 2);
           x.fill();
+          x.stroke();
 
-          // Visor LCD superior da impressora
-          x.fillStyle = '#061622';
-          rr(x, -R * 0.65, -R * 0.5, R * 1.3, R * 0.35, 4);
-          x.fill();
-          x.fillStyle = '#00d4ff';
-          x.font = '700 8px monospace';
-          x.textAlign = 'center';
-          x.fillText('PRINTING // 100%', 0, -R * 0.28);
-
-          // Fenda mecânica frontal de saída
+          // Visor LCD Frontal Cyan Estratégia Nerd
           x.fillStyle = '#020617';
-          rr(x, -R * 0.75, R * 0.05, R * 1.5, 9, 4.5);
+          rr(x, -R * 0.72, -R * 0.56, R * 1.44, R * 0.42, 5);
           x.fill();
-          x.strokeStyle = '#00d4ff';
+          x.strokeStyle = 'rgba(0, 212, 255, 0.4)';
           x.lineWidth = 1;
           x.stroke();
 
-          // Folha impressa saindo da fenda
-          if (s.paperY > 0.02) {
-            const pw = R * 1.2, ph = R * 1.05 * s.paperY;
-            x.fillStyle = '#ffffff';
-            x.shadowColor = 'rgba(0, 212, 255, 0.3)';
-            x.shadowBlur = 10;
-            rr(x, -pw / 2, R * 0.1, pw, ph, 4);
-            x.fill();
-            x.shadowBlur = 0;
+          // Texto do visor
+          x.fillStyle = '#00d4ff';
+          x.font = '800 8px monospace';
+          x.textAlign = 'center';
+          const printPct = Math.round(s.paperY * 100);
+          x.fillText(`PRINTING // ${printPct}%`, 0, -R * 0.38);
+          
+          // Dois LEDs digitais no visor
+          x.fillStyle = '#10b981';
+          x.beginPath(); x.arc(-R * 0.52, -R * 0.38, 2.5, 0, Math.PI * 2); x.fill();
+          x.fillStyle = '#00d4ff';
+          x.beginPath(); x.arc(R * 0.52, -R * 0.38, 2.5, 0, Math.PI * 2); x.fill();
 
-            // Cabeçalho Estratégia Nerd no papel impresso
+          // Fenda mecânica frontal de ejeção
+          x.fillStyle = '#000000';
+          rr(x, -R * 0.8, R * 0.04, R * 1.6, 10, 5);
+          x.fill();
+          x.strokeStyle = '#00d4ff';
+          x.lineWidth = 1.2;
+          x.stroke();
+
+          // Folha impressa saindo da fenda
+          if (s.paperY > 0.01) {
+            const pw = R * 1.3, ph = R * 1.18 * s.paperY;
+            x.save();
+            x.shadowColor = 'rgba(0, 212, 255, 0.35)';
+            x.shadowBlur = 10;
+            x.fillStyle = '#ffffff';
+            rr(x, -pw / 2, R * 0.08, pw, ph, 4);
+            x.fill();
+            x.restore();
+
+            // Detalhes da impressão na folha
+            x.save();
+            x.beginPath();
+            rr(x, -pw / 2, R * 0.08, pw, ph, 4);
+            x.clip();
+
+            // Cabeçalho Cyan Estratégia Nerd
             x.fillStyle = '#00d4ff';
-            x.fillRect(-pw / 2 + 8, R * 0.1 + 6, pw - 16, 3);
-            x.fillStyle = '#0f172a';
-            x.font = 'bold 7px monospace';
+            x.fillRect(-pw / 2 + 7, R * 0.08 + 6, pw - 14, 3);
+
+            x.fillStyle = '#041622';
+            x.font = '800 7px monospace';
             x.textAlign = 'left';
-            x.fillText('ESTRATEGIA NERD', -pw / 2 + 8, R * 0.1 + 17);
+            x.fillText('ESTRATÉGIA NERD', -pw / 2 + 7, R * 0.08 + 17);
+
             x.fillStyle = '#10b981';
-            x.fillText('✓ PLANO EXECUTADO', -pw / 2 + 8, R * 0.1 + 27);
+            x.font = '700 6px monospace';
+            x.fillText('✓ RELATÓRIO EXECUTADO', -pw / 2 + 7, R * 0.08 + 26);
+
+            // Linhas de código e dados impressos
+            x.fillStyle = '#94a3b8';
+            x.fillRect(-pw / 2 + 7, R * 0.08 + 32, pw * 0.72, 2);
+            x.fillRect(-pw / 2 + 7, R * 0.08 + 37, pw * 0.54, 2);
+            x.fillRect(-pw / 2 + 7, R * 0.08 + 42, pw * 0.82, 2);
+            x.fillRect(-pw / 2 + 7, R * 0.08 + 47, pw * 0.65, 2);
+            x.restore();
           }
+
           x.restore();
         }
 
         // ==========================================
         // 7. MORPH 2D: PC RETRÔ 90s (Macintosh CRT)
         // ==========================================
-        if (s.customMode === 'pc90s') {
+        if (this.customMode === 'pc90s' && m > 0.2) {
           x.save();
-          // Tela CRT verde
-          x.fillStyle = '#04160d';
-          rr(x, -R * 0.82, -R * 0.72, R * 1.64, R * 0.94, 6);
+
+          // Moldura biselada da tela CRT
+          x.fillStyle = '#1a1f1b';
+          rr(x, -R * 0.86, -R * 0.75, R * 1.72, R * 1.04, 7);
           x.fill();
 
-          // Texto CRT verde
+          // Vidro CRT verde escuro fosforescente
+          x.fillStyle = '#02160a';
+          rr(x, -R * 0.8, -R * 0.69, R * 1.6, R * 0.92, 5);
+          x.fill();
+
+          // Scanlines sutis da tela CRT
+          x.fillStyle = 'rgba(0, 0, 0, 0.18)';
+          for (let sy = -R * 0.66; sy < R * 0.2; sy += 3.5) {
+            x.fillRect(-R * 0.8, sy, R * 1.6, 1.2);
+          }
+
+          // Terminal com rosto em Pixel Art / ASCII
+          const isBlink = (NOW() % 3600 < 220);
+          const face = isBlink ? '[ - _ - ]' : '[ ^ _ ^ ]';
+          
           x.fillStyle = '#10b981';
+          x.shadowColor = 'rgba(16, 185, 129, 0.65)';
+          x.shadowBlur = 8;
           x.font = '800 13px monospace';
           x.textAlign = 'center';
-          x.fillText('( ^ _ ^ )', 0, -R * 0.35);
-          x.font = '700 7.5px monospace';
-          x.fillText('> ESTRATEGIA NERD', 0, -R * 0.12);
-          x.fillText('> BOOT OK // 1994', 0, R * 0.06);
+          x.fillText(face, 0, -R * 0.32);
 
-          // Fenda de disquete integrada
-          x.fillStyle = '#1e293b';
-          rr(x, -R * 0.6, R * 0.44, R * 1.2, 7, 3);
+          x.font = '700 7.5px monospace';
+          x.fillText('> ESTRATÉGIA NERD OS', 0, -R * 0.11);
+          x.fillText('> RAM: 640K // BOOT OK', 0, R * 0.07);
+          x.shadowBlur = 0;
+
+          // Compartimento inferior de disquete 3.5"
+          x.fillStyle = '#262626';
+          rr(x, -R * 0.72, R * 0.44, R * 1.44, 8, 3.5);
           x.fill();
-          // Disquete
+
+          // Fenda mecânica do disquete
+          x.fillStyle = '#0f172a';
+          rr(x, -R * 0.45, R * 0.45, R * 0.85, 6, 2);
+          x.fill();
+
+          // Disquete 3.5" inserido (corpo Cyan com obturador prata)
           x.fillStyle = '#00d4ff';
-          rr(x, -R * 0.35, R * 0.44, R * 0.7, 5, 1.5);
+          rr(x, -R * 0.38, R * 0.45, R * 0.72, 5, 1.5);
           x.fill();
-          // LED
-          x.fillStyle = '#10b981';
-          x.beginPath(); x.arc(R * 0.7, R * 0.47, 3, 0, Math.PI * 2); x.fill();
+          x.fillStyle = '#e2e8f0'; // Obturador metálico de proteção
+          rr(x, -R * 0.15, R * 0.45, R * 0.28, 4, 1);
+          x.fill();
+
+          // LED indicador de atividade (pisca)
+          const ledOn = (NOW() % 700 < 420);
+          x.fillStyle = ledOn ? '#10b981' : '#064e3b';
+          if (ledOn) {
+            x.shadowColor = '#10b981';
+            x.shadowBlur = 6;
+          }
+          x.beginPath();
+          x.arc(R * 0.62, R * 0.48, 2.5, 0, Math.PI * 2);
+          x.fill();
+          x.shadowBlur = 0;
+
           x.restore();
         }
 
         // ==========================================
         // 8. OLHOS 2D REDONDOS ORIGINAIS DO COUCOU
         // ==========================================
-        if (s.customMode !== 'pc90s' && s.customMode !== 'printer') {
+        if (this.customMode !== 'pc90s' && this.customMode !== 'printer') {
           x.save();
           x.clip(path);
           x.fillStyle = P.ink;
@@ -764,7 +842,7 @@
         // ==========================================
         // 10. BADGES NA TESTA NATIVOS DO COUCOU
         // ==========================================
-        if (this.badge && s.badgeS > 0.01) {
+        if (this.badge && s.badgeS > 0.01 && this.customMode === 'none') {
           const bs = s.badgeS;
           const bx = -rx * 0.72 * s.sx, by = -ry * 0.72 * s.sy;
           x.save();
@@ -981,18 +1059,40 @@
     }
 
     function resetMochiState() {
-      mochi.s.speaking = false;
+      mochi.speaking = false;
+      mochi.customMode = 'none';
       speechBubble.classList.add('hidden');
-      mochi.s.customMode = 'none';
-      mochi.anim('morph', [[0, 260, E.out]]);
+      if (speechTimer) {
+        clearInterval(speechTimer);
+        speechTimer = null;
+      }
+
+      // Limpeza completa de badges residuais
+      mochi.setBadge(null);
+      mochi.badge = null;
+      mochi.s.badgeS = 0;
+      mochi.tg.badgeS = 0;
+
+      // Limpeza de tintura e restauração de cor
+      mochi.tg.tint = 0;
+      mochi.s.tint = 0;
+      mochi.col = [0, 212, 255];
+      mochi.colT = [0, 212, 255];
+
+      // Reset de morph, óculos e impressão
+      mochi.anim('morph', [[0, 240, E.out]]);
+      mochi.tg.morph = 0;
       mochi.anim('glasses', [[0, 200, E.out]]);
+      mochi.tg.glasses = 0;
       mochi.s.paperY = 0;
+      mochi.tg.paperY = 0;
+      mochi.eyeOv = null;
     }
 
     let speechTimer = null;
     function triggerSpeak() {
       resetMochiState();
-      mochi.s.speaking = true;
+      mochi.speaking = true;
       speechBubble.classList.remove('hidden');
       speechText.textContent = "Fala Mestre! Estratégia Nerd online e monitorando tudo!";
       
@@ -1009,7 +1109,8 @@
         count++;
         if (count >= 16) {
           clearInterval(speechTimer);
-          mochi.s.speaking = false;
+          speechTimer = null;
+          mochi.speaking = false;
         }
       }, 160);
     }
@@ -1034,37 +1135,50 @@
 
     function triggerMorph(type) {
       resetMochiState();
+
       if (type === 'glasses') {
-        mochi.s.customMode = 'none';
-        mochi.anim('morph', [[0, 250, E.out]]);
+        mochi.customMode = 'glasses';
+        mochi.anim('morph', [[0, 200, E.out]]);
+        mochi.tg.morph = 0;
         mochi.anim('glasses', [[1, 350, E.back]]);
+        mochi.tg.glasses = 1;
         Snd.play('pop');
         titleEl.textContent = '👓 Óculos Nerd 2D de Grau';
         descEl.textContent = 'Armação circular cyan cristalina sobre os olhos';
+        chipDot.className = 'w-2 h-2 rounded-full bg-[#00d4ff]';
         chipLabel.textContent = 'nerd';
       } else if (type === 'printer') {
-        mochi.s.customMode = 'printer';
-        mochi.anim('glasses', [[0, 150, E.out]]);
-        mochi.anim('morph', [[1, 400, E.back]]);
+        mochi.customMode = 'printer';
+        mochi.anim('morph', [[1, 380, E.back]]);
+        mochi.tg.morph = 1;
         mochi.s.paperY = 0;
+        mochi.tg.paperY = 0;
         Snd.play('print');
         
-        // Ejeção ativa do papel com som
+        // Ejeção fluida do papel com som mecânico e finalização
         setTimeout(() => {
-          mochi.anim('paperY', [[1, 1200, E.out]]);
+          if (mochi.customMode !== 'printer') return;
+          mochi.anim('paperY', [[1, 1400, E.out]]);
+          mochi.tg.paperY = 1;
           Snd.play('finish');
         }, 320);
+
         titleEl.textContent = '🖨️ Impressora 2D Estratégia Nerd';
-        descEl.textContent = 'Chassi cyan escuro, fenda mecânica e relatório impresso';
+        descEl.textContent = 'Chassi dark ink/cyan, alimentação de papel e impressão ativa';
+        chipDot.className = 'w-2 h-2 rounded-full bg-[#00d4ff]';
         chipLabel.textContent = 'printer';
       } else if (type === 'pc90s') {
-        mochi.s.customMode = 'pc90s';
-        mochi.anim('glasses', [[0, 150, E.out]]);
-        mochi.anim('morph', [[1, 400, E.back]]);
+        mochi.customMode = 'pc90s';
+        mochi.anim('morph', [[1, 380, E.back]]);
+        mochi.tg.morph = 1;
         Snd.play('pop');
-        setTimeout(() => Snd.play('proud'), 250);
+        setTimeout(() => {
+          if (mochi.customMode === 'pc90s') Snd.play('proud');
+        }, 220);
+
         titleEl.textContent = '🖥️ PC Retrô 90s // Macintosh';
-        descEl.textContent = 'Monitor clássico com tela CRT verde e disquete cyan';
+        descEl.textContent = 'Monitor bege clássico com tela CRT verde fosforescente e disquete 3.5"';
+        chipDot.className = 'w-2 h-2 rounded-full bg-[#10b981]';
         chipLabel.textContent = 'pc-90s';
       }
     }
