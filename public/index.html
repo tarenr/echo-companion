@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Echo // Estratégia Nerd</title>
+  <meta name="theme-color" content="#030712">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Tela Fullscreen OLED Limpa -->
+  <main class="echo-screen" id="screen">
+    
+    <!-- Efeito Scanlines Retrô -->
+    <div class="scanlines"></div>
+
+    <!-- Barra Superior -->
+    <header class="top-bar">
+      <div class="brand-tag">
+        <span id="brand-project">ESTRATÉGIA NERD</span>
+        <span>//</span>
+        <span id="agent-label">ECHO</span>
+      </div>
+      <div class="status-badge">
+        <span id="badge-top">STANDBY</span>
+        <div class="dot-indicator" id="status-dot"></div>
+      </div>
+    </header>
+
+    <!-- Palco Central -->
+    <section class="stage">
+      
+      <!-- Wrapper do Mascote Echo -->
+      <div class="echo-wrapper mode-full" id="echo-wrapper">
+        <div class="head-floating">
+          <div class="echo-face" id="echo-face">
+            
+            <!-- Parêntese Esquerdo Alto -->
+            <span class="parenthesis">(</span>
+
+            <!-- Miolo: 2 Linhas (Olhos e Boca) -->
+            <div class="face-core">
+              <div class="eyes-row">
+                <span class="eye" id="eye-left">^</span>
+                <span class="eye" id="eye-right">^</span>
+              </div>
+              <div class="mouth-row">
+                <span class="mouth" id="mouth">_</span>
+              </div>
+            </div>
+
+            <!-- Parêntese Direito Alto -->
+            <span class="parenthesis">)</span>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel Lateral de Informações / Alertas (Lado Direito) -->
+      <aside class="info-panel" id="info-panel">
+        <div class="badge-tag" id="panel-badge">TELEMETRIA PC</div>
+        <div class="main-stat-text" id="panel-main-text">CPU: 0%</div>
+        
+        <div class="progress-track" id="panel-track">
+          <div class="progress-fill" id="panel-fill"></div>
+        </div>
+
+        <div class="sub-detail-text" id="panel-sub-text">
+          <span id="panel-sub-line1">RAM: 0% • 0 GB</span>
+          <span class="sub-detail-muted" id="panel-sub-line2">Monitoramento ativo</span>
+        </div>
+
+        <div class="voice-subtitle" id="panel-voice" style="display: none;">
+          🗣️ "<span id="voice-text"></span>"
+        </div>
+      </aside>
+
+    </section>
+
+    <!-- Rodapé -->
+    <footer class="bottom-bar">
+      <span id="connection-status">WI-FI LOCAL: CONECTANDO...</span>
+      <span id="telemetry-bar">CPU: -- | RAM: --</span>
+    </footer>
+
+    <!-- Dica de desbloqueio de áudio no primeiro toque -->
+    <div class="unlock-audio-toast" id="audio-toast">
+      🔊 TOQUE NA TELA PARA ATIVAR O SOM DO ECHO
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
