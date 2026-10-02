@@ -51,20 +51,35 @@ O Echo pode ser acessado de **dentro de casa (Wi-Fi)** ou de **qualquer lugar do
 ## 📱 Como Conectar o Celular
 
 ### Opção 1: Pela Internet (4G/5G ou fora de casa)
-1. Abra no navegador do celular:
+1. Abra no navegador do celular (Chrome / Edge / Samsung Internet):
    ```text
    https://echo.tfr-info.com.br
    ```
 2. Digite o PIN de segurança (`4884`).
 3. Toque uma vez na tela para autorizar o áudio e ativar a retenção de tela acesa (WakeLock).
 
+### 📲 Instalando como Aplicativo (PWA Mobile)
+O Echo é uma **Progressive Web App (PWA)** completa com Service Worker, cache de carregamento instantâneo e ícones cyberpunk nativos em alta resolução:
+1. Ao abrir `https://echo.tfr-info.com.br` no Chrome do Android, toque no menu de 3 pontinhos (`⋮`) ou no banner de instalação.
+2. Selecione **"Instalar aplicativo"** (ou **"Adicionar à tela inicial"**).
+3. O ícone oficial do Echo com o Kaomoji ciano neon `\ ( ^ _ ^ ) /` ficará na tela inicial do seu celular, abrindo em tela cheia (Display Standalone/Fullscreen OLED) sem barras de endereço do navegador.
+
 ### Opção 2: Pela Wi-Fi de Casa
-1. No PC, inicie o servidor:
-   ```powershell
-   npm start
+1. Abra no celular:
+   ```text
+   http://192.168.1.4:4884
    ```
-2. Aponte a câmera do smartphone para o QR Code gerado no terminal (ou acesse `http://192.168.1.4:4884`).
-3. Dê um toque na tela para ativar som e WakeLock.
+2. Dê um toque na tela para ativar som e WakeLock.
+
+---
+
+## ⚡ Inicialização Silenciosa no Windows (Auto-Start)
+
+O Echo foi configurado para rodar permanentemente e em segundo plano silencioso (sem janelas de terminal e sem tasks presas em IDEs):
+
+- **Script Headless:** `echo-daemon.vbs` executa `node server.js` de forma 100% oculta através do Windows WScript Shell.
+- **Atalho no Startup:** Localizado em `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Echo Companion.lnk`, iniciando o servidor automaticamente no boot do Windows.
+- **Logs de Execução:** Redirecionados para `out.log` e `err.log` na pasta do projeto para depuração sem interferir no usuário.
 
 ---
 

@@ -5,6 +5,16 @@ const fs = require('fs');
 const os = require('os');
 const qrcode = require('qrcode-terminal');
 
+process.on('uncaughtException', (err, origin) => {
+  fs.appendFileSync(path.resolve(__dirname, 'crash.log'), `[${new Date().toISOString()}] UncaughtException: ${err?.stack || err} (origin: ${origin})\n`);
+});
+process.on('unhandledRejection', (reason) => {
+  fs.appendFileSync(path.resolve(__dirname, 'crash.log'), `[${new Date().toISOString()}] UnhandledRejection: ${reason?.stack || reason}\n`);
+});
+process.on('exit', (code) => {
+  fs.appendFileSync(path.resolve(__dirname, 'crash.log'), `[${new Date().toISOString()}] Process exit with code: ${code}\n`);
+});
+
 // Carrega variáveis do ambiente do Estratégia Nerd se existir
 const estrategiaEnvPath = path.resolve('C:/Users/WINDOWS/Projects/estrategia-nerd/.env');
 let OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
@@ -26,6 +36,11 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 4884;
 const ECHO_PIN = process.env.ECHO_PIN || '4884';
+
+app.use((req, res, next) => {
+  console.log(`[HTTP ${req.method}] ${req.url} (${req.ip})`);
+  next();
+});
 
 app.use(express.json());
 

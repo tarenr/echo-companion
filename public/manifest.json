@@ -1,10 +1,31 @@
 {
   "name": "Echo // Estratégia Nerd Companion",
   "short_name": "Echo",
+  "description": "Companion de telemetria e mascote com inteligência emocional para sessões de desenvolvimento",
   "start_url": "/",
-  "display": "fullscreen",
+  "scope": "/",
+  "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#030712",
   "orientation": "any",
-  "icons": []
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }

@@ -426,6 +426,32 @@
     if (e.key === 'Enter') submitPin();
   });
 
+  // 8. Registro de Service Worker para PWA Instalável no Celular
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => {
+          console.log('✅ [PWA] Service Worker registrado:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('⚠️ [PWA] Falha ao registrar Service Worker:', err);
+        });
+    });
+  }
+
+  // Captura do evento de instalação para navegadores mobile (Chrome/Edge/Samsung Internet)
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log('💡 [PWA] Aplicativo pronto para instalação no celular');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    console.log('🎉 [PWA] Echo instalado com sucesso no dispositivo!');
+    deferredPrompt = null;
+  });
+
   // Inicialização
   const urlParams = new URLSearchParams(window.location.search);
   const pinFromUrl = urlParams.get('pin');
