@@ -3,985 +3,877 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Grok & Coucou Bot // Laboratório Oficial</title>
+  <title>Mochi // Motor 2D Original do Coucou</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Estilos e animações para complementos mecânicos */
-    @keyframes crtBlink {
-      0%, 49% { opacity: 1; }
-      50%, 100% { opacity: 0; }
+    :root {
+      --spr: cubic-bezier(.32, 1.22, .42, 1);
     }
-    @keyframes crtScan {
-      0% { background-position: 0 0; }
-      100% { background-position: 0 100%; }
-    }
-    @keyframes floppyInsert {
-      0% { transform: translateY(50px) scale(0.9); opacity: 0; }
-      40% { transform: translateY(12px) scale(1); opacity: 1; }
-      75% { transform: translateY(4px); }
-      100% { transform: translateY(0px); opacity: 1; }
-    }
-    @keyframes paperFeedOut {
-      0% { transform: translateY(-35px) scale(0.95); opacity: 0; }
-      25% { transform: translateY(-18px) scale(1); opacity: 1; }
-      60% { transform: translateY(2px); }
-      100% { transform: translateY(14px); opacity: 1; }
-    }
-    @keyframes rocketFlame {
-      0%, 100% { transform: scaleY(1) scaleX(1); filter: drop-shadow(0 0 12px #f97316); }
-      50% { transform: scaleY(1.25) scaleX(0.9); filter: drop-shadow(0 0 22px #ef4444); }
-    }
-    @keyframes coffeeSteam {
-      0% { transform: translateY(0) scaleX(0.8); opacity: 0.7; }
-      50% { transform: translateY(-16px) scaleX(1.2); opacity: 0.4; }
-      100% { transform: translateY(-32px) scaleX(1.5); opacity: 0; }
-    }
-    @keyframes coffeeDrop {
-      0% { transform: translateY(0); opacity: 1; }
-      75% { transform: translateY(18px); opacity: 1; }
-      100% { transform: translateY(22px); opacity: 0; }
-    }
-    @keyframes nerdSheen {
-      0%, 100% { opacity: 0.35; transform: translateX(-3px); }
-      50% { opacity: 0.95; transform: translateX(3px); }
-    }
-    @keyframes speakMouthPulse {
-      0%, 100% { transform: scaleY(0.4) scaleX(0.8); }
-      50% { transform: scaleY(1.3) scaleX(1.15); }
-    }
-    @keyframes wavePulse {
-      0%, 100% { height: 4px; }
-      50% { height: 14px; }
-    }
-
-    .canvas-bot {
-      touch-action: none;
+    body {
+      background-color: #0c0e12;
+      touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
     }
+    .canvas-wrap {
+      filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.5));
+    }
   </style>
 </head>
-<body class="bg-[#03060c] text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center justify-between font-sans antialiased select-none overflow-x-hidden">
+<body class="text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center justify-between font-sans antialiased overflow-x-hidden">
 
   <!-- Header -->
-  <header class="text-center mt-0.5 w-full max-w-sm">
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-1">
+  <header class="text-center mt-1 w-full max-w-sm">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold uppercase tracking-wider mb-1">
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-      Coucou & Grok Bot // 60 FPS Canvas Engine
+      Coucou 2D Engine // Mochi Oficial
     </div>
-    <h1 class="text-lg font-bold tracking-tight text-white">Física do Coucou & Transformações</h1>
-    <p class="text-xs text-slate-400">Toque no robô para amassar (squash) ou arraste o dedo para ele seguir seu olhar!</p>
+    <h1 class="text-lg font-bold tracking-tight text-white">Mochi 2D (Pure Vector & Spring)</h1>
+    <p class="text-xs text-slate-400">Toque nele para dar um "slap" elástico com som, ou arraste para ele olhar!</p>
   </header>
 
-  <!-- Palco Central -->
-  <main class="w-full max-w-sm bg-[#090e17]/90 border border-slate-800/80 rounded-[32px] p-4 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-2xl min-h-[350px] my-2">
+  <!-- Palco Central com Canvas Grande do Mochi -->
+  <main class="w-full max-w-sm bg-[#14161c] border border-slate-800/80 rounded-[32px] p-6 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden min-h-[330px] my-2">
     
-    <!-- Satélite de Status Flutuante -->
-    <div id="satellite" class="absolute top-4 left-5 z-40 w-8 h-8 rounded-full bg-[#173b57] border border-[#3b8ac4]/60 flex items-center justify-center shadow-lg transition-all duration-300">
-      <div id="sat-waves" class="flex items-center gap-[2.5px] h-3.5">
-        <span class="w-[3px] bg-[#61b8f5] rounded-full h-2 animate-pulse"></span>
-        <span class="w-[3px] bg-[#61b8f5] rounded-full h-3 animate-pulse" style="animation-delay: 0.15s"></span>
-        <span class="w-[3px] bg-[#61b8f5] rounded-full h-1.5 animate-pulse" style="animation-delay: 0.3s"></span>
-      </div>
+    <!-- Satélite / Badge de Estado Flutuante -->
+    <div id="status-chip" class="absolute top-4 left-5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-[10px] font-mono text-slate-300 flex items-center gap-1.5 shadow-sm">
+      <span id="chip-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      <span id="chip-label">idle</span>
     </div>
 
-    <!-- Área de Exibição Central -->
-    <div class="relative w-full h-[220px] flex items-center justify-center" id="stage-box">
-      
-      <!-- CANVAS 2D DO BOT (Coucou Canvas Engine) -->
-      <canvas id="botCanvas" width="220" height="220" class="canvas-bot z-20 cursor-pointer drop-shadow-[0_12px_28px_rgba(0,180,255,0.25)]"></canvas>
-
-      <!-- OVERLAY DE OBJETOS TRANSFORMADOS (PC Antigo, Impressora, Foguete, Cafeteira) -->
-      <div id="object-overlay" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center hidden">
-        <!-- Injetado dinamicamente -->
-      </div>
-
+    <!-- Canvas do Mochi (Desenhado com a classe Bot original do Coucou) -->
+    <div class="canvas-wrap relative cursor-pointer active:scale-95 transition-transform duration-75">
+      <canvas id="coucouCanvas" width="240" height="240" class="block"></canvas>
     </div>
 
-    <!-- Legenda e Estado Atual -->
-    <div class="text-center mt-2 w-full z-40">
-      <div class="text-base font-semibold text-white tracking-wide" id="label-title">🔵 Ocioso / Respiração Orgânica</div>
-      <div class="text-xs text-blue-400 font-medium mt-0.5" id="label-desc">Física elástica Coucou com rastreamento do olhar</div>
-      <div id="speech-bubble" class="mt-2 mx-auto max-w-xs bg-blue-950/60 border border-blue-500/40 rounded-2xl p-2 text-xs text-blue-200 hidden shadow-lg">
-        💬 "<span id="speech-text">Pronto para transformar ou programar!</span>"
-      </div>
+    <!-- Legenda e Feedback -->
+    <div class="text-center mt-4 w-full">
+      <div class="text-base font-bold text-white tracking-wide" id="action-title">Mochi (Au repos)</div>
+      <div class="text-xs text-slate-400 mt-0.5" id="action-desc">Física elástica 2D, superelipse de Lamé e piscar natural</div>
     </div>
   </main>
 
-  <!-- Painel de Controles com TODAS as 14 Animações -->
+  <!-- Painel de Ações do Coucou (Emotes, Estados e Transformações) -->
   <footer class="w-full max-w-sm bg-slate-900/90 border border-slate-800 rounded-3xl p-3 flex flex-col gap-2 mb-1 backdrop-blur-md">
     
-    <!-- Seletor de Abas (Expressões vs Transformações) -->
+    <!-- Seletor de Categoria -->
     <div class="flex rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 text-xs font-semibold">
-      <button id="tab-btn-expr" onclick="switchTab('expr')" class="flex-1 py-1.5 rounded-lg bg-blue-600 text-white transition shadow-sm">
-        🎭 Expressões & Poses (10)
+      <button id="tab-emotes" onclick="selectTab('emotes')" class="flex-1 py-1.5 rounded-lg bg-emerald-600 text-white transition shadow-sm">
+        😊 Emotes Coucou (7)
       </button>
-      <button id="tab-btn-morph" onclick="switchTab('morph')" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
-        ⚙️ Transformações (4)
+      <button id="tab-states" onclick="selectTab('states')" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+        ⚡ Estados (5)
+      </button>
+      <button id="tab-morphs" onclick="selectTab('morphs')" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+        ⚙️ 2D Morphs (3)
       </button>
     </div>
 
-    <!-- ABA 1: EXPRESSÕES & POSES (10 BOTÕES ORIGINAIS INTACTOS) -->
-    <div id="tab-expr" class="grid grid-cols-2 gap-1.5 max-h-[170px] overflow-y-auto pr-0.5">
-      <button onclick="setMode('idle')" class="px-2 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-        <span>🔵</span> <span>Ocioso (Padrão)</span>
+    <!-- GRUPO 1: EMOTES NATIVOS DO COUCOU (7) -->
+    <div id="panel-emotes" class="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-0.5">
+      <button onclick="triggerEmote('love')" class="px-2 py-2 rounded-xl bg-pink-600/20 border border-pink-500/40 text-pink-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>💖</span> <span>Amor (Corações)</span>
       </button>
-
-      <button onclick="setMode('nerd')" class="px-2 py-2 rounded-xl bg-sky-600/20 border border-sky-400/40 text-sky-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-        <span>👓</span> <span>Óculos de Grau</span>
+      <button onclick="triggerEmote('wink')" class="px-2 py-2 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>😉</span> <span>Piscadela (Wink)</span>
       </button>
-
-      <button onclick="setMode('talking')" class="px-2 py-2 rounded-xl bg-blue-600/20 border border-blue-400/40 text-blue-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-        <span>🗣️</span> <span>Falando / Voz</span>
+      <button onclick="triggerEmote('proud')" class="px-2 py-2 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>⭐</span> <span>Orgulhoso (Estrelas)</span>
       </button>
-
-      <button onclick="setMode('hacker')" class="px-2 py-2 rounded-xl bg-cyan-600/20 border border-cyan-400/40 text-cyan-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-        <span>💻</span> <span>Codando Rápido</span>
+      <button onclick="triggerEmote('happy')" class="px-2 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>😊</span> <span>Feliz (^ _ ^)</span>
       </button>
-
-      <button onclick="setMode('dance')" class="px-2 py-2 rounded-xl bg-purple-600/20 border border-purple-400/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-        <span>🕺</span> <span>Dancinha Vitória</span>
-      </button>
-
-      <button onclick="setMode('doubt')" class="px-2 py-2 rounded-xl bg-amber-600/20 border border-amber-400/40 text-amber-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-        <span>🤔</span> <span>Dúvida (Coçando)</span>
-      </button>
-
-      <button onclick="setMode('surprised')" class="px-2 py-2 rounded-xl bg-pink-600/20 border border-pink-400/40 text-pink-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+      <button onclick="triggerEmote('surprised')" class="px-2 py-2 rounded-xl bg-sky-600/20 border border-sky-500/40 text-sky-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
         <span>😲</span> <span>Surpreso (O O)</span>
       </button>
-
-      <button onclick="setMode('call')" class="px-2 py-2 rounded-xl bg-teal-600/20 border border-teal-400/40 text-teal-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-        <span>🙌</span> <span>Chamando Você</span>
+      <button onclick="triggerEmote('annoyed')" class="px-2 py-2 rounded-xl bg-rose-600/20 border border-rose-500/40 text-rose-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>😒</span> <span>Bravo (- _ -)</span>
       </button>
-
-      <button onclick="setMode('sleep')" class="px-2 py-2 rounded-xl bg-indigo-600/20 border border-indigo-400/40 text-indigo-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-        <span>😴</span> <span>Dormindo Zzz</span>
-      </button>
-
-      <button onclick="setMode('glitch')" class="px-2 py-2 rounded-xl bg-red-600/20 border border-red-400/40 text-red-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
-        <span>⚡</span> <span>Curto-Circuito</span>
+      <button onclick="triggerEmote('yawn')" class="px-2 py-2 rounded-xl bg-slate-700/40 border border-slate-600 text-slate-300 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>🥱</span> <span>Bocejo (Sono Zzz)</span>
       </button>
     </div>
 
-    <!-- ABA 2: TRANSFORMAÇÕES EM OBJETOS FÍSICOS REAIS (4 NOVOS OBJETOS) -->
-    <div id="tab-morph" class="grid grid-cols-2 gap-2 hidden">
-      <!-- 1. PC ANTIGO RETRÔ 90s -->
-      <button onclick="setMode('pc90s')" class="p-2.5 rounded-2xl bg-amber-600/20 border border-amber-400/40 text-amber-200 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-xl">🖥️</span>
-        <span>PC Antigo 90s</span>
-        <span class="text-[9px] text-amber-300/80 font-normal">Disquete & Tubo CRT</span>
+    <!-- GRUPO 2: ESTADOS NATIVOS (5) -->
+    <div id="panel-states" class="grid grid-cols-2 gap-1.5 hidden max-h-[160px] overflow-y-auto pr-0.5">
+      <button onclick="triggerState('idle')" class="px-2 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>⚪</span> <span>Ao Repouso (Idle)</span>
       </button>
-
-      <!-- 2. IMPRESSORA DE MESA REALISTA -->
-      <button onclick="setMode('printer_real')" class="p-2.5 rounded-2xl bg-blue-600/20 border border-blue-400/40 text-blue-200 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-xl">🖨️</span>
-        <span>Impressora Real</span>
-        <span class="text-[9px] text-blue-300/80 font-normal">Bandeja superior & papel</span>
+      <button onclick="triggerState('working')" class="px-2 py-2 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>🔵</span> <span>Trabalhando</span>
       </button>
-
-      <!-- 3. FOGUETE DE DEPLOY -->
-      <button onclick="setMode('rocket')" class="p-2.5 rounded-2xl bg-red-600/20 border border-red-400/40 text-red-200 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-xl">🚀</span>
-        <span>Foguete Deploy</span>
-        <span class="text-[9px] text-red-300/80 font-normal">Aletas & Chamas</span>
+      <button onclick="triggerState('thinking')" class="px-2 py-2 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>🟣</span> <span>Pensando</span>
       </button>
+      <button onclick="triggerState('approval')" class="px-2 py-2 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>🟠</span> <span>Aprovação (!)</span>
+      </button>
+      <button onclick="triggerState('finished')" class="col-span-2 px-2 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <span>🟢</span> <span>Concluído / Sucesso (Giro 360°)</span>
+      </button>
+    </div>
 
-      <!-- 4. CAFETEIRA EXPRESSO DEV -->
-      <button onclick="setMode('coffee')" class="p-2.5 rounded-2xl bg-emerald-600/20 border border-emerald-400/40 text-emerald-200 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-xl">☕</span>
-        <span>Cafeteira Dev</span>
-        <span class="text-[9px] text-emerald-300/80 font-normal">Manômetro & Vapor</span>
+    <!-- GRUPO 3: TRANSFORMAÇÕES 2D MINIMALISTAS (3) -->
+    <div id="panel-morphs" class="grid grid-cols-2 gap-1.5 hidden max-h-[160px] overflow-y-auto pr-0.5">
+      <button onclick="triggerMorph('printer')" class="p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-200 text-xs font-bold flex flex-col items-center gap-1 active:scale-95 transition">
+        <span class="text-lg">🖨️</span>
+        <span>Impressora 2D</span>
+        <span class="text-[9px] font-normal text-blue-300">Folha saindo da fenda</span>
+      </button>
+      <button onclick="triggerMorph('pc90s')" class="p-2.5 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-200 text-xs font-bold flex flex-col items-center gap-1 active:scale-95 transition">
+        <span class="text-lg">🖥️</span>
+        <span>PC Retrô 2D</span>
+        <span class="text-[9px] font-normal text-amber-300">Monitor vintage com disquete</span>
+      </button>
+      <button onclick="triggerMorph('glasses')" class="col-span-2 p-2 rounded-xl bg-sky-600/20 border border-sky-500/40 text-sky-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <span>👓</span>
+        <span>Óculos Nerd 2D de Grau</span>
       </button>
     </div>
 
   </footer>
 
-  <!-- SCRIPT DO MOTOR COUCOU (CANVAS 2D) & TRANSFORMAÇÕES -->
+  <!-- SCRIPT: MOTOR ORIGINAL DO COUCOU (CLASSE BOT + SND) -->
   <script>
-    // ========================================================
-    // MOTOR DE ANIMAÇÃO PARAMÉTRICO ESTILO COUCOU
-    // ========================================================
-    const canvas = document.getElementById('botCanvas');
-    const ctx = canvas.getContext('2d');
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const W = 220, H = 220;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    ctx.scale(dpr, dpr);
+    const NOW = () => performance.now();
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const lerp = (a, b, t) => a + (b - a) * t;
 
-    const overlay = document.getElementById('object-overlay');
-    const labelTitle = document.getElementById('label-title');
-    const labelDesc = document.getElementById('label-desc');
-    const speechBubble = document.getElementById('speech-bubble');
-    const speechText = document.getElementById('speech-text');
-    const satellite = document.getElementById('satellite');
-
-    // Estado físico contínuo do robô
-    const bot = {
-      // Posição e dimensões
-      cx: 110,
-      cy: 110,
-      r: 58,
-      
-      // Variáveis físicas e de mola (Coucou params)
-      sx: 1, sy: 1,            // Escala X e Y (squash & stretch)
-      targetSx: 1, targetSy: 1,
-      yaw: 0, pitch: 0, tilt: 0, // Ângulos de orientação
-      look: { x: 0, y: 0 },    // Direção da pupila (-1 a 1 via Math.tanh)
-      open: 1,                 // Abertura do olho (1 aberto, 0 piscando)
-      blush: 0,                // Bochechas rosadas (0 a 1)
-      hands: 0,                // Altura dos bracinhos (0 a 1)
-      handL: { x: 0, y: 0, rot: 0 },
-      handR: { x: 0, y: 0, rot: 0 },
-
-      // Estado atual
-      mode: 'idle',
-      mouthOpen: 0,            // Abertura da boca falante
-      glasses: false,          // Óculos nerd
-      baseColorTop: '#bde4ff',
-      baseColorMid: '#68b2e3',
-      baseColorDark: '#1b4a6d',
-
-      // Temporizadores de ciclo
-      nextBlink: performance.now() + 2500,
-      isBlinking: false
+    // Curvas elásticas de interpolação
+    const E = {
+      out: t => 1 - Math.pow(1 - t, 3),
+      inOut: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+      back: t => { const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+      lin: t => t
     };
 
-    // Função de mola elástica (Coucou spring lerp)
-    function spring(current, target, speed = 0.15) {
-      return current + (target - current) * speed;
+    const hexRgb = h => {
+      h = h.replace('#', '');
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    };
+    const rgba = (c, a) => `rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
+    const mix = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+
+    // Funções vetoriais do Coucou
+    function rr(x, X, Y, W, H, R) {
+      R = Math.max(0, Math.min(R, W / 2, H / 2));
+      x.beginPath();
+      x.moveTo(X + R, Y);
+      x.arcTo(X + W, Y, X + W, Y + H, R);
+      x.arcTo(X + W, Y + H, X, Y + H, R);
+      x.arcTo(X, Y + H, X, Y, R);
+      x.arcTo(X, Y, X + W, Y, R);
+      x.closePath();
     }
-
-    // Squash & Stretch ao tocar (como no Coucou)
-    function squashBot() {
-      bot.sx = 1.18;
-      bot.sy = 0.82;
-      bot.blush = 0.8;
-      setTimeout(() => { bot.blush = 0; }, 600);
+    function heart(x, s) {
+      x.beginPath();
+      x.moveTo(0, s * 0.38);
+      x.bezierCurveTo(-s * 1.05, -s * 0.15, -s * 0.5, -s * 0.95, 0, -s * 0.38);
+      x.bezierCurveTo(s * 0.5, -s * 0.95, s * 1.05, -s * 0.15, 0, s * 0.38);
+      x.closePath();
     }
-    canvas.addEventListener('pointerdown', squashBot);
-
-    // Eye Tracking seguindo o toque/cursor pela tela (via Tangente Hiperbólica Math.tanh)
-    function trackPointer(e) {
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX || (e.touches && e.touches[0].clientX)) - (rect.left + rect.width / 2);
-      const y = (e.clientY || (e.touches && e.touches[0].clientY)) - (rect.top + rect.height / 2);
-      bot.look.x = Math.tanh(x / 140);
-      bot.look.y = Math.tanh(y / 140);
-    }
-    window.addEventListener('pointermove', trackPointer);
-    window.addEventListener('touchmove', trackPointer);
-
-    // Alternar Abas no Rodapé
-    function switchTab(tab) {
-      const expr = document.getElementById('tab-expr');
-      const morph = document.getElementById('tab-morph');
-      const btnE = document.getElementById('tab-btn-expr');
-      const btnM = document.getElementById('tab-btn-morph');
-
-      if (tab === 'expr') {
-        expr.classList.remove('hidden');
-        morph.classList.add('hidden');
-        btnE.className = 'flex-1 py-1.5 rounded-lg bg-blue-600 text-white transition shadow-sm';
-        btnM.className = 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
-      } else {
-        morph.classList.remove('hidden');
-        expr.classList.add('hidden');
-        btnM.className = 'flex-1 py-1.5 rounded-lg bg-blue-600 text-white transition shadow-sm';
-        btnE.className = 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+    function star(x, ro, ri) {
+      x.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 ? ri : ro, a = -Math.PI / 2 + i * Math.PI / 5;
+        x.lineTo(Math.cos(a) * r, Math.sin(a) * r);
       }
+      x.closePath();
     }
 
     // ========================================================
-    // RENDERIZADOR COUCOU (CANVAS 2D)
+    // SINTETIZADOR DE ÁUDIO WEB AUDIO (SOM DO COUCOU)
     // ========================================================
-    function drawCoucouBot(t) {
-      ctx.clearRect(0, 0, W, H);
-
-      // Se estiver em modo de objeto mecânico pesado (PC 90s, Impressora, Foguete, Cafeteira),
-      // o overlay HTML/SVG assume o controle do palco e o Canvas fica sutil.
-      if (['pc90s', 'printer_real', 'rocket', 'coffee'].includes(bot.mode)) {
-        return;
+    const Snd = {
+      ctx: null, on: true, vol: 0.5,
+      init() {
+        if (this.ctx) return;
+        const C = window.AudioContext || window.webkitAudioContext;
+        if (!C) return;
+        const c = this.ctx = new C();
+        this.master = c.createGain();
+        this.master.gain.value = this.vol;
+        this.master.connect(c.destination);
+      },
+      tone({ f = 440, to = 0, d = 0.2, type = 'sine', g = 0.1, a = 0.006 }) {
+        this.init();
+        if (!this.ctx) return;
+        const c = this.ctx, t = c.currentTime;
+        const o = c.createOscillator();
+        o.type = type;
+        o.frequency.setValueAtTime(f, t);
+        if (to) o.frequency.exponentialRampToValueAtTime(to, t + d * 0.9);
+        const gn = c.createGain();
+        gn.gain.setValueAtTime(0.0001, t);
+        gn.gain.exponentialRampToValueAtTime(g, t + a);
+        gn.gain.exponentialRampToValueAtTime(0.0001, t + d);
+        o.connect(gn);
+        gn.connect(this.master);
+        o.start(t);
+        o.stop(t + d + 0.05);
+      },
+      play(name) {
+        if (name === 'slap') {
+          this.tone({ f: 280, to: 120, d: 0.14, type: 'triangle', g: 0.15 });
+        } else if (name === 'pop') {
+          this.tone({ f: 450, to: 820, d: 0.09, type: 'sine', g: 0.12 });
+        } else if (name === 'love') {
+          this.tone({ f: 523, to: 659, d: 0.25, type: 'sine', g: 0.1 });
+        } else if (name === 'proud') {
+          this.tone({ f: 659, to: 880, d: 0.22, type: 'sine', g: 0.12 });
+        } else if (name === 'wink') {
+          this.tone({ f: 780, to: 600, d: 0.12, type: 'sine', g: 0.09 });
+        } else if (name === 'yawn') {
+          this.tone({ f: 380, to: 220, d: 0.5, type: 'sine', g: 0.08 });
+        } else if (name === 'finish') {
+          this.tone({ f: 523, to: 1046, d: 0.35, type: 'triangle', g: 0.15 });
+        }
       }
+    };
 
-      // 1. Atualiza Física de Mola
-      bot.sx = spring(bot.sx, bot.targetSx, 0.18);
-      bot.sy = spring(bot.sy, bot.targetSy, 0.18);
+    // ========================================================
+    // MODELOS DE FORMA E ESTADOS DO COUCOU
+    // ========================================================
+    const MOCHI_SPEC = {
+      name: 'Mochi',
+      shape: 'mochi',
+      eye: { w: 0.24, h: 0.26, sp: 0.36, p: -0.08 }, // Proporção redondinha bonita original
+      base: ['#FFFAF5', '#EAD8C7'],
+      ink: '#1A1412'
+    };
 
-      // Respiração contínua orgânica
-      const breath = Math.sin(t / 800) * 0.025;
-      const breathY = Math.sin(t / 800) * 3;
+    const STATES = {
+      idle: { label: 'Ao repouso', col: '#E6E9EE', tint: 0, eye: 'pill', badge: null, glow: 'rgba(255,255,255,.35)' },
+      working: { label: 'Trabalhando', col: '#3B9EFF', tint: 0.72, eye: 'pill', badge: ['dots', '#3B9EFF'], glow: '#3B9EFF' },
+      finished: { label: 'Concluído', col: '#34D399', tint: 0.35, eye: 'happy', badge: ['dot', '#34D399'], glow: '#34D399' },
+      error: { label: 'Erro', col: '#F4505E', tint: 0.78, eye: 'flat', badge: ['dot', '#F4505E'], glow: '#F4505E' },
+      dizzy: { label: 'Tonto', col: '#F472B6', tint: 0.7, eye: 'spiral', badge: null, glow: '#F472B6' },
+      thinking: { label: 'Pensando', col: '#8B5CF6', tint: 0.72, eye: 'pill', badge: ['dots', '#8B5CF6'], glow: '#8B5CF6' },
+      approval: { label: 'Aguardando', col: '#F5A524', tint: 0.78, eye: 'wide', badge: ['bang', '#F5A524'], glow: '#F5A524' }
+    };
 
-      // 2. Piscar Natural
-      if (t > bot.nextBlink && !bot.isBlinking) {
-        bot.isBlinking = true;
-        bot.open = 0;
-        setTimeout(() => {
-          bot.open = 1;
-          bot.isBlinking = false;
-          bot.nextBlink = t + 2200 + Math.random() * 3000;
-        }, 120);
-      }
+    const EMOTES = {
+      love: { label: 'Amor', eye: 'heart', snd: 'love', c: '#FF4D6D' },
+      surprised: { label: 'Surpreso', eye: 'dot', snd: 'pop', c: '#FFFFFF' },
+      proud: { label: 'Orgulhoso', eye: 'star', snd: 'proud', c: '#F7B32B' },
+      wink: { label: 'Piscadela', eye: 'wink', snd: 'wink', c: '#A78BFA' },
+      yawn: { label: 'Bocejo', eye: 'tired', snd: 'yawn', c: '#94A3B8' },
+      happy: { eye: 'happy' },
+      annoyed: { eye: 'line' }
+    };
 
-      ctx.save();
-      ctx.translate(bot.cx, bot.cy + breathY);
-      ctx.rotate(bot.tilt);
-      ctx.scale(bot.sx + breath, bot.sy - breath);
-
-      // ==========================================
-      // A) BRAÇOS / MÃOS (Coucou Hands)
-      // ==========================================
-      if (bot.hands > 0.05) {
-        ctx.fillStyle = '#68b2e3';
-        ctx.strokeStyle = '#255d85';
-        ctx.lineWidth = 3;
-
-        // Mão Esquerda
-        ctx.save();
-        ctx.translate(bot.handL.x, bot.handL.y);
-        ctx.rotate(bot.handL.rot);
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 10, 16, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-
-        // Mão Direita
-        ctx.save();
-        ctx.translate(bot.handR.x, bot.handR.y);
-        ctx.rotate(bot.handR.rot);
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 10, 16, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // ==========================================
-      // B) CORPO SQUIRCLE 2.5D (Volume em 3 Camadas)
-      // ==========================================
-      ctx.beginPath();
-      ctx.arc(0, 0, bot.r, 0, Math.PI * 2);
-
-      // Camada 1: Gradiente base luminoso
-      const gBase = ctx.createRadialGradient(-18, -20, 8, 0, 0, bot.r * 1.05);
-      gBase.addColorStop(0, bot.baseColorTop);
-      gBase.addColorStop(0.45, bot.baseColorMid);
-      gBase.addColorStop(1, bot.baseColorDark);
-      ctx.fillStyle = gBase;
-      ctx.fill();
-
-      // Camada 2: Sombra de Oclusão na base inferior
-      const gShadow = ctx.createLinearGradient(0, bot.r * 0.2, 0, bot.r);
-      gShadow.addColorStop(0, 'rgba(10, 25, 45, 0)');
-      gShadow.addColorStop(1, 'rgba(8, 20, 36, 0.65)');
-      ctx.fillStyle = gShadow;
-      ctx.fill();
-
-      // Camada 3: Brilho Especular Superior (Highlight silicone/vidro)
-      const gHighlight = ctx.createRadialGradient(-bot.r * 0.35, -bot.r * 0.35, 0, -bot.r * 0.35, -bot.r * 0.35, bot.r * 0.6);
-      gHighlight.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-      gHighlight.addColorStop(0.7, 'rgba(255, 255, 255, 0.08)');
-      gHighlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      ctx.fillStyle = gHighlight;
-      ctx.fill();
-
-      // ==========================================
-      // C) BOCHECHAS ROSADAS (Coucou Blush)
-      // ==========================================
-      if (bot.blush > 0.02) {
-        ctx.fillStyle = `rgba(244, 114, 182, ${0.45 * bot.blush})`;
-        ctx.beginPath();
-        ctx.ellipse(-26, 12, 10, 6, 0, 0, Math.PI * 2);
-        ctx.ellipse(26, 12, 10, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // ==========================================
-      // D) OLHOS EM CÁPSULA (Eye Tracking + Clipping)
-      // ==========================================
-      ctx.save();
-      // Máscara de corte para os olhos não saírem da face
-      ctx.beginPath();
-      ctx.arc(0, 0, bot.r - 4, 0, Math.PI * 2);
-      ctx.clip();
-
-      const eyeSeparation = 22;
-      const eyeOffsetX = bot.look.x * 12 + bot.yaw * 16;
-      const eyeOffsetY = bot.look.y * 10 + bot.pitch * 12;
-
-      ctx.fillStyle = '#071626';
-
-      if (bot.mode === 'sleep') {
-        // Olhinhos fechados dormindo
-        ctx.strokeStyle = '#071626';
-        ctx.lineWidth = 4;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.arc(-eyeSeparation + eyeOffsetX, 4 + eyeOffsetY, 10, 0.2 * Math.PI, 0.8 * Math.PI);
-        ctx.arc(eyeSeparation + eyeOffsetX, 4 + eyeOffsetY, 10, 0.2 * Math.PI, 0.8 * Math.PI);
-        ctx.stroke();
-      } else if (bot.mode === 'surprised') {
-        // Olhos arregalados redondos com brilho branco
-        const rSurprise = 12;
-        ctx.beginPath();
-        ctx.arc(-eyeSeparation + eyeOffsetX, eyeOffsetY, rSurprise, 0, Math.PI * 2);
-        ctx.arc(eyeSeparation + eyeOffsetX, eyeOffsetY, rSurprise, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(-eyeSeparation + eyeOffsetX - 3, eyeOffsetY - 3, 3.5, 0, Math.PI * 2);
-        ctx.arc(eyeSeparation + eyeOffsetX - 3, eyeOffsetY - 3, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (bot.mode === 'dance') {
-        // Olhinhos de felicidade em arco ( ^ _ ^ )
-        ctx.strokeStyle = '#042217';
-        ctx.lineWidth = 4;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.arc(-eyeSeparation, -2, 10, 1.2 * Math.PI, 1.8 * Math.PI);
-        ctx.arc(eyeSeparation, -2, 10, 1.2 * Math.PI, 1.8 * Math.PI);
-        ctx.stroke();
-      } else if (bot.mode === 'glitch') {
-        // Olhos com linhas retas tensas
-        ctx.fillStyle = '#3f0707';
-        ctx.fillRect(-eyeSeparation - 7 + eyeOffsetX, eyeOffsetY - 2, 16, 4);
-        ctx.fillRect(eyeSeparation - 7 + eyeOffsetX, eyeOffsetY - 2, 16, 4);
-      } else {
-        // Olhos padrão em cápsula (oval vertical com abertura de piscar)
-        const eyeW = 8;
-        const eyeH = 19 * Math.max(0.08, bot.open);
+    // ========================================================
+    // CLASSE BOT ORIGINAL DO COUCOU (PORTADA LIMPA)
+    // ========================================================
+    class Bot {
+      constructor(canvas) {
+        this.c = canvas;
+        this.x = canvas.getContext('2d');
+        this.s = {
+          yaw: 0, pitch: 0, roll: 0, tilt: 0,
+          open: 1, sx: 1, sy: 1, oy: 0, ox: 0,
+          tint: 0, morph: 0, hands: 0, blush: 0,
+          es: 1, badgeS: 0,
+          // Custom morphing props
+          paperY: 0,
+          glasses: 0,
+          customMode: 'none'
+        };
+        this.tg = { ...this.s };
+        this.tw = [];
+        this.lock = {};
+        this.col = [240, 243, 248];
+        this.colT = [240, 243, 248];
+        this.state = 'idle';
+        this.cfg = STATES.idle;
+        this.eyeOv = null;
+        this.ovUntil = 0;
+        this.badge = null;
+        this.badgeCol = '#fff';
+        this.parts = [];
+        this.nextBlink = NOW() + 2000 + Math.random() * 2000;
+        this.look = { x: 0, y: 0 };
+        this.t0 = NOW();
+        this.last = NOW();
         
-        ctx.beginPath();
-        ctx.ellipse(-eyeSeparation + eyeOffsetX, eyeOffsetY, eyeW, eyeH, 0, 0, Math.PI * 2);
-        ctx.ellipse(eyeSeparation + eyeOffsetX, eyeOffsetY, eyeW, eyeH, 0, 0, Math.PI * 2);
-        ctx.fill();
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        canvas.width = 240 * dpr;
+        canvas.height = 240 * dpr;
+        canvas.style.width = '240px';
+        canvas.style.height = '240px';
+        this.x.scale(dpr, dpr);
+      }
 
-        // Mini reflexo especular na pupila
-        if (bot.open > 0.5) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-          ctx.beginPath();
-          ctx.arc(-eyeSeparation + eyeOffsetX - 2, eyeOffsetY - 5, 2, 0, Math.PI * 2);
-          ctx.arc(eyeSeparation + eyeOffsetX - 2, eyeOffsetY - 5, 2, 0, Math.PI * 2);
-          ctx.fill();
+      anim(p, keys, after) {
+        this.tw = this.tw.filter(t => t.p !== p);
+        this.tw.push({ p, keys, i: 0, from: this.s[p], t0: NOW(), after });
+        this.lock[p] = 1;
+      }
+
+      setState(n, force) {
+        if (!STATES[n]) return;
+        this.state = n;
+        const c = this.cfg = STATES[n];
+        this.colT = hexRgb(c.col);
+        this.tg.tint = c.tint;
+        this.tg.tilt = c.tilt || 0;
+        this.badge = c.badge ? c.badge[0] : null;
+        this.badgeCol = c.badge ? c.badge[1] : null;
+
+        if (n === 'finished') {
+          this.roll(800, 1);
+          setTimeout(() => this.emit('spark', 5), 400);
+          Snd.play('finish');
+        } else if (n === 'dizzy') {
+          this.roll(1100, 2);
+        } else {
+          this.blink();
         }
       }
 
-      ctx.restore();
-
-      // ==========================================
-      // E) BOCA FALANTE (Coucou Mouth)
-      // ==========================================
-      if (bot.mouthOpen > 0.05) {
-        ctx.fillStyle = '#071626';
-        ctx.beginPath();
-        ctx.ellipse(0, 18, 7, 3 + bot.mouthOpen * 9, 0, 0, Math.PI * 2);
-        ctx.fill();
+      blink() {
+        if (this.lock.open) return;
+        this.anim('open', [[0.05, 60, E.inOut], [1, 120, E.out]]);
       }
 
-      // ==========================================
-      // F) ÓCULOS NERD DE GRAU (Cristalinos)
-      // ==========================================
-      if (bot.glasses) {
-        ctx.save();
-        ctx.translate(0, -2);
-
-        // Aros finos
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.5;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-
-        // Lente Esquerda
-        ctx.beginPath();
-        ctx.arc(-22, 0, 16, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        // Lente Direita
-        ctx.beginPath();
-        ctx.arc(22, 0, 16, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        // Ponte de metal
-        ctx.beginPath();
-        ctx.moveTo(-6, -2);
-        ctx.quadraticCurveTo(0, -7, 6, -2);
-        ctx.stroke();
-
-        // Reflexo de luz na lente
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        ctx.moveTo(-31, -8);
-        ctx.lineTo(-19, 8);
-        ctx.moveTo(13, -8);
-        ctx.lineTo(25, 8);
-        ctx.stroke();
-
-        ctx.restore();
+      squash() {
+        Snd.play('slap');
+        this.anim('sy', [[0.78, 70, E.out], [1.12, 130, E.out], [1, 160, E.inOut]]);
+        this.anim('sx', [[1.18, 70, E.out], [0.94, 130, E.out], [1, 160, E.inOut]]);
       }
 
-      ctx.restore();
+      roll(d = 900, turns = 1) {
+        this.s.roll = 0;
+        this.anim('roll', [[Math.PI * 2 * turns, d, E.inOut]], () => {
+          this.s.roll = 0;
+          this.tg.roll = 0;
+        });
+      }
+
+      emote(n, d = 1800) {
+        const em = EMOTES[n];
+        if (!em) return;
+        this.eyeOv = em.eye;
+        this.ovUntil = NOW() + d;
+
+        if (n === 'love') {
+          this.anim('blush', [[1, 300, E.out], [1, d - 600, E.lin], [0, 300, E.inOut]]);
+          this.emit('heart', 4);
+          this.anim('oy', [[-0.1, 160, E.out], [0, 300, E.back]]);
+        } else if (n === 'surprised') {
+          this.anim('oy', [[-0.2, 140, E.out], [0, 350, E.back]]);
+          this.anim('es', [[1.25, 120, E.out], [1, 400, E.inOut]]);
+        } else if (n === 'proud') {
+          this.emit('star', 5);
+          this.anim('tilt', [[-0.12, 220, E.out], [-0.12, d - 500, E.lin], [0, 260, E.inOut]]);
+        } else if (n === 'wink') {
+          this.anim('tilt', [[0.12, 160, E.out], [0.12, d - 400, E.lin], [0, 240, E.inOut]]);
+        } else if (n === 'yawn') {
+          this.anim('sy', [[1.1, 400, E.inOut], [1, 400, E.inOut]]);
+          setTimeout(() => { this.eyeOv = 'closed'; this.emit('z', 2); }, 500);
+        } else if (n === 'happy') {
+          this.anim('blush', [[0.6, 200, E.out], [0, 600, E.inOut]]);
+        }
+        if (em.snd) Snd.play(em.snd);
+      }
+
+      emit(type, n) {
+        for (let i = 0; i < n; i++) {
+          this.parts.push({
+            type,
+            x: (Math.random() - 0.5) * 0.9 + (type === 'z' ? 0.5 : 0),
+            y: -0.7 - Math.random() * 0.2,
+            vx: (Math.random() - 0.5) * 0.3 + (type === 'z' ? 0.15 : 0),
+            vy: -(0.4 + Math.random() * 0.3),
+            age: -i * 0.12,
+            life: 1.2 + Math.random() * 0.4,
+            rot: Math.random() * 6,
+            sz: 0.14 + Math.random() * 0.08
+          });
+        }
+      }
+
+      update() {
+        const n = NOW(), dt = Math.min(0.05, (n - this.last) / 1000);
+        this.last = n;
+        const s = this.s, tg = this.tg, t = (n - this.t0) / 1000;
+
+        // Processa animações interpoladas
+        for (const tw of [...this.tw]) {
+          const k = tw.keys[tw.i];
+          const p = clamp((n - tw.t0) / k[1], 0, 1);
+          s[tw.p] = tw.from + (k[0] - tw.from) * k[2](p);
+          if (p >= 1) {
+            tw.from = k[0];
+            tw.i++;
+            tw.t0 = n;
+            if (tw.i >= tw.keys.length) {
+              this.tw.splice(this.tw.indexOf(tw), 1);
+              delete this.lock[tw.p];
+              this.tg[tw.p] = tw.keys[tw.keys.length - 1][0];
+              if (tw.after) tw.after();
+            }
+          }
+        }
+
+        // Clamp de movimentação dos olhos (TRAVA PARA NUNCA SAIR DO LUGAR)
+        tg.yaw = clamp(this.look.x * 0.45, -0.4, 0.4);
+        tg.pitch = clamp(this.look.y * 0.3, -0.28, 0.18); // Limite seguro para não encavalar
+        tg.sy = 1 + Math.sin(t * 1.8) * 0.025; // Respiração suave Mochi
+        tg.sx = 1 - Math.sin(t * 1.8) * 0.015;
+
+        const kLook = 1 - Math.pow(0.002, dt), kGen = 1 - Math.pow(0.0008, dt);
+        for (const k in tg) {
+          if (this.lock[k]) continue;
+          s[k] += (tg[k] - s[k]) * ((k === 'yaw' || k === 'pitch') ? kLook : kGen);
+        }
+
+        this.col = mix(this.col, this.colT, 1 - Math.pow(0.002, dt));
+
+        // Piscar aleatório natural
+        if (n > this.nextBlink) {
+          this.blink();
+          this.nextBlink = n + 2200 + Math.random() * 3200;
+        }
+        if (this.eyeOv && n > this.ovUntil) this.eyeOv = null;
+
+        for (const p of this.parts) p.age += dt;
+        this.parts = this.parts.filter(p => p.age < p.life);
+      }
+
+      draw() {
+        const x = this.x, W = 240, H = 240, s = this.s, P = MOCHI_SPEC;
+        x.clearRect(0, 0, W, H);
+
+        const R = W * 0.3;
+        let rx = R * 1.14, ry = R * 0.88;
+        const cx = W / 2 + s.ox * R, cy = H / 2 + s.oy * R + R * 0.06;
+
+        x.save();
+        x.translate(cx, cy);
+        x.rotate(s.tilt);
+        x.scale(s.sx, s.sy);
+
+        const path = new Path2D(), m = s.morph;
+
+        // ==========================================
+        // 1. CORPO 2D: SUPERELIPSE DE LAMÉ DO MOCHI
+        // ==========================================
+        if (m < 0.01) {
+          for (let i = 0; i <= 72; i++) {
+            const a = i / 72 * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+            const px = rx * Math.sign(ca) * Math.pow(Math.abs(ca), 2 / 2.7);
+            const py = ry * Math.sign(sa) * Math.pow(Math.abs(sa), 2 / 2.7);
+            i ? path.lineTo(px, py) : path.moveTo(px, py);
+          }
+          path.closePath();
+        } else {
+          // Morfa suavemente para retângulo 2D arredondado
+          const w = lerp(rx, R * 1.12, m), h = lerp(ry, R * 0.88, m), r = lerp(Math.min(rx, ry), R * 0.32, m);
+          path.roundRect(-w, -h, 2 * w, 2 * h, r);
+        }
+
+        // Preenchimento 2D limpo (Mochi Original)
+        let c0 = hexRgb(P.base[0]), c1 = hexRgb(P.base[1]);
+        if (s.customMode === 'pc90s') {
+          c0 = [228, 220, 202]; c1 = [205, 195, 175]; // Bege vintage 2D
+        } else if (s.customMode === 'printer') {
+          c0 = [245, 247, 250]; c1 = [218, 224, 233]; // Branco e cinza escritório 2D
+        }
+
+        const g = x.createLinearGradient(0, -ry, 0, ry);
+        g.addColorStop(0, rgba(c0, 1));
+        g.addColorStop(1, rgba(c1, 1));
+        x.fillStyle = g;
+        x.fill(path);
+
+        // Borda sutil de traço vetorial elegante
+        x.strokeStyle = 'rgba(0, 0, 0, 0.07)';
+        x.lineWidth = 1.5;
+        x.stroke(path);
+
+        // ==========================================
+        // 2. BOCHECHAS ROSADAS (COUCOU BLUSH)
+        // ==========================================
+        const bl = Math.max(s.blush, 0.32) * (1 - m);
+        if (bl > 0.01) {
+          x.save();
+          x.clip(path);
+          const yo = Math.sin(s.yaw) * rx * 0.7;
+          x.fillStyle = `rgba(255, 120, 150, ${0.45 * bl})`;
+          for (const sd of [-1, 1]) {
+            x.beginPath();
+            x.ellipse(sd * rx * 0.52 + yo, ry * 0.18, R * 0.16, R * 0.09, 0, 0, Math.PI * 2);
+            x.fill();
+          }
+          x.restore();
+        }
+
+        // ==========================================
+        // 3. MORPH: DETALHES 2D DA IMPRESSORA
+        // ==========================================
+        if (s.customMode === 'printer' && m > 0.3) {
+          x.save();
+          // Fenda de saída de papel
+          x.fillStyle = '#1c2430';
+          rr(x, -R * 0.7, R * 0.15, R * 1.4, 6, 3);
+          x.fill();
+
+          // Folha saindo diretamente de dentro da fenda
+          const paperProgress = s.paperY; // 0 a 1
+          if (paperProgress > 0.05) {
+            const pw = R * 1.1, ph = R * 0.9 * paperProgress;
+            x.fillStyle = '#ffffff';
+            x.shadowColor = 'rgba(0,0,0,0.15)';
+            x.shadowBlur = 8;
+            rr(x, -pw / 2, R * 0.18, pw, ph, 4);
+            x.fill();
+            x.shadowBlur = 0;
+
+            // Linhas de texto minimalistas do documento impresso
+            x.fillStyle = '#3b82f6';
+            x.fillRect(-pw / 2 + 8, R * 0.18 + 6, pw - 16, 2.5);
+            x.fillStyle = '#94a3b8';
+            x.fillRect(-pw / 2 + 8, R * 0.18 + 12, pw * 0.6, 2);
+            x.fillRect(-pw / 2 + 8, R * 0.18 + 17, pw * 0.75, 2);
+          }
+
+          // LED indicador da impressora
+          x.fillStyle = '#10b981';
+          x.beginPath();
+          x.arc(R * 0.7, -R * 0.45, 3.5, 0, Math.PI * 2);
+          x.fill();
+
+          x.restore();
+        }
+
+        // ==========================================
+        // 4. MORPH: DETALHES 2D DO PC RETRÔ 90s
+        // ==========================================
+        if (s.customMode === 'pc90s' && m > 0.3) {
+          x.save();
+          // Tela CRT verde
+          x.fillStyle = '#051f12';
+          rr(x, -R * 0.75, -R * 0.65, R * 1.5, R * 0.85, 6);
+          x.fill();
+
+          // Texto verde do terminal
+          x.fillStyle = '#10b981';
+          x.font = '700 8px monospace';
+          x.textAlign = 'center';
+          x.fillText('> ECHO // 1994', 0, -R * 0.4);
+          x.fillText('( ^ _ ^ )', 0, -R * 0.12);
+
+          // Fenda do disquete integrada no chassi
+          x.fillStyle = '#1a1f26';
+          rr(x, -R * 0.55, R * 0.42, R * 1.1, 5, 2.5);
+          x.fill();
+
+          // Luz de leitura do disquete
+          x.fillStyle = '#10b981';
+          x.beginPath();
+          x.arc(R * 0.65, R * 0.44, 2.5, 0, Math.PI * 2);
+          x.fill();
+
+          x.restore();
+        }
+
+        // ==========================================
+        // 5. OLHOS 2D REDONDOS ORIGINAIS DO COUCOU
+        // ==========================================
+        if (s.customMode !== 'pc90s') {
+          x.save();
+          x.clip(path);
+          x.fillStyle = P.ink;
+          x.strokeStyle = P.ink;
+
+          const shape = this.eyeOv || this.cfg.eye;
+          for (const sd of [-1, 1]) {
+            const yaw = sd * P.eye.sp + s.yaw;
+            let pitch = P.eye.p + s.pitch + s.roll;
+            pitch = ((pitch + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+
+            const cp = Math.cos(pitch);
+            if (Math.cos(yaw) * cp < 0.04) continue;
+
+            let px = Math.sin(yaw) * cp * rx, py = -Math.sin(pitch) * ry;
+            if (m > 0) py += ry * 0.14 * m;
+
+            const fx = lerp(Math.max(0.18, Math.cos(yaw)), 1, m * 0.7);
+            const fy = lerp(Math.max(0.18, cp), 1, m * 0.7);
+
+            x.save();
+            x.translate(px, py);
+            x.scale(fx, fy);
+            this.eye(shape, R * P.eye.w * s.es, R * P.eye.h * s.es, s.open, sd, P);
+            x.restore();
+          }
+          x.restore();
+        }
+
+        // ==========================================
+        // 6. ÓCULOS NERD 2D (CIRCULARES E CRISTALINOS)
+        // ==========================================
+        if (s.glasses > 0.1) {
+          x.save();
+          x.translate(0, -R * 0.08);
+          x.scale(s.glasses, s.glasses);
+
+          x.strokeStyle = '#2563eb';
+          x.lineWidth = 2.4;
+          x.fillStyle = 'rgba(255, 255, 255, 0.15)';
+
+          // Lente esquerda circular
+          x.beginPath();
+          x.arc(-R * 0.36, 0, R * 0.22, 0, Math.PI * 2);
+          x.fill();
+          x.stroke();
+
+          // Lente direita circular
+          x.beginPath();
+          x.arc(R * 0.36, 0, R * 0.22, 0, Math.PI * 2);
+          x.fill();
+          x.stroke();
+
+          // Ponte curva fina
+          x.beginPath();
+          x.moveTo(-R * 0.14, -R * 0.02);
+          x.quadraticCurveTo(0, -R * 0.1, R * 0.14, -R * 0.02);
+          x.stroke();
+
+          // Reflexo leve
+          x.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+          x.lineWidth = 1.6;
+          x.beginPath();
+          x.moveTo(-R * 0.46, -R * 0.1);
+          x.lineTo(-R * 0.3, R * 0.1);
+          x.moveTo(R * 0.26, -R * 0.1);
+          x.lineTo(R * 0.42, R * 0.1);
+          x.stroke();
+
+          x.restore();
+        }
+
+        x.restore();
+
+        // ==========================================
+        // 7. PARTÍCULAS NATIVAS DO COUCOU
+        // ==========================================
+        for (const p of this.parts) {
+          if (p.age < 0) continue;
+          const k = p.age / p.life, a = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8;
+          const px = cx + (p.x + p.vx * p.age) * R * 1.3, py = cy + (p.y + p.vy * p.age) * R * 1.3;
+          const sz = R * p.sz * (1 + k * 0.4);
+
+          x.save();
+          x.translate(px, py);
+          x.globalAlpha = clamp(a, 0, 1);
+          if (p.type === 'heart') {
+            x.fillStyle = '#FF4D6D';
+            x.rotate(Math.sin(p.age * 6) * 0.3);
+            heart(x, sz);
+            x.fill();
+          } else if (p.type === 'star') {
+            x.fillStyle = '#F7B32B';
+            x.rotate(p.rot + p.age * 2);
+            star(x, sz, sz * 0.45);
+            x.fill();
+          } else if (p.type === 'spark') {
+            x.fillStyle = '#34d399';
+            x.rotate(p.rot);
+            star(x, sz * 0.8, sz * 0.18);
+            x.fill();
+          } else if (p.type === 'z') {
+            x.fillStyle = '#94a3b8';
+            x.font = `700 ${sz * 1.9}px -apple-system, sans-serif`;
+            x.fillText('z', 0, 0);
+          }
+          x.restore();
+        }
+      }
+
+      eye(shape, w, h, open, sd, P) {
+        const x = this.x, t = NOW() / 1000;
+        switch (shape) {
+          case 'wide': w *= 1.15; h *= 1.15; /* fallthrough */
+          case 'pill': {
+            const hh = Math.max(h * open, w * 0.3);
+            rr(x, -w / 2, -hh / 2, w, hh, Math.min(w / 2, hh / 2));
+            x.fill();
+            break;
+          }
+          case 'dot':
+            x.beginPath();
+            x.arc(0, 0, w * 0.48, 0, Math.PI * 2);
+            x.fill();
+            break;
+          case 'line':
+            x.rotate(-sd * 0.2);
+            rr(x, -w * 0.78, -w * 0.21, w * 1.56, w * 0.42, w * 0.21);
+            x.fill();
+            break;
+          case 'flat':
+            rr(x, -w * 0.72, -w * 0.2, w * 1.44, w * 0.4, w * 0.2);
+            x.fill();
+            break;
+          case 'happy':
+            x.lineWidth = w * 0.46;
+            x.lineCap = 'round';
+            x.beginPath();
+            x.arc(0, h * 0.16, w * 0.82, Math.PI * 1.12, Math.PI * 1.88);
+            x.stroke();
+            break;
+          case 'closed':
+            x.lineWidth = w * 0.36;
+            x.lineCap = 'round';
+            x.beginPath();
+            x.arc(0, -h * 0.08, w * 0.78, Math.PI * 0.15, Math.PI * 0.85);
+            x.stroke();
+            break;
+          case 'spiral':
+            x.lineWidth = w * 0.22;
+            x.lineCap = 'round';
+            x.beginPath();
+            for (let a = 0; a < 4.4 * Math.PI; a += 0.2) {
+              const r = w * 0.06 + a * w * 0.058, aa = a + t * 9 * sd;
+              const px = Math.cos(aa) * r, py = Math.sin(aa) * r;
+              a ? x.lineTo(px, py) : x.moveTo(px, py);
+            }
+            x.stroke();
+            break;
+          case 'heart':
+            x.fillStyle = '#FF4D6D';
+            heart(x, w * 1.2);
+            x.fill();
+            break;
+          case 'star':
+            x.fillStyle = '#F7B32B';
+            x.rotate(t * 1.5 * sd);
+            star(x, w * 1.05, w * 0.46);
+            x.fill();
+            break;
+          case 'tired':
+            rr(x, -w / 2, -h * 0.02, w, h * 0.38, w / 2);
+            x.fill();
+            break;
+          case 'wink':
+            if (sd < 0) {
+              rr(x, -w / 2, -h / 2, w, h, w / 2);
+              x.fill();
+            } else {
+              x.lineWidth = w * 0.5;
+              x.lineCap = 'round';
+              x.beginPath();
+              x.arc(0, h * 0.18, w * 0.82, Math.PI * 1.12, Math.PI * 1.88);
+              x.stroke();
+            }
+            break;
+          default:
+            rr(x, -w / 2, -h / 2, w, h, w / 2);
+            x.fill();
+        }
+      }
     }
-
-    // Loop a 60 FPS
-    function loop(t) {
-      // Animações específicas de modo contínuo
-      if (bot.mode === 'talking') {
-        bot.mouthOpen = (Math.sin(t / 90) + 1) / 2;
-        bot.handL = { x: -68, y: 10 + Math.sin(t / 200) * 8, rot: 0.5 };
-        bot.handR = { x: 68, y: 10 + Math.cos(t / 200) * 8, rot: -0.5 };
-        bot.tilt = Math.sin(t / 400) * 0.05;
-      } else if (bot.mode === 'hacker') {
-        bot.handL = { x: -45, y: 35 + Math.sin(t / 70) * 12, rot: -0.4 };
-        bot.handR = { x: 45, y: 35 + Math.cos(t / 70) * 12, rot: 0.4 };
-        bot.tilt = 0;
-      } else if (bot.mode === 'dance') {
-        bot.handL = { x: -62, y: -25 + Math.sin(t / 250) * 16, rot: -0.9 };
-        bot.handR = { x: 62, y: -25 + Math.cos(t / 250) * 16, rot: 0.9 };
-        bot.tilt = Math.sin(t / 300) * 0.12;
-      } else if (bot.mode === 'call') {
-        bot.handL = { x: -60, y: -15 + Math.sin(t / 180) * 10, rot: -0.6 };
-        bot.handR = { x: 60, y: -15 + Math.sin(t / 180) * 10, rot: 0.6 };
-        bot.tilt = 0;
-      } else if (bot.mode === 'doubt') {
-        bot.handL = { x: 0, y: 0, rot: 0 };
-        bot.handR = { x: 48, y: -38 + Math.sin(t / 220) * 4, rot: 0.8 };
-        bot.tilt = -0.15;
-      } else if (bot.mode === 'surprised') {
-        bot.handL = { x: -50, y: 15, rot: 0.6 };
-        bot.handR = { x: 50, y: 15, rot: -0.6 };
-        bot.tilt = 0;
-      } else if (bot.mode === 'nerd') {
-        bot.handL = { x: -44, y: 24, rot: 0.7 };
-        bot.handR = { x: 0, y: 0, rot: 0 };
-        bot.tilt = -0.06;
-      } else {
-        bot.mouthOpen = 0;
-        bot.tilt = spring(bot.tilt, 0, 0.1);
-      }
-
-      drawCoucouBot(t);
-      requestAnimationFrame(loop);
-    }
-    requestAnimationFrame(loop);
 
     // ========================================================
-    // MUDANÇA DE MODO E TRANSFORMAÇÕES
+    // INICIALIZAÇÃO DA INSTÂNCIA E INTERAÇÕES
     // ========================================================
-    function resetBotState() {
-      overlay.classList.add('hidden');
-      overlay.innerHTML = '';
-      canvas.classList.remove('hidden');
-      speechBubble.classList.add('hidden');
-      
-      bot.glasses = false;
-      bot.hands = 0;
-      bot.blush = 0;
-      bot.baseColorTop = '#bde4ff';
-      bot.baseColorMid = '#68b2e3';
-      bot.baseColorDark = '#1b4a6d';
-      bot.tilt = 0;
-      bot.targetSx = 1;
-      bot.targetSy = 1;
-      
-      satellite.className = 'absolute top-4 left-5 z-40 w-8 h-8 rounded-full bg-[#173b57] border border-[#3b8ac4]/60 flex items-center justify-center shadow-lg transition-all duration-300';
-      satellite.innerHTML = `
-        <div class="flex items-center gap-[2.5px] h-3.5">
-          <span class="w-[3px] bg-[#61b8f5] rounded-full h-2 animate-pulse"></span>
-          <span class="w-[3px] bg-[#61b8f5] rounded-full h-3 animate-pulse" style="animation-delay: 0.15s"></span>
-          <span class="w-[3px] bg-[#61b8f5] rounded-full h-1.5 animate-pulse" style="animation-delay: 0.3s"></span>
-        </div>
-      `;
+    const canvas = document.getElementById('coucouCanvas');
+    const mochi = new Bot(canvas);
+
+    const titleEl = document.getElementById('action-title');
+    const descEl = document.getElementById('action-desc');
+    const chipDot = document.getElementById('chip-dot');
+    const chipLabel = document.getElementById('chip-label');
+
+    // Toque / Slap com som e elasticidade
+    canvas.addEventListener('pointerdown', () => {
+      mochi.squash();
+    });
+
+    // Eye Tracking seguindo o toque/cursor pela tela com Tangente Hiperbólica
+    function trackMove(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX || (e.touches && e.touches[0].clientX)) - (rect.left + rect.width / 2);
+      const y = (e.clientY || (e.touches && e.touches[0].clientY)) - (rect.top + rect.height / 2);
+      mochi.look.x = Math.tanh(x / 120);
+      mochi.look.y = Math.tanh(y / 100);
+    }
+    window.addEventListener('pointermove', trackMove);
+    window.addEventListener('touchmove', trackMove);
+
+    // Loop de renderização 60 FPS
+    function tick() {
+      mochi.update();
+      mochi.draw();
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // ========================================================
+    // CONTROLES DE INTERFACE
+    // ========================================================
+    function selectTab(tab) {
+      document.getElementById('panel-emotes').classList.toggle('hidden', tab !== 'emotes');
+      document.getElementById('panel-states').classList.toggle('hidden', tab !== 'states');
+      document.getElementById('panel-morphs').classList.toggle('hidden', tab !== 'morphs');
+
+      document.getElementById('tab-emotes').className = tab === 'emotes' ? 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white transition shadow-sm' : 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      document.getElementById('tab-states').className = tab === 'states' ? 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white transition shadow-sm' : 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      document.getElementById('tab-morphs').className = tab === 'morphs' ? 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white transition shadow-sm' : 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
     }
 
-    function setMode(mode) {
-      resetBotState();
-      bot.mode = mode;
+    function resetMorphs() {
+      mochi.s.customMode = 'none';
+      mochi.anim('morph', [[0, 320, E.out]]);
+      mochi.anim('glasses', [[0, 200, E.out]]);
+      mochi.s.paperY = 0;
+    }
 
-      // ========================================================
-      // 1. OCIOSO NORMAL
-      // ========================================================
-      if (mode === 'idle') {
-        labelTitle.textContent = '🔵 Ocioso / Respiração Orgânica';
-        labelDesc.textContent = 'Física elástica Coucou com rastreamento do olhar';
-      }
+    function triggerEmote(name) {
+      resetMorphs();
+      mochi.emote(name, 1900);
+      chipDot.className = 'w-2 h-2 rounded-full bg-pink-400';
+      chipLabel.textContent = name;
+      titleEl.textContent = `Emote: ${EMOTES[name]?.label || name}`;
+      descEl.textContent = 'Expressão 2D vetorial original do Coucou';
+    }
 
-      // ========================================================
-      // 2. ÓCULOS NERD DE GRAU
-      // ========================================================
-      else if (mode === 'nerd') {
-        bot.glasses = true;
-        bot.hands = 1;
-        bot.blush = 0.2;
-        labelTitle.textContent = '👓 Intelectual / Óculos de Grau';
-        labelDesc.textContent = 'Lentes cristalinas transparentes com mão no queixo';
-      }
+    function triggerState(name) {
+      resetMorphs();
+      mochi.setState(name);
+      chipDot.className = 'w-2 h-2 rounded-full bg-blue-400';
+      chipLabel.textContent = name;
+      titleEl.textContent = `Estado: ${STATES[name]?.label || name}`;
+      descEl.textContent = 'Mochi no estado nativo com iluminação Coucou';
+    }
 
-      // ========================================================
-      // 3. FALANDO / VOZ
-      // ========================================================
-      else if (mode === 'talking') {
-        bot.hands = 1;
-        speechBubble.classList.remove('hidden');
-        speechText.textContent = 'Fala mestre! Estou monitorando as tarefas e pronto para agir!';
-        labelTitle.textContent = '🗣️ Falando / Gesticulando';
-        labelDesc.textContent = 'Boca animada em tempo real com gesticulação de mãos';
-      }
-
-      // ========================================================
-      // 4. CODANDO RÁPIDO (HACKER)
-      // ========================================================
-      else if (mode === 'hacker') {
-        bot.hands = 1;
-        bot.baseColorTop = '#b8f5ff';
-        bot.baseColorMid = '#52d3ec';
-        bot.baseColorDark = '#0e4a57';
-        labelTitle.textContent = '💻 Codando em Alta Velocidade';
-        labelDesc.textContent = 'Dois braços digitando freneticamente no ar';
-      }
-
-      // ========================================================
-      // 5. DANCINHA DA VITÓRIA
-      // ========================================================
-      else if (mode === 'dance') {
-        bot.hands = 1;
-        bot.blush = 0.6;
-        bot.baseColorTop = '#c4ffd8';
-        bot.baseColorMid = '#4ae39f';
-        bot.baseColorDark = '#0b4f31';
-        labelTitle.textContent = '🕺 Dancinha da Vitória!';
-        labelDesc.textContent = 'Balanço rítmico comemorativo com braços no ar';
-      }
-
-      // ========================================================
-      // 6. DÚVIDA / COÇANDO A CABEÇA
-      // ========================================================
-      else if (mode === 'doubt') {
-        bot.hands = 1;
-        bot.baseColorTop = '#fff2cc';
-        bot.baseColorMid = '#f6cb65';
-        bot.baseColorDark = '#523c0b';
-        labelTitle.textContent = '🤔 Hum... Deixe-me ver';
-        labelDesc.textContent = 'Mãozinha na cabeça calculando a resposta';
-      }
-
-      // ========================================================
-      // 7. SURPRESO (O O)
-      // ========================================================
-      else if (mode === 'surprised') {
-        bot.hands = 1;
-        bot.blush = 0.5;
-        bot.targetSx = 1.08;
-        bot.targetSy = 0.94;
-        labelTitle.textContent = '😲 Uau! Olha isso!';
-        labelDesc.textContent = 'Olhos arregalados com mãos nas bochechas';
-      }
-
-      // ========================================================
-      // 8. CHAMANDO VOCÊ (ACENO DUPLO)
-      // ========================================================
-      else if (mode === 'call') {
-        bot.hands = 1;
-        labelTitle.textContent = '🙌 Ei Mestre, estou aqui!';
-        labelDesc.textContent = 'Aceno duplo animado para chamar atenção';
-      }
-
-      // ========================================================
-      // 9. DORMINDO ZZZ
-      // ========================================================
-      else if (mode === 'sleep') {
-        bot.baseColorTop = '#cbd5e1';
-        bot.baseColorMid = '#64748b';
-        bot.baseColorDark = '#1e293b';
-        labelTitle.textContent = '😴 Modo Standby / Sono Zzz';
-        labelDesc.textContent = 'Respiração desacelerada com olhinhos fechados';
-      }
-
-      // ========================================================
-      // 10. CURTO-CIRCUITO (GLITCH)
-      // ========================================================
-      else if (mode === 'glitch') {
-        bot.baseColorTop = '#ffd4d4';
-        bot.baseColorMid = '#f87171';
-        bot.baseColorDark = '#5c0d0d';
-        satellite.innerHTML = `<span class="w-3.5 h-3.5 bg-red-500 rounded-full animate-ping"></span>`;
-        labelTitle.textContent = '⚡ Curto-Circuito!';
-        labelDesc.textContent = 'Alerta de erro com satélite em choque';
-      }
-
-      // ========================================================
-      // 11. TRANSFORMAÇÃO: PC ANTIGO 90s (MACINTOSH RETRÔ)
-      // ========================================================
-      else if (mode === 'pc90s') {
-        canvas.classList.add('hidden');
-        overlay.classList.remove('hidden');
-
-        satellite.className = 'absolute top-3 left-4 z-40 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-[9px] font-mono text-emerald-400';
-        satellite.innerHTML = `<span>1994 OS</span>`;
-
-        overlay.innerHTML = `
-          <!-- Gabinete Retrô Beige Macintosh 90s -->
-          <div class="relative w-48 h-56 rounded-2xl bg-gradient-to-b from-[#e8decb] via-[#ded2ba] to-[#c7bca1] border-2 border-[#b8ab8e] shadow-[0_20px_45px_rgba(0,0,0,0.8),inset_0_2px_4px_rgba(255,255,255,0.7)] flex flex-col items-center pt-3 px-3">
-            
-            <!-- Ranhuras de Ventilação Topo -->
-            <div class="w-28 flex justify-between gap-1 mb-2">
-              <span class="h-1 flex-1 bg-[#b8ab8e] rounded-full"></span>
-              <span class="h-1 flex-1 bg-[#b8ab8e] rounded-full"></span>
-              <span class="h-1 flex-1 bg-[#b8ab8e] rounded-full"></span>
-              <span class="h-1 flex-1 bg-[#b8ab8e] rounded-full"></span>
-            </div>
-
-            <!-- Moldura Profunda do Tubo CRT -->
-            <div class="w-40 h-28 rounded-xl bg-[#22272e] p-2 border-2 border-[#a39679] shadow-[inset_0_6px_12px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden">
-              
-              <!-- Tela de Tubo de Vidro Fósforo Verde -->
-              <div class="w-full h-full rounded-lg bg-[#041a0d] border border-emerald-900/60 p-2 text-left font-mono text-[9px] text-emerald-400 relative overflow-hidden shadow-[inset_0_0_15px_rgba(16,185,129,0.4)]">
-                <!-- Scanlines e Curvatura do Vidro -->
-                <div class="absolute inset-0 pointer-events-none opacity-25" style="background: repeating-linear-gradient(to bottom, transparent, transparent 2px, rgba(0,255,100,0.15) 3px);"></div>
-                <div class="absolute top-0 right-0 w-16 h-8 bg-gradient-to-bl from-white/15 to-transparent rounded-bl-full pointer-events-none"></div>
-
-                <div class="space-y-0.5 relative z-10">
-                  <div class="text-[8px] text-emerald-600 font-bold">// ECHO CLASSIC 128K</div>
-                  <div>&gt; BOOT SYSTEM</div>
-                  <div class="text-emerald-300 font-bold">MEM: 640KB OK</div>
-                  <div class="flex items-center gap-1 text-emerald-400 mt-1">
-                    <span>A:\&gt; ready_</span>
-                    <span class="inline-block w-1.5 h-3 bg-emerald-400 animate-pulse"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Painel Inferior: Logo Rainbow, Drive de Disquete 3.5" e LED -->
-            <div class="w-full mt-3 px-1 flex flex-col gap-2">
-              <div class="flex items-center justify-between">
-                <!-- Badge Colorida Retrô -->
-                <div class="w-3.5 h-4 rounded-sm bg-gradient-to-b from-blue-500 via-green-500 via-amber-400 to-red-500 shadow-sm"></div>
-                
-                <!-- Drive de Disquete 3.5" com Ranhura -->
-                <div class="w-24 h-4 bg-[#1a1f26] rounded border border-[#8a7e65] relative flex items-center px-1 shadow-inner">
-                  <div class="w-full h-1 bg-[#0b0e12] rounded-full"></div>
-                  <!-- Botão de Ejeção do Disquete -->
-                  <div class="absolute right-1 w-2.5 h-2 bg-[#d1c5ab] rounded-sm border border-slate-600"></div>
-                </div>
-
-                <!-- LED Indicador de Leitura (Piscando) -->
-                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
-              </div>
-
-              <!-- Disquete 3.5" Físico Inserindo no Drive -->
-              <div class="w-24 mx-auto -mt-1 bg-blue-700 rounded-sm p-1 border border-blue-900 text-[6px] font-mono text-white flex items-center justify-between shadow-lg"
-                   style="animation: floppyInsert 1.8s ease-out forwards;">
-                <span class="w-4 h-2 bg-slate-300 rounded-xs inline-block"></span>
-                <span>FLOPPY 1.44M</span>
-              </div>
-            </div>
-
-          </div>
-        `;
-
-        labelTitle.textContent = '🖥️ PC Antigo Retrô 90s // Macintosh';
-        labelDesc.textContent = 'Gabinete bege, tubo CRT de fósforo verde e drive de disquete funcional';
-      }
-
-      // ========================================================
-      // 12. TRANSFORMAÇÃO: IMPRESSORA DE MESA REALISTA
-      // ========================================================
-      else if (mode === 'printer_real') {
-        canvas.classList.add('hidden');
-        overlay.classList.remove('hidden');
-
-        satellite.className = 'absolute top-3 left-4 z-40 px-2 py-0.5 rounded bg-blue-950/80 border border-blue-500/40 text-[9px] font-mono text-blue-300';
-        satellite.innerHTML = `<span>PRINTER 300 DPI</span>`;
-
-        overlay.innerHTML = `
-          <div class="relative w-56 flex flex-col items-center">
-            
-            <!-- 1. Bandeja Traseira Superior Inclinada com Folhas de Papel A4 em Branco -->
-            <div class="w-36 h-10 bg-slate-700 rounded-t-lg border-2 border-slate-600 flex justify-center pt-1 shadow-md transform -skew-x-2">
-              <!-- Pilha de Folhas Brancas -->
-              <div class="w-28 h-8 bg-white rounded-t border-t border-x border-slate-300 shadow-sm flex items-center justify-center text-[7px] font-mono text-slate-400">
-                <span>A4 BLANK PAPER</span>
-              </div>
-            </div>
-
-            <!-- 2. Chassi da Impressora Bicolor (Branco Fosco com Friso Grafite) -->
-            <div class="w-52 h-24 rounded-2xl bg-gradient-to-b from-[#f8fafc] via-[#e2e8f0] to-[#cbd5e1] border-2 border-slate-400 shadow-[0_16px_35px_rgba(0,0,0,0.8),inset_0_2px_4px_rgba(255,255,255,0.9)] p-2.5 flex flex-col justify-between relative z-10">
-              
-              <!-- Tampa do Scanner com Vinco e Botões de Controle -->
-              <div class="w-full flex items-center justify-between border-b border-slate-300/80 pb-1.5">
-                <div class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                  <span class="text-[9px] font-mono font-bold text-slate-700 ml-1">ECHO PRINT JET</span>
-                </div>
-                <!-- Botão Físico Power / Cancel -->
-                <div class="flex gap-1">
-                  <div class="w-3 h-3 rounded-full bg-slate-300 border border-slate-400 shadow-inner"></div>
-                  <div class="w-3 h-3 rounded-full bg-red-400 border border-red-500 shadow-inner"></div>
-                </div>
-              </div>
-
-              <!-- Abertura Mecânica Frontal com Roletes Pretos Giratórios -->
-              <div class="w-full h-5 bg-[#0f172a] rounded-lg border border-slate-700 px-2 flex items-center justify-between relative overflow-hidden shadow-inner">
-                <!-- Roletes de borracha -->
-                <div class="w-3 h-3 rounded-full bg-slate-600 border border-slate-400 animate-spin"></div>
-                <div class="w-3 h-3 rounded-full bg-slate-600 border border-slate-400 animate-spin"></div>
-                <div class="w-3 h-3 rounded-full bg-slate-600 border border-slate-400 animate-spin"></div>
-              </div>
-
-              <!-- Base da Impressora -->
-              <div class="text-[8px] font-mono text-slate-400 text-right pr-1">READY // 100% INK</div>
-            </div>
-
-            <!-- 3. Folha de Relatório Impresso Saindo da Fenda para a Bandeja Frontal -->
-            <div class="w-40 bg-white text-slate-900 rounded-b-lg border-x-2 border-b-2 border-slate-300 p-2 shadow-2xl font-mono text-[9px] leading-tight z-20"
-                 style="animation: paperFeedOut 2.2s cubic-bezier(0.2, 1, 0.4, 1) forwards;">
-              <div class="font-bold text-blue-700 border-b border-slate-200 pb-1 flex justify-between">
-                <span>[RELATÓRIO // PLAN]</span>
-                <span class="text-emerald-600 font-bold">100% OK</span>
-              </div>
-              <div class="mt-1 space-y-0.5 text-[8px] text-slate-700">
-                <div>✓ Setup Windows Confirmado</div>
-                <div>✓ Coucou Canvas 2D Engine Ativo</div>
-                <div>✓ Todas as 14 Ações Online</div>
-              </div>
-            </div>
-
-            <!-- 4. Bandeja de Saída Estendida Inferior -->
-            <div class="w-44 h-3 bg-slate-800 rounded-b-xl border-x-2 border-b-2 border-slate-600 -mt-1 z-0 shadow-lg"></div>
-
-          </div>
-        `;
-
-        labelTitle.textContent = '🖨️ Impressora de Mesa Realista';
-        labelDesc.textContent = 'Alimentador traseiro com folhas, roletes de tração e bandeja frontal';
-      }
-
-      // ========================================================
-      // 13. TRANSFORMAÇÃO: FOGUETE DE DEPLOY
-      // ========================================================
-      else if (mode === 'rocket') {
-        canvas.classList.add('hidden');
-        overlay.classList.remove('hidden');
-
-        satellite.className = 'absolute top-3 left-4 z-40 px-2 py-0.5 rounded bg-orange-950/80 border border-orange-500/40 text-[9px] font-mono text-orange-400';
-        satellite.innerHTML = `<span>T-MINUS 0s</span>`;
-
-        overlay.innerHTML = `
-          <div class="relative flex flex-col items-center animate-bounce" style="animation-duration: 1.2s;">
-            <!-- Ponta Cônica Aerodinâmica do Foguete -->
-            <div class="w-0 h-0 border-l-[32px] border-l-transparent border-r-[32px] border-r-transparent border-b-[44px] border-b-red-600 drop-shadow-md"></div>
-
-            <!-- Corpo Cilíndrico Metálico com Rebites -->
-            <div class="relative w-28 h-32 rounded-xl bg-gradient-to-r from-slate-200 via-slate-100 to-slate-300 border-2 border-slate-400 shadow-2xl flex flex-col items-center justify-center p-2 z-10">
-              
-              <!-- Aleta Esquerda -->
-              <div class="absolute -left-5 bottom-0 w-6 h-14 bg-red-600 rounded-tl-full border-l-2 border-slate-700 transform -skew-y-12"></div>
-              <!-- Aleta Direita -->
-              <div class="absolute -right-5 bottom-0 w-6 h-14 bg-red-600 rounded-tr-full border-r-2 border-slate-700 transform skew-y-12"></div>
-
-              <!-- Escotilha Circular com os Olhinhos do Robô Espiando -->
-              <div class="w-14 h-14 rounded-full bg-[#071626] border-4 border-slate-400 shadow-inner flex items-center justify-center gap-2">
-                <span class="w-2.5 h-5 bg-[#38bdf8] rounded-full animate-pulse"></span>
-                <span class="w-2.5 h-5 bg-[#38bdf8] rounded-full animate-pulse"></span>
-              </div>
-
-              <!-- Faixa de Identificação -->
-              <div class="mt-2 px-2 py-0.5 bg-red-600 text-white font-mono font-bold text-[8px] rounded">
-                ECHO // DEPLOY
-              </div>
-            </div>
-
-            <!-- Bocal do Motor Propulsor -->
-            <div class="w-16 h-4 bg-slate-800 rounded-b-lg border-2 border-slate-600 -mt-1 z-10"></div>
-
-            <!-- Chamas do Propulsor em Camadas Pulsantes -->
-            <div class="relative w-12 flex justify-center -mt-0.5" style="animation: rocketFlame 0.3s ease-in-out infinite alternate;">
-              <div class="w-12 h-14 bg-gradient-to-b from-yellow-300 via-orange-500 to-red-600 rounded-b-full filter blur-[1px]"></div>
-              <div class="absolute top-0 w-6 h-8 bg-white rounded-b-full filter blur-[0.5px]"></div>
-            </div>
-          </div>
-        `;
-
-        labelTitle.textContent = '🚀 Foguete de Deploy Espacial';
-        labelDesc.textContent = 'Corpo aerodinâmico, aletas, escotilha com olhos e chamas propulsoras';
-      }
-
-      // ========================================================
-      // 14. TRANSFORMAÇÃO: CAFETEIRA EXPRESSO DEV
-      // ========================================================
-      else if (mode === 'coffee') {
-        canvas.classList.add('hidden');
-        overlay.classList.remove('hidden');
-
-        satellite.className = 'absolute top-3 left-4 z-40 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-[9px] font-mono text-emerald-300';
-        satellite.innerHTML = `<span>15 BAR // 92°C</span>`;
-
-        overlay.innerHTML = `
-          <div class="relative w-48 flex flex-col items-center">
-            
-            <!-- Vapor do Café Subindo -->
-            <div class="absolute -top-7 flex gap-3 text-slate-300 pointer-events-none opacity-80">
-              <span class="text-sm font-bold" style="animation: coffeeSteam 1.6s infinite;">~</span>
-              <span class="text-base font-bold" style="animation: coffeeSteam 1.8s infinite 0.3s;">~</span>
-              <span class="text-sm font-bold" style="animation: coffeeSteam 1.4s infinite 0.6s;">~</span>
-            </div>
-
-            <!-- Corpo da Máquina de Café Expresso -->
-            <div class="w-44 h-40 rounded-2xl bg-gradient-to-b from-[#2a303c] via-[#1f242d] to-[#12151b] border-2 border-slate-600 shadow-[0_16px_35px_rgba(0,0,0,0.8),inset_0_2px_4px_rgba(255,255,255,0.2)] p-2.5 flex flex-col justify-between relative">
-              
-              <!-- Manômetro Analógico Superior & Botões -->
-              <div class="w-full flex items-center justify-between border-b border-slate-700 pb-1.5">
-                <div class="flex items-center gap-2">
-                  <!-- Manômetro Circular com Agulha -->
-                  <div class="w-7 h-7 rounded-full bg-slate-100 border-2 border-amber-600 flex items-center justify-center relative shadow-inner">
-                    <div class="w-2.5 h-0.5 bg-red-600 origin-left transform rotate-45"></div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-slate-900 absolute"></div>
-                  </div>
-                  <span class="text-[9px] font-mono font-bold text-amber-400">DEV // COFFEE</span>
-                </div>
-                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
-              </div>
-
-              <!-- Nicho de Extração com Bico Injetor -->
-              <div class="w-full h-20 bg-[#0d1015] rounded-xl border border-slate-800 relative flex flex-col items-center justify-between p-1.5 shadow-inner">
-                <!-- Bico Dosador Injetor de Café -->
-                <div class="w-8 h-3 bg-slate-400 rounded-b border border-slate-600 relative">
-                  <!-- Gota de Café Pingando -->
-                  <div class="w-1.5 h-2 rounded-full bg-amber-900 mx-auto" style="animation: coffeeDrop 0.8s infinite;"></div>
-                </div>
-
-                <!-- Xícara de Café Quentinho Apoiada -->
-                <div class="relative w-9 h-7 rounded-b-xl bg-slate-100 border border-slate-300 shadow-md flex items-center justify-center">
-                  <!-- Alça da Xícara -->
-                  <div class="absolute -right-2 top-1 w-2.5 h-4 rounded-r-full border-2 border-slate-100 border-l-0"></div>
-                  <!-- Café dentro da xícara -->
-                  <div class="w-7 h-1.5 bg-amber-950 rounded-full -mt-3.5"></div>
-                </div>
-
-                <!-- Grade Coletora Inferior Perfurada -->
-                <div class="w-full h-1.5 bg-slate-700 rounded flex justify-around items-center px-1">
-                  <span class="w-1 h-0.5 bg-slate-900 rounded-full"></span>
-                  <span class="w-1 h-0.5 bg-slate-900 rounded-full"></span>
-                  <span class="w-1 h-0.5 bg-slate-900 rounded-full"></span>
-                  <span class="w-1 h-0.5 bg-slate-900 rounded-full"></span>
-                </div>
-              </div>
-
-              <!-- Status -->
-              <div class="text-[8px] font-mono text-emerald-400 text-center">ESPRESSO READY // COMPILING</div>
-            </div>
-
-          </div>
-        `;
-
-        labelTitle.textContent = '☕ Máquina de Café Expresso Dev';
-        labelDesc.textContent = 'Manômetro de pressão, bico dosador com café e vapor saindo da xícara';
+    function triggerMorph(type) {
+      if (type === 'glasses') {
+        mochi.s.customMode = 'none';
+        mochi.anim('morph', [[0, 250, E.out]]);
+        mochi.anim('glasses', [[1, 350, E.back]]);
+        titleEl.textContent = '👓 Óculos Nerd 2D de Grau';
+        descEl.textContent = 'Armação circular vetorial cristalina com reflexo';
+        chipLabel.textContent = 'nerd';
+      } else if (type === 'printer') {
+        mochi.s.customMode = 'printer';
+        mochi.anim('glasses', [[0, 150, E.out]]);
+        mochi.anim('morph', [[1, 450, E.back]]);
+        mochi.s.paperY = 0;
+        setTimeout(() => {
+          mochi.anim('paperY', [[1, 1400, E.out]]);
+        }, 350);
+        titleEl.textContent = '🖨️ Impressora 2D Minimalista';
+        descEl.textContent = 'Squircle se transforma em impressora e ejeta a folha da fenda';
+        chipLabel.textContent = 'printer';
+      } else if (type === 'pc90s') {
+        mochi.s.customMode = 'pc90s';
+        mochi.anim('glasses', [[0, 150, E.out]]);
+        mochi.anim('morph', [[1, 450, E.back]]);
+        titleEl.textContent = '🖥️ PC Antigo 2D // Macintosh';
+        descEl.textContent = 'Corpo morphado em gabinete bege com CRT verde e disquete';
+        chipLabel.textContent = 'pc-90s';
       }
     }
   </script>
