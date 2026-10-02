@@ -3,60 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Mochi // Motor 2D Original do Coucou</title>
+  <title>Mochi // Estratégia Nerd 2D Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    :root {
+      --en-bg-0: #0a0e17;
+      --en-bg-1: #020617;
+      --en-accent: #00d4ff;
+      --en-accent2: #b829dd;
+      --en-accent-soft: #7fe3f5;
+      --en-ink: #041622;
+    }
     body {
-      background-color: #0c0e12;
+      background-color: var(--en-bg-0);
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
     }
-    .canvas-wrap {
-      filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.5));
+    .canvas-glow {
+      filter: drop-shadow(0 14px 28px rgba(0, 212, 255, 0.22));
     }
   </style>
 </head>
 <body class="text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center justify-between font-sans antialiased overflow-x-hidden">
 
-  <!-- Header -->
+  <!-- Header Estratégia Nerd -->
   <header class="text-center mt-1 w-full max-w-sm">
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold uppercase tracking-wider mb-1">
-      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-      Coucou 2D Engine // Mochi Oficial
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00d4ff]/10 border border-[#00d4ff]/40 text-[#00d4ff] text-[11px] font-semibold uppercase tracking-wider mb-1">
+      <span class="w-2 h-2 rounded-full bg-[#00d4ff] animate-ping"></span>
+      Estratégia Nerd // Mochi 2D
     </div>
-    <h1 class="text-lg font-bold tracking-tight text-white">Mochi 2D (Pure Vector & Spring)</h1>
+    <h1 class="text-lg font-bold tracking-tight text-white">Mascote Oficial 2D</h1>
     <p class="text-xs text-slate-400">Toque no boneco para amassar com som, ou selecione qualquer ação abaixo!</p>
   </header>
 
-  <!-- Palco Central com Canvas Grande do Mochi -->
-  <main class="w-full max-w-sm bg-[#14161c] border border-slate-800/80 rounded-[32px] p-6 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden min-h-[330px] my-2">
+  <!-- Palco Central com Canvas -->
+  <main class="w-full max-w-sm bg-[#060911]/90 border border-[#00d4ff]/25 rounded-[32px] p-5 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden min-h-[350px] my-2 backdrop-blur-md">
     
     <!-- Satélite / Badge de Estado Flutuante -->
-    <div id="status-chip" class="absolute top-4 left-5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-[10px] font-mono text-slate-300 flex items-center gap-1.5 shadow-sm">
-      <span id="chip-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+    <div id="status-chip" class="absolute top-4 left-5 px-2.5 py-1 rounded-full bg-[#0c1424] border border-[#00d4ff]/30 text-[10px] font-mono text-[#7fe3f5] flex items-center gap-1.5 shadow-sm">
+      <span id="chip-dot" class="w-2 h-2 rounded-full bg-[#00d4ff]"></span>
       <span id="chip-label">idle</span>
     </div>
 
-    <!-- Canvas do Mochi (Desenhado com a classe Bot oficial do Coucou) -->
-    <div class="canvas-wrap relative cursor-pointer active:scale-95 transition-transform duration-75">
+    <!-- Canvas do Mochi com a Paleta Estratégia Nerd -->
+    <div class="canvas-glow relative cursor-pointer active:scale-95 transition-transform duration-75">
       <canvas id="coucouCanvas" width="240" height="240" class="block"></canvas>
     </div>
 
+    <!-- Balão de Fala Dinâmico (Modo Falando) -->
+    <div id="speech-bubble" class="mt-2 max-w-xs bg-[#0b172a]/90 border border-[#00d4ff]/40 rounded-2xl p-2.5 text-xs text-[#eafcff] hidden shadow-lg text-center animate-fade-in">
+      💬 "<span id="speech-text">Fala Mestre! Estratégia Nerd online e monitorando tudo!</span>"
+    </div>
+
     <!-- Legenda e Feedback -->
-    <div class="text-center mt-4 w-full">
-      <div class="text-base font-bold text-white tracking-wide" id="action-title">Mochi (Au repos)</div>
-      <div class="text-xs text-slate-400 mt-0.5" id="action-desc">Física elástica 2D, superelipse de Lamé e piscar natural</div>
+    <div class="text-center mt-3 w-full">
+      <div class="text-base font-bold text-white tracking-wide" id="action-title">Mochi (Ao Repouso)</div>
+      <div class="text-xs text-[#7fe3f5] mt-0.5" id="action-desc">Física elástica 2D com a paleta oficial do Estratégia Nerd</div>
     </div>
   </main>
 
-  <!-- Painel de Ações do Coucou (Emotes, Estados e Transformações) -->
-  <footer class="w-full max-w-sm bg-slate-900/90 border border-slate-800 rounded-3xl p-3 flex flex-col gap-2 mb-1 backdrop-blur-md">
+  <!-- Painel de Ações: Emotes, Estados e Transformações -->
+  <footer class="w-full max-w-sm bg-[#090e17]/95 border border-slate-800 rounded-3xl p-3 flex flex-col gap-2 mb-1 backdrop-blur-md">
     
     <!-- Seletor de Categoria -->
     <div class="flex rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 text-xs font-semibold">
-      <button id="tab-emotes" onclick="selectTab('emotes')" class="flex-1 py-1.5 rounded-lg bg-emerald-600 text-white transition shadow-sm">
-        😊 Emotes Coucou (7)
+      <button id="tab-emotes" onclick="selectTab('emotes')" class="flex-1 py-1.5 rounded-lg bg-[#00d4ff] text-slate-950 font-bold transition shadow-sm">
+        🗣️ Fala & Emotes (8)
       </button>
       <button id="tab-states" onclick="selectTab('states')" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
         ⚡ Estados (5)
@@ -66,9 +79,13 @@
       </button>
     </div>
 
-    <!-- GRUPO 1: EMOTES NATIVOS DO COUCOU (7) -->
+    <!-- GRUPO 1: FALA & EMOTES (8) -->
     <div id="panel-emotes" class="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-0.5">
-      <button onclick="triggerEmote('love')" class="px-2 py-2 rounded-xl bg-pink-600/20 border border-pink-500/40 text-pink-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+      <button onclick="triggerSpeak()" class="col-span-2 px-3 py-2 rounded-xl bg-[#00d4ff]/20 border border-[#00d4ff]/50 text-[#00d4ff] text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-sm">
+        <span>🗣️</span> <span>Modo Falando (Voz & Boca)</span>
+      </button>
+
+      <button onclick="triggerEmote('love')" class="px-2 py-2 rounded-xl bg-[#b829dd]/20 border border-[#b829dd]/40 text-[#f0abfc] text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
         <span>💖</span> <span>Amor (Corações)</span>
       </button>
       <button onclick="triggerEmote('wink')" class="px-2 py-2 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
@@ -86,20 +103,20 @@
       <button onclick="triggerEmote('annoyed')" class="px-2 py-2 rounded-xl bg-rose-600/20 border border-rose-500/40 text-rose-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
         <span>😒</span> <span>Bravo (- _ -)</span>
       </button>
-      <button onclick="triggerEmote('yawn')" class="px-2 py-2 rounded-xl bg-slate-700/40 border border-slate-600 text-slate-300 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+      <button onclick="triggerEmote('yawn')" class="col-span-2 px-2 py-2 rounded-xl bg-slate-700/40 border border-slate-600 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
         <span>🥱</span> <span>Bocejo (Sono Zzz)</span>
       </button>
     </div>
 
-    <!-- GRUPO 2: ESTADOS NATIVOS (5) -->
+    <!-- GRUPO 2: ESTADOS NATIVOS COM TINT E BADGES (5) -->
     <div id="panel-states" class="grid grid-cols-2 gap-1.5 hidden max-h-[160px] overflow-y-auto pr-0.5">
       <button onclick="triggerState('idle')" class="px-2 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
         <span>⚪</span> <span>Ao Repouso (Idle)</span>
       </button>
-      <button onclick="triggerState('working')" class="px-2 py-2 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+      <button onclick="triggerState('working')" class="px-2 py-2 rounded-xl bg-[#00d4ff]/20 border border-[#00d4ff]/40 text-[#7fe3f5] text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
         <span>🔵</span> <span>Trabalhando (Badge)</span>
       </button>
-      <button onclick="triggerState('thinking')" class="px-2 py-2 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+      <button onclick="triggerState('thinking')" class="px-2 py-2 rounded-xl bg-[#b829dd]/20 border border-[#b829dd]/40 text-[#f0abfc] text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
         <span>🟣</span> <span>Pensando (Badge)</span>
       </button>
       <button onclick="triggerState('approval')" class="px-2 py-2 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
@@ -110,18 +127,20 @@
       </button>
     </div>
 
-    <!-- GRUPO 3: TRANSFORMAÇÕES 2D MINIMALISTAS (3) -->
+    <!-- GRUPO 3: 2D MORPHS ATIVOS COM ANIMAÇÃO COMPLETA (3) -->
     <div id="panel-morphs" class="grid grid-cols-2 gap-1.5 hidden max-h-[160px] overflow-y-auto pr-0.5">
-      <button onclick="triggerMorph('printer')" class="p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-200 text-xs font-bold flex flex-col items-center gap-1 active:scale-95 transition">
-        <span class="text-lg">🖨️</span>
-        <span>Impressora 2D</span>
-        <span class="text-[9px] font-normal text-blue-300">Bandeja & saída de papel</span>
+      <button onclick="triggerMorph('printer')" class="p-2.5 rounded-xl bg-[#00d4ff]/20 border border-[#00d4ff]/50 text-[#7fe3f5] text-xs font-bold flex flex-col items-center gap-1 active:scale-95 transition">
+        <span class="text-xl">🖨️</span>
+        <span>Imprimir Relatório</span>
+        <span class="text-[9px] font-normal text-slate-300">Bandeja & papel animado</span>
       </button>
-      <button onclick="triggerMorph('pc90s')" class="p-2.5 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-200 text-xs font-bold flex flex-col items-center gap-1 active:scale-95 transition">
-        <span class="text-lg">🖥️</span>
-        <span>PC Retrô 2D</span>
-        <span class="text-[9px] font-normal text-amber-300">Tela CRT verde & disquete</span>
+
+      <button onclick="triggerMorph('pc90s')" class="p-2.5 rounded-xl bg-[#b829dd]/20 border border-[#b829dd]/50 text-[#f0abfc] text-xs font-bold flex flex-col items-center gap-1 active:scale-95 transition">
+        <span class="text-xl">🖥️</span>
+        <span>PC Retrô 90s</span>
+        <span class="text-[9px] font-normal text-slate-300">Tela CRT verde & disquete</span>
       </button>
+
       <button onclick="triggerMorph('glasses')" class="col-span-2 p-2 rounded-xl bg-sky-600/20 border border-sky-500/40 text-sky-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
         <span>👓</span>
         <span>Óculos Nerd 2D de Grau</span>
@@ -130,13 +149,13 @@
 
   </footer>
 
-  <!-- SCRIPT: MOTOR ORIGINAL DO COUCOU COM TINT, BADGES E MORPHS -->
+  <!-- SCRIPT DO MOTOR COMPLETO -->
   <script>
     const NOW = () => performance.now();
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
     const lerp = (a, b, t) => a + (b - a) * t;
 
-    // Curvas elásticas de interpolação do Coucou
+    // Curvas elásticas de interpolação
     const E = {
       out: t => 1 - Math.pow(1 - t, 3),
       inOut: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
@@ -178,7 +197,7 @@
     }
 
     // ========================================================
-    // SINTETIZADOR DE ÁUDIO PROCEDURAL
+    // SINTETIZADOR DE ÁUDIO WEB AUDIO
     // ========================================================
     const Snd = {
       ctx: null, on: true, vol: 0.5,
@@ -223,43 +242,49 @@
           this.tone({ f: 380, to: 220, d: 0.5, type: 'sine', g: 0.08 });
         } else if (name === 'finish') {
           this.tone({ f: 523, to: 1046, d: 0.35, type: 'triangle', g: 0.15 });
+        } else if (name === 'speech') {
+          // Bips de sintetizador fofo falando
+          this.tone({ f: 350 + Math.random() * 250, to: 420 + Math.random() * 200, d: 0.08, type: 'sine', g: 0.08 });
+        } else if (name === 'print') {
+          this.tone({ f: 220, to: 180, d: 0.12, type: 'square', g: 0.06 });
         }
       }
     };
 
     // ========================================================
-    // MODELOS DE ESTADO DO COUCOU
+    // PALETA OFICIAL DO ESTRATÉGIA NERD
     // ========================================================
     const MOCHI_SPEC = {
-      name: 'Mochi',
+      name: 'Mochi EN',
       shape: 'mochi',
       eye: { w: 0.24, h: 0.26, sp: 0.36, p: -0.08 },
-      base: ['#FFFAF5', '#EAD8C7'],
-      ink: '#1A1412'
+      base: ['#eafcff', '#7fe3f5'], // Cyan suave oficial EN
+      ink: '#041622',               // Ink azul escuro
+      blush: '#b829dd'              // Magenta neon oficial EN
     };
 
     const STATES = {
-      idle: { label: 'Ao repouso', col: '#E6E9EE', tint: 0, eye: 'pill', badge: null },
-      working: { label: 'Trabalhando', col: '#3B9EFF', tint: 0.72, eye: 'pill', badge: ['dots', '#3B9EFF'] },
-      finished: { label: 'Concluído', col: '#34D399', tint: 0.35, eye: 'happy', badge: ['dot', '#34D399'] },
+      idle: { label: 'Ao repouso', col: '#00d4ff', tint: 0, eye: 'pill', badge: null },
+      working: { label: 'Trabalhando', col: '#00d4ff', tint: 0.72, eye: 'pill', badge: ['dots', '#00d4ff'] },
+      finished: { label: 'Concluído', col: '#34D399', tint: 0.4, eye: 'happy', badge: ['dot', '#34D399'] },
       error: { label: 'Erro', col: '#F4505E', tint: 0.78, eye: 'flat', badge: ['dot', '#F4505E'] },
-      dizzy: { label: 'Tonto', col: '#F472B6', tint: 0.7, eye: 'spiral', badge: null },
-      thinking: { label: 'Pensando', col: '#8B5CF6', tint: 0.72, eye: 'pill', badge: ['dots', '#8B5CF6'] },
+      dizzy: { label: 'Tonto', col: '#b829dd', tint: 0.7, eye: 'spiral', badge: null },
+      thinking: { label: 'Pensando', col: '#b829dd', tint: 0.72, eye: 'pill', badge: ['dots', '#b829dd'] },
       approval: { label: 'Aguardando', col: '#F5A524', tint: 0.78, eye: 'wide', badge: ['bang', '#F5A524'] }
     };
 
     const EMOTES = {
-      love: { label: 'Amor', eye: 'heart', snd: 'love', c: '#FF4D6D' },
-      surprised: { label: 'Surpreso', eye: 'dot', snd: 'pop', c: '#FFFFFF' },
+      love: { label: 'Amor', eye: 'heart', snd: 'love', c: '#b829dd' },
+      surprised: { label: 'Surpreso', eye: 'dot', snd: 'pop', c: '#00d4ff' },
       proud: { label: 'Orgulhoso', eye: 'star', snd: 'proud', c: '#F7B32B' },
-      wink: { label: 'Piscadela', eye: 'wink', snd: 'wink', c: '#A78BFA' },
+      wink: { label: 'Piscadela', eye: 'wink', snd: 'wink', c: '#7fe3f5' },
       yawn: { label: 'Bocejo', eye: 'tired', snd: 'yawn', c: '#94A3B8' },
       happy: { eye: 'happy' },
       annoyed: { eye: 'line' }
     };
 
     // ========================================================
-    // CLASSE BOT COUCOU COM TINT, BADGES E MORPHING COMPLETO
+    // CLASSE BOT OFICIAL COM SUPORTE A FALA E MORPHS
     // ========================================================
     class Bot {
       constructor(canvas) {
@@ -272,19 +297,21 @@
           es: 1, badgeS: 0,
           paperY: 0,
           glasses: 0,
+          mouthOpen: 0,
+          speaking: false,
           customMode: 'none'
         };
         this.tg = { ...this.s };
         this.tw = [];
         this.lock = {};
-        this.col = [240, 243, 248];
-        this.colT = [240, 243, 248];
+        this.col = [0, 212, 255];
+        this.colT = [0, 212, 255];
         this.state = 'idle';
         this.cfg = STATES.idle;
         this.eyeOv = null;
         this.ovUntil = 0;
         this.badge = null;
-        this.badgeCol = '#fff';
+        this.badgeCol = '#00d4ff';
         this._bk = 'none';
         this._bt = 0;
         this.parts = [];
@@ -435,11 +462,21 @@
           }
         }
 
-        // Clamp seguro dos olhos
-        tg.yaw = clamp(this.look.x * 0.42, -0.4, 0.4);
-        tg.pitch = clamp(this.look.y * 0.28, -0.25, 0.16);
+        // Clamp suave dos olhos (proporções agradáveis e seguras)
+        tg.yaw = clamp(this.look.x * 0.42, -0.38, 0.38);
+        tg.pitch = clamp(this.look.y * 0.26, -0.22, 0.14);
         tg.sy = 1 + Math.sin(t * 1.8) * 0.025;
         tg.sx = 1 - Math.sin(t * 1.8) * 0.015;
+
+        // Se estiver falando, articula boca e cabeça
+        if (s.speaking) {
+          s.mouthOpen = (Math.sin(t * 15) + 1) / 2;
+          tg.tilt = Math.sin(t * 6) * 0.06;
+          s.hands = 1;
+        } else {
+          s.mouthOpen = 0;
+          if (s.customMode === 'none') s.hands = 0;
+        }
 
         const kLook = 1 - Math.pow(0.002, dt), kGen = 1 - Math.pow(0.0008, dt);
         for (const k in tg) {
@@ -496,12 +533,12 @@
           path.closePath();
         }
 
-        // Cor Base
+        // Cor Base Oficial Estratégia Nerd
         let c0 = hexRgb(P.base[0]), c1 = hexRgb(P.base[1]);
         if (s.customMode === 'pc90s') {
-          c0 = [232, 224, 208]; c1 = [206, 196, 176]; // Bege vintage Macintosh
+          c0 = [228, 222, 208]; c1 = [200, 192, 174]; // Bege retrô
         } else if (s.customMode === 'printer') {
-          c0 = [248, 250, 252]; c1 = [218, 224, 233]; // Chassi claro de impressora
+          c0 = [14, 22, 36]; c1 = [6, 11, 20]; // Chassi escuro high-tech com cyan
         }
 
         const g = x.createLinearGradient(0, -ry, 0, ry);
@@ -521,20 +558,20 @@
           x.fill(path);
         }
 
-        // Contorno vetorial sutil
-        x.strokeStyle = 'rgba(0, 0, 0, 0.08)';
-        x.lineWidth = 1.5;
+        // Borda sutil cyan Estratégia Nerd
+        x.strokeStyle = s.customMode === 'printer' ? '#00d4ff' : 'rgba(0, 212, 255, 0.15)';
+        x.lineWidth = s.customMode === 'printer' ? 2 : 1.5;
         x.stroke(path);
 
         // ==========================================
-        // 3. BOCHECHAS ROSADAS (COUCOU BLUSH)
+        // 3. BOCHECHAS MAGENTA NEON (ESTRATÉGIA NERD)
         // ==========================================
         const bl = Math.max(s.blush, 0.32) * (1 - m);
         if (bl > 0.01) {
           x.save();
           x.clip(path);
           const yo = Math.sin(s.yaw) * rx * 0.7;
-          x.fillStyle = `rgba(255, 120, 150, ${0.45 * bl})`;
+          x.fillStyle = `rgba(184, 41, 221, ${0.45 * bl})`; // Magenta #b829dd
           for (const sd of [-1, 1]) {
             x.beginPath();
             x.ellipse(sd * rx * 0.52 + yo, ry * 0.18, R * 0.16, R * 0.09, 0, 0, Math.PI * 2);
@@ -544,79 +581,125 @@
         }
 
         // ==========================================
-        // 4. MORPH 2D: IMPRESSORA (Bandeja superior e saída)
+        // 4. MÃOS GESTICULANDO (COUCOU HANDS)
+        // ==========================================
+        if (s.hands > 0.05) {
+          const hr = R * 0.18 * s.hands;
+          const t = NOW() / 1000;
+          x.fillStyle = '#7fe3f5';
+          x.strokeStyle = '#00d4ff';
+          x.lineWidth = 2;
+
+          for (const sd of [-1, 1]) {
+            const hx = sd * rx * 1.25 * s.sx;
+            const hy = ry * 0.35 + Math.sin(t * 8 + sd) * 6;
+            x.beginPath();
+            x.arc(hx, hy, hr, 0, Math.PI * 2);
+            x.fill();
+            x.stroke();
+          }
+        }
+
+        // ==========================================
+        // 5. BOCA FALANTE DINÂMICA
+        // ==========================================
+        if (s.mouthOpen > 0.05) {
+          x.fillStyle = P.ink;
+          x.beginPath();
+          x.ellipse(0, ry * 0.28, 6, 2 + s.mouthOpen * 7, 0, 0, Math.PI * 2);
+          x.fill();
+        }
+
+        // ==========================================
+        // 6. MORPH 2D: IMPRESSORA (ALIMENTADOR & PAPEL)
         // ==========================================
         if (s.customMode === 'printer') {
           x.save();
           // Bandeja de alimentação superior com folha branca
-          x.fillStyle = '#94a3b8';
-          rr(x, -R * 0.5, -ry - R * 0.28, R * 1.0, R * 0.35, 4);
+          x.fillStyle = '#1e293b';
+          rr(x, -R * 0.55, -ry - R * 0.28, R * 1.1, R * 0.35, 4);
           x.fill();
           x.fillStyle = '#ffffff';
-          rr(x, -R * 0.4, -ry - R * 0.25, R * 0.8, R * 0.25, 2);
+          rr(x, -R * 0.45, -ry - R * 0.25, R * 0.9, R * 0.26, 2);
           x.fill();
 
-          // Fenda mecânica frontal de saída
-          x.fillStyle = '#0f172a';
-          rr(x, -R * 0.75, R * 0.1, R * 1.5, 8, 4);
+          // Visor LCD superior da impressora
+          x.fillStyle = '#061622';
+          rr(x, -R * 0.65, -R * 0.5, R * 1.3, R * 0.35, 4);
           x.fill();
+          x.fillStyle = '#00d4ff';
+          x.font = '700 8px monospace';
+          x.textAlign = 'center';
+          x.fillText('PRINTING // 100%', 0, -R * 0.28);
+
+          // Fenda mecânica frontal de saída
+          x.fillStyle = '#020617';
+          rr(x, -R * 0.75, R * 0.05, R * 1.5, 9, 4.5);
+          x.fill();
+          x.strokeStyle = '#00d4ff';
+          x.lineWidth = 1;
+          x.stroke();
 
           // Folha impressa saindo da fenda
           if (s.paperY > 0.02) {
-            const pw = R * 1.15, ph = R * 0.95 * s.paperY;
+            const pw = R * 1.2, ph = R * 1.05 * s.paperY;
             x.fillStyle = '#ffffff';
-            x.shadowColor = 'rgba(0,0,0,0.2)';
-            x.shadowBlur = 8;
-            rr(x, -pw / 2, R * 0.14, pw, ph, 4);
+            x.shadowColor = 'rgba(0, 212, 255, 0.3)';
+            x.shadowBlur = 10;
+            rr(x, -pw / 2, R * 0.1, pw, ph, 4);
             x.fill();
             x.shadowBlur = 0;
 
-            // Linhas de código no documento
-            x.fillStyle = '#2563eb';
-            x.fillRect(-pw / 2 + 8, R * 0.14 + 6, pw - 16, 3);
-            x.fillStyle = '#94a3b8';
-            x.fillRect(-pw / 2 + 8, R * 0.14 + 13, pw * 0.6, 2.5);
-            x.fillRect(-pw / 2 + 8, R * 0.14 + 19, pw * 0.8, 2.5);
+            // Cabeçalho Estratégia Nerd no papel impresso
+            x.fillStyle = '#00d4ff';
+            x.fillRect(-pw / 2 + 8, R * 0.1 + 6, pw - 16, 3);
+            x.fillStyle = '#0f172a';
+            x.font = 'bold 7px monospace';
+            x.textAlign = 'left';
+            x.fillText('ESTRATEGIA NERD', -pw / 2 + 8, R * 0.1 + 17);
+            x.fillStyle = '#10b981';
+            x.fillText('✓ PLANO EXECUTADO', -pw / 2 + 8, R * 0.1 + 27);
           }
           x.restore();
         }
 
         // ==========================================
-        // 5. MORPH 2D: PC RETRÔ 90s (Macintosh CRT)
+        // 7. MORPH 2D: PC RETRÔ 90s (Macintosh CRT)
         // ==========================================
         if (s.customMode === 'pc90s') {
           x.save();
           // Tela CRT verde
-          x.fillStyle = '#051f12';
-          rr(x, -R * 0.8, -R * 0.7, R * 1.6, R * 0.9, 6);
+          x.fillStyle = '#04160d';
+          rr(x, -R * 0.82, -R * 0.72, R * 1.64, R * 0.94, 6);
           x.fill();
 
-          // Rosto ASCII verde e prompt
+          // Texto CRT verde
           x.fillStyle = '#10b981';
           x.font = '800 13px monospace';
           x.textAlign = 'center';
           x.fillText('( ^ _ ^ )', 0, -R * 0.35);
-          x.font = '700 8px monospace';
-          x.fillText('> ECHO // 1994', 0, -R * 0.08);
+          x.font = '700 7.5px monospace';
+          x.fillText('> ESTRATEGIA NERD', 0, -R * 0.12);
+          x.fillText('> BOOT OK // 1994', 0, R * 0.06);
 
           // Fenda de disquete integrada
           x.fillStyle = '#1e293b';
-          rr(x, -R * 0.6, R * 0.42, R * 1.2, 7, 3);
+          rr(x, -R * 0.6, R * 0.44, R * 1.2, 7, 3);
           x.fill();
           // Disquete
-          x.fillStyle = '#2563eb';
-          rr(x, -R * 0.35, R * 0.42, R * 0.7, 5, 1.5);
+          x.fillStyle = '#00d4ff';
+          rr(x, -R * 0.35, R * 0.44, R * 0.7, 5, 1.5);
           x.fill();
           // LED
           x.fillStyle = '#10b981';
-          x.beginPath(); x.arc(R * 0.7, R * 0.45, 3, 0, Math.PI * 2); x.fill();
+          x.beginPath(); x.arc(R * 0.7, R * 0.47, 3, 0, Math.PI * 2); x.fill();
           x.restore();
         }
 
         // ==========================================
-        // 6. OLHOS 2D REDONDOS ORIGINAIS DO COUCOU
+        // 8. OLHOS 2D REDONDOS ORIGINAIS DO COUCOU
         // ==========================================
-        if (s.customMode !== 'pc90s') {
+        if (s.customMode !== 'pc90s' && s.customMode !== 'printer') {
           x.save();
           x.clip(path);
           x.fillStyle = P.ink;
@@ -647,15 +730,15 @@
         }
 
         // ==========================================
-        // 7. ÓCULOS NERD 2D (CIRCULARES E CRISTALINOS)
+        // 9. ÓCULOS NERD 2D (CIRCULARES E CRISTALINOS)
         // ==========================================
         if (s.glasses > 0.05) {
           x.save();
           x.translate(0, -R * 0.06);
           x.scale(s.glasses, s.glasses);
-          x.strokeStyle = '#2563eb';
+          x.strokeStyle = '#00d4ff'; // Cyan Estratégia Nerd
           x.lineWidth = 3;
-          x.fillStyle = 'rgba(255, 255, 255, 0.18)';
+          x.fillStyle = 'rgba(0, 212, 255, 0.12)';
 
           for (const sd of [-1, 1]) {
             x.beginPath();
@@ -679,7 +762,7 @@
         }
 
         // ==========================================
-        // 8. BADGES NA TESTA NATIVOS DO COUCOU
+        // 10. BADGES NA TESTA NATIVOS DO COUCOU
         // ==========================================
         if (this.badge && s.badgeS > 0.01) {
           const bs = s.badgeS;
@@ -691,24 +774,24 @@
 
           if (this.badge === 'dots') {
             const w = R * 0.74, h = R * 0.42;
-            x.fillStyle = '#000';
+            x.fillStyle = '#041622';
             rr(x, -w / 2 - R * 0.06, -h / 2 - R * 0.06, w + R * 0.12, h + R * 0.12, (h + R * 0.12) / 2);
             x.fill();
             x.fillStyle = bcol;
-            rr(x, -w / 2, -h / 2, w, h, h / 2);
+            rr(x, -w / 2, -h / 2, w, h, h/2);
             x.fill();
 
             const tt = NOW() / 1000;
             for (let i = 0; i < 3; i++) {
               const ph = ((tt * 2.4 - i * 0.22) % 1 + 1) % 1;
               const r = R * 0.058 * (1 + 0.4 * Math.max(0, Math.sin(ph * Math.PI * 2)));
-              x.fillStyle = 'rgba(255,255,255,.95)';
+              x.fillStyle = '#ffffff';
               x.beginPath();
               x.arc((i - 1) * R * 0.19, 0, r, 0, Math.PI * 2);
               x.fill();
             }
           } else if (this.badge === 'bang' || this.badge === 'q') {
-            x.fillStyle = '#000';
+            x.fillStyle = '#041622';
             x.beginPath(); x.arc(0, 0, R * 0.28, 0, Math.PI * 2); x.fill();
             x.fillStyle = bcol;
             x.beginPath(); x.arc(0, 0, R * 0.22, 0, Math.PI * 2); x.fill();
@@ -718,7 +801,7 @@
             x.textBaseline = 'middle';
             x.fillText(this.badge === 'bang' ? '!' : '?', 0, R * 0.02);
           } else {
-            x.fillStyle = '#000';
+            x.fillStyle = '#041622';
             x.beginPath(); x.arc(0, 0, R * 0.19, 0, Math.PI * 2); x.fill();
             x.fillStyle = bcol;
             x.beginPath(); x.arc(0, 0, R * 0.13, 0, Math.PI * 2); x.fill();
@@ -729,7 +812,7 @@
         x.restore();
 
         // ==========================================
-        // 9. PARTÍCULAS ORIGINAIS (CORAÇÃO, ESTRELAS, ZZZ)
+        // 11. PARTÍCULAS ORIGINAIS (CORAÇÃO, ESTRELAS, ZZZ)
         // ==========================================
         for (const p of this.parts) {
           if (p.age < 0) continue;
@@ -741,12 +824,12 @@
           x.translate(px, py);
           x.globalAlpha = clamp(a, 0, 1);
           if (p.type === 'heart') {
-            x.fillStyle = '#FF4D6D';
+            x.fillStyle = '#b829dd'; // Magenta neon
             x.rotate(Math.sin(p.age * 6) * 0.3);
             heart(x, sz);
             x.fill();
           } else if (p.type === 'star') {
-            x.fillStyle = '#F7B32B';
+            x.fillStyle = '#00d4ff'; // Cyan neon
             x.rotate(p.rot + p.age * 2);
             star(x, sz, sz * 0.45);
             x.fill();
@@ -756,7 +839,7 @@
             star(x, sz * 0.8, sz * 0.18);
             x.fill();
           } else if (p.type === 'z') {
-            x.fillStyle = '#94a3b8';
+            x.fillStyle = '#7fe3f5';
             x.font = `700 ${sz * 1.9}px -apple-system, sans-serif`;
             x.fillText('z', 0, 0);
           }
@@ -814,12 +897,12 @@
             x.stroke();
             break;
           case 'heart':
-            x.fillStyle = '#FF4D6D';
+            x.fillStyle = '#b829dd';
             heart(x, w * 1.2);
             x.fill();
             break;
           case 'star':
-            x.fillStyle = '#F7B32B';
+            x.fillStyle = '#00d4ff';
             x.rotate(t * 1.5 * sd);
             star(x, w * 1.05, w * 0.46);
             x.fill();
@@ -857,6 +940,8 @@
     const descEl = document.getElementById('action-desc');
     const chipDot = document.getElementById('chip-dot');
     const chipLabel = document.getElementById('chip-label');
+    const speechBubble = document.getElementById('speech-bubble');
+    const speechText = document.getElementById('speech-text');
 
     // Toque / Slap com som e elasticidade
     canvas.addEventListener('pointerdown', () => {
@@ -890,65 +975,96 @@
       document.getElementById('panel-states').classList.toggle('hidden', tab !== 'states');
       document.getElementById('panel-morphs').classList.toggle('hidden', tab !== 'morphs');
 
-      document.getElementById('tab-emotes').className = tab === 'emotes' ? 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white transition shadow-sm' : 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
-      document.getElementById('tab-states').className = tab === 'states' ? 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white transition shadow-sm' : 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
-      document.getElementById('tab-morphs').className = tab === 'morphs' ? 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white transition shadow-sm' : 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      document.getElementById('tab-emotes').className = tab === 'emotes' ? 'flex-1 py-1.5 rounded-lg bg-[#00d4ff] text-slate-950 font-bold transition shadow-sm' : 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      document.getElementById('tab-states').className = tab === 'states' ? 'flex-1 py-1.5 rounded-lg bg-[#00d4ff] text-slate-950 font-bold transition shadow-sm' : 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      document.getElementById('tab-morphs').className = tab === 'morphs' ? 'flex-1 py-1.5 rounded-lg bg-[#00d4ff] text-slate-950 font-bold transition shadow-sm' : 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
     }
 
-    function resetMorphs() {
+    function resetMochiState() {
+      mochi.s.speaking = false;
+      speechBubble.classList.add('hidden');
       mochi.s.customMode = 'none';
-      mochi.anim('morph', [[0, 280, E.out]]);
+      mochi.anim('morph', [[0, 260, E.out]]);
       mochi.anim('glasses', [[0, 200, E.out]]);
       mochi.s.paperY = 0;
     }
 
+    let speechTimer = null;
+    function triggerSpeak() {
+      resetMochiState();
+      mochi.s.speaking = true;
+      speechBubble.classList.remove('hidden');
+      speechText.textContent = "Fala Mestre! Estratégia Nerd online e monitorando tudo!";
+      
+      chipDot.className = 'w-2 h-2 rounded-full bg-[#00d4ff]';
+      chipLabel.textContent = 'speaking';
+      titleEl.textContent = '🗣️ Modo Falando (Voz & Boca)';
+      descEl.textContent = 'Boca articulada com cadência de fala e gesticulação de mãos';
+
+      // Dispara bips de sintetizador fofo
+      clearInterval(speechTimer);
+      let count = 0;
+      speechTimer = setInterval(() => {
+        Snd.play('speech');
+        count++;
+        if (count >= 16) {
+          clearInterval(speechTimer);
+          mochi.s.speaking = false;
+        }
+      }, 160);
+    }
+
     function triggerEmote(name) {
-      resetMorphs();
+      resetMochiState();
       mochi.emote(name, 1900);
-      chipDot.className = 'w-2 h-2 rounded-full bg-pink-400';
+      chipDot.className = 'w-2 h-2 rounded-full bg-[#b829dd]';
       chipLabel.textContent = name;
       titleEl.textContent = `Emote: ${EMOTES[name]?.label || name}`;
-      descEl.textContent = 'Expressão 2D vetorial oficial do Coucou';
+      descEl.textContent = 'Expressão 2D vetorial com paleta Estratégia Nerd';
     }
 
     function triggerState(name) {
-      resetMorphs();
+      resetMochiState();
       mochi.setState(name);
-      chipDot.className = `w-2 h-2 rounded-full ${name === 'finished' ? 'bg-emerald-400' : name === 'working' ? 'bg-blue-400' : name === 'thinking' ? 'bg-purple-400' : name === 'approval' ? 'bg-amber-400' : 'bg-slate-400'}`;
+      chipDot.className = `w-2 h-2 rounded-full ${name === 'finished' ? 'bg-emerald-400' : name === 'working' ? 'bg-[#00d4ff]' : name === 'thinking' ? 'bg-[#b829dd]' : name === 'approval' ? 'bg-amber-400' : 'bg-slate-400'}`;
       chipLabel.textContent = name;
       titleEl.textContent = `Estado: ${STATES[name]?.label || name}`;
-      descEl.textContent = 'Mochi com badge na cabeça e coloração ativa';
+      descEl.textContent = 'Mochi com badge na cabeça e iluminação ativa';
     }
 
     function triggerMorph(type) {
+      resetMochiState();
       if (type === 'glasses') {
         mochi.s.customMode = 'none';
         mochi.anim('morph', [[0, 250, E.out]]);
         mochi.anim('glasses', [[1, 350, E.back]]);
         Snd.play('pop');
         titleEl.textContent = '👓 Óculos Nerd 2D de Grau';
-        descEl.textContent = 'Armação circular vetorial cristalina com reflexo';
+        descEl.textContent = 'Armação circular cyan cristalina sobre os olhos';
         chipLabel.textContent = 'nerd';
       } else if (type === 'printer') {
         mochi.s.customMode = 'printer';
         mochi.anim('glasses', [[0, 150, E.out]]);
-        mochi.anim('morph', [[1, 450, E.back]]);
+        mochi.anim('morph', [[1, 400, E.back]]);
         mochi.s.paperY = 0;
-        Snd.play('pop');
+        Snd.play('print');
+        
+        // Ejeção ativa do papel com som
         setTimeout(() => {
-          mochi.anim('paperY', [[1, 1400, E.out]]);
+          mochi.anim('paperY', [[1, 1200, E.out]]);
           Snd.play('finish');
-        }, 350);
-        titleEl.textContent = '🖨️ Impressora 2D Minimalista';
-        descEl.textContent = 'Bandeja de alimentação superior e folha ejetada da fenda';
+        }, 320);
+        titleEl.textContent = '🖨️ Impressora 2D Estratégia Nerd';
+        descEl.textContent = 'Chassi cyan escuro, fenda mecânica e relatório impresso';
         chipLabel.textContent = 'printer';
       } else if (type === 'pc90s') {
         mochi.s.customMode = 'pc90s';
         mochi.anim('glasses', [[0, 150, E.out]]);
-        mochi.anim('morph', [[1, 450, E.back]]);
+        mochi.anim('morph', [[1, 400, E.back]]);
         Snd.play('pop');
-        titleEl.textContent = '🖥️ PC Antigo 2D // Macintosh';
-        descEl.textContent = 'Gabinete retrô com tela CRT verde ( ^ _ ^ ) e disquete';
+        setTimeout(() => Snd.play('proud'), 250);
+        titleEl.textContent = '🖥️ PC Retrô 90s // Macintosh';
+        descEl.textContent = 'Monitor clássico com tela CRT verde e disquete cyan';
         chipLabel.textContent = 'pc-90s';
       }
     }
