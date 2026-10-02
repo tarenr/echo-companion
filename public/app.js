@@ -8,6 +8,8 @@
   const screen = document.getElementById('screen');
   const echoWrapper = document.getElementById('echo-wrapper');
   const echoFace = document.getElementById('echo-face');
+  const armLeft = document.getElementById('arm-left');
+  const armRight = document.getElementById('arm-right');
   const eyeLeft = document.getElementById('eye-left');
   const eyeRight = document.getElementById('eye-right');
   const mouth = document.getElementById('mouth');
@@ -30,12 +32,22 @@
   const telemetryBar = document.getElementById('telemetry-bar');
   const audioToast = document.getElementById('audio-toast');
 
+  // Elementos do PIN Modal
+  const pinModal = document.getElementById('pin-modal');
+  const pinInput = document.getElementById('pin-input');
+  const pinBtn = document.getElementById('pin-btn');
+  const pinError = document.getElementById('pin-error');
+
   // Estado Local
   let audioUnlocked = false;
   let currentAudio = null;
   let mouthTalkInterval = null;
   let lastVoicePlayed = '';
   let wakeLock = null;
+  let sseSource = null;
+  let idleInterval = null;
+  let currentState = null;
+  let idlePoseIndex = 0;
 
   // 1. Desbloqueio de Áudio e Wake Lock no primeiro toque na tela
   async function unlockAudioAndWakeLock() {
@@ -43,7 +55,6 @@
       audioUnlocked = true;
       audioToast.classList.add('hidden');
 
-      // Toca um bipe silencioso para liberar o contexto de áudio móvel
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') {
@@ -60,7 +71,6 @@
         console.warn('Erro ao inicializar AudioContext:', e);
       }
 
-      // Ativa WakeLock para manter tela do celular sempre acesa
       requestWakeLock();
     }
   }
@@ -79,14 +89,13 @@
     }
   }
 
-  // Se o usuário alternar de app e voltar, restabelece o WakeLock
   document.addEventListener('visibilitychange', () => {
     if (wakeLock !== null && document.visibilityState === 'visible') {
       requestWakeLock();
     }
   });
 
-  // 2. Animação de Fala do Mascote (_ <-> o)
+  // 2. Regra Estrita da Boca: ESTRITAMENTE '_' e 'o'
   function startSpeakingAnimation() {
     if (mouthTalkInterval) clearInterval(mouthTalkInterval);
     let open = false;
@@ -101,21 +110,77 @@
       clearInterval(mouthTalkInterval);
       mouthTalkInterval = null;
     }
+    // Boca fechada por padrão
     mouth.textContent = '_';
   }
 
   // Piscar de Olhos Natural Contínuo
   setInterval(() => {
-    if (mouthTalkInterval) return; // Não pisca no meio da fala
-    eyeLeft.textContent = '-';
-    eyeRight.textContent = '-';
-    setTimeout(() => {
+    if (mouthTalkInterval) return;
+    if (currentState && currentState.state !== 'idle') return;
+    
+    // Pisca rápido apenas se estiver com olhos abertos
+    const prevL = eyeLeft.textContent;
+    const prevR = eyeRight.textContent;
+    if (prevL === '^' && prevR === '^') {
+      eyeLeft.textContent = '-';
+      eyeRight.textContent = '-';
+      setTimeout(() => {
+        eyeLeft.textContent = '^';
+        eyeRight.textContent = '^';
+      }, 130);
+    }
+  }, 3800);
+
+  // 3. Ciclo Orgânico de Poses no Modo Ocioso (Idle)
+  function applyIdlePose(index) {
+    if (mouthTalkInterval) return;
+
+    armLeft.className = 'arm-side';
+    armRight.className = 'arm-side';
+    mouth.textContent = '_'; // Regra estrita: boca sempre '_' quando quieto
+
+    if (index === 0) {
+      // Repouso suave e sereno
+      armLeft.textContent = '';
+      armRight.textContent = '';
       eyeLeft.textContent = '^';
       eyeRight.textContent = '^';
-    }, 130);
-  }, 3500);
+    } 
+    else if (index === 1) {
+      // Dando de ombros pensando na vida: ¯\_(¬_¬)_/¯
+      armLeft.textContent = '¯\\_';
+      armRight.textContent = '_/¯';
+      armLeft.style.marginTop = '0.5rem';
+      armRight.style.marginTop = '0.5rem';
+      eyeLeft.textContent = '¬';
+      eyeRight.textContent = '¬';
+    } 
+    else if (index === 2) {
+      // Relaxando / dançando: ~(˘_˘~)
+      armLeft.textContent = '~';
+      armRight.textContent = '~';
+      armLeft.style.marginTop = '0';
+      armRight.style.marginTop = '0';
+      eyeLeft.textContent = '˘';
+      eyeRight.textContent = '˘';
+    }
+  }
 
-  // 3. Síntese e Execução de Voz OpenAI TTS
+  function startIdleCycle() {
+    if (idleInterval) clearInterval(idleInterval);
+    idlePoseIndex = 0;
+    applyIdlePose(0);
+
+    idleInterval = setInterval(() => {
+      if (!currentState || currentState.state === 'idle') {
+        idlePoseIndex = (idlePoseIndex + 1) % 3;
+        applyIdlePose(idlePoseIndex);
+      }
+    }, 22000);
+  }
+
+  // 4. Síntese e Execução de Voz OpenAI TTS
   async function speak(text) {
     if (!text || !audioUnlocked) return;
     if (currentAudio) {
@@ -147,8 +212,7 @@
         URL.revokeObjectURL(audioUrl);
       };
 
-      currentAudio.onerror = (e) => {
-        console.warn('Erro ao tocar áudio:', e);
+      currentAudio.onerror = () => {
         stopSpeakingAnimation();
         currentAudio = null;
       };
@@ -160,8 +224,10 @@
     }
   }
 
-  // 4. Aplicação do Estado no Layout
+  // 5. Renderização do Estado no Layout
   function renderState(state) {
+    currentState = state;
+
     // Header
     if (state.project) brandProject.textContent = state.project;
     if (state.agent) agentLabel.textContent = state.agent;
@@ -174,7 +240,6 @@
 
     // Modo Visual (Full vs Info)
     const isInfoMode = state.mode === 'info';
-
     if (isInfoMode) {
       echoWrapper.className = 'echo-wrapper mode-info';
       infoPanel.classList.add('visible');
@@ -183,13 +248,34 @@
       infoPanel.classList.remove('visible');
     }
 
-    // Cores e Emoções
-    echoFace.className = 'echo-face';
-    panelBadge.className = 'badge-tag';
+    // Reseta classes básicas de braços
+    armLeft.className = 'arm-side';
+    armRight.className = 'arm-side';
+    armLeft.style.marginTop = '0';
+    armRight.style.marginTop = '0';
 
+    // Determina Tema de Cor
+    let themeClass = 'theme-cyan';
+    if (state.state === 'waiting') themeClass = 'theme-waiting';
+    else if (state.state === 'success') themeClass = 'theme-success';
+    else if (state.state === 'error') themeClass = 'theme-error';
+    else if (state.agentTheme === 'claude') themeClass = 'theme-claude';
+    else if (state.agentTheme === 'antigravity') themeClass = 'theme-antigravity';
+    else if (state.agentTheme === 'codex') themeClass = 'theme-codex';
+
+    echoFace.className = `echo-face ${themeClass}`;
+
+    // Configuração das Faces Kaomoji por Ação
     if (state.state === 'waiting' || state.badge === 'APROVAÇÃO NECESSÁRIA') {
-      echoFace.classList.add('color-amber');
-      panelBadge.className = 'badge-tag';
+      // Chamando atenção: \( ? o ? )/
+      armLeft.className = 'arm-side arm-animated-left';
+      armRight.className = 'arm-side arm-animated-right';
+      armLeft.textContent = '\\';
+      armRight.textContent = '/';
+      eyeLeft.textContent = '?';
+      eyeRight.textContent = '?';
+      mouth.textContent = 'o'; // Boca aberta chamando você
+
       panelBadge.textContent = state.badge || 'APROVAÇÃO NECESSÁRIA';
       panelMainText.textContent = state.title || 'APROVAR?';
       panelMainText.style.color = 'var(--amber-neon)';
@@ -199,8 +285,13 @@
       panelSubLine2.textContent = 'Verifique o plano proposto no console';
     } 
     else if (state.state === 'error') {
-      echoFace.classList.add('color-rose');
-      panelBadge.className = 'badge-tag badge-rose';
+      // Erro: ¯\_( x _ x )_/¯
+      armLeft.textContent = '¯\\_';
+      armRight.textContent = '_/¯';
+      eyeLeft.textContent = 'x';
+      eyeRight.textContent = 'x';
+      mouth.textContent = '_';
+
       panelBadge.textContent = state.badge || 'ERRO';
       panelMainText.textContent = state.title || 'FALHA NA TAREFA';
       panelMainText.style.color = 'var(--rose-neon)';
@@ -210,20 +301,38 @@
       panelSubLine2.textContent = 'Consulte o log de erro no PC';
     } 
     else if (state.state === 'success') {
-      echoFace.classList.add('color-emerald');
-      mouth.textContent = 'v';
+      // Comemorando vitória: *\ ( ^ _ ^ ) /*
+      armLeft.className = 'arm-side arm-animated-left';
+      armRight.className = 'arm-side arm-animated-right';
+      armLeft.textContent = '*\\';
+      armRight.textContent = '/*';
+      eyeLeft.textContent = '^';
+      eyeRight.textContent = '^';
+      mouth.textContent = '_';
     } 
     else if (state.state === 'working') {
-      echoFace.className = 'echo-face'; // Neon cyan padrão
-      mouth.textContent = '_';
+      if (state.actionType === 'executing') {
+        // Implementando (escrita): \( ò _ ó )/
+        armLeft.textContent = '\\';
+        armRight.textContent = '/';
+        eyeLeft.textContent = 'ò';
+        eyeRight.textContent = 'ó';
+        mouth.textContent = '_';
+      } else {
+        // Pesquisando (leitura): c( • _ • )כ
+        armLeft.textContent = 'c';
+        armRight.textContent = 'כ';
+        eyeLeft.textContent = '•';
+        eyeRight.textContent = '•';
+        mouth.textContent = '_';
+      }
     } 
     else {
-      // Idle / Standby
-      echoFace.className = 'echo-face';
-      mouth.textContent = '_';
+      // Standby: segue o ciclo orgânico ocioso
+      applyIdlePose(idlePoseIndex);
     }
 
-    // Fala por voz caso haja uma mensagem nova
+    // Voz
     if (state.voiceMessage && state.voiceMessage !== lastVoicePlayed) {
       lastVoicePlayed = state.voiceMessage;
       voiceText.textContent = state.voiceMessage;
@@ -232,20 +341,23 @@
     }
   }
 
-  // 5. Conexão SSE (Server-Sent Events)
+  // 6. Conexão SSE
   function connectSSE() {
-    connectionStatus.textContent = 'WI-FI LOCAL: CONECTANDO...';
+    if (sseSource) sseSource.close();
+
+    connectionStatus.textContent = 'CONECTANDO...';
     connectionStatus.style.color = 'var(--cyan-neon)';
 
-    const sse = new EventSource('/api/stream');
+    sseSource = new EventSource('/api/stream');
 
-    sse.onopen = () => {
-      connectionStatus.textContent = 'WI-FI LOCAL: CONECTADO';
-      connectionStatus.style.color = 'var(--emerald-neon)';
+    sseSource.onopen = () => {
+      connectionStatus.textContent = 'ONLINE // CONECTADO';
+      connectionStatus.style.color = 'var(--matrix-neon)';
       statusDot.style.backgroundColor = 'var(--cyan-neon)';
+      pinModal.classList.add('hidden');
     };
 
-    sse.onmessage = (event) => {
+    sseSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         renderState(data);
@@ -254,42 +366,77 @@
       }
     };
 
-    sse.addEventListener('telemetry_alert', (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        echoWrapper.className = 'echo-wrapper mode-info';
-        infoPanel.classList.add('visible');
-        echoFace.className = 'echo-face color-amber';
-        panelBadge.className = 'badge-tag';
-        panelBadge.textContent = data.badge;
-        panelMainText.textContent = data.mainText;
-        panelMainText.style.color = 'var(--amber-neon)';
-        panelFill.style.width = '90%';
-        panelFill.style.backgroundColor = 'var(--amber-neon)';
-        panelSubLine1.textContent = data.subText;
-        panelSubLine2.textContent = 'Hardware sob alta demanda';
-
-        if (data.voiceText && data.voiceText !== lastVoicePlayed) {
-          lastVoicePlayed = data.voiceText;
-          voiceText.textContent = data.voiceText;
-          panelVoice.style.display = 'block';
-          speak(data.voiceText);
-        }
-      } catch (e) {
-        console.error('Erro ao processar alerta:', e);
-      }
-    });
-
-    sse.onerror = () => {
-      connectionStatus.textContent = 'WI-FI LOCAL: RECONECTANDO...';
+    sseSource.onerror = (err) => {
+      console.warn('SSE Desconectado ou Não Autorizado:', err);
+      connectionStatus.textContent = 'DESCONECTADO // RECONECTANDO...';
       connectionStatus.style.color = 'var(--amber-neon)';
       statusDot.style.backgroundColor = 'var(--amber-neon)';
-      sse.close();
-      setTimeout(connectSSE, 2500);
+      sseSource.close();
+
+      // Checa se foi bloqueado por falta de PIN
+      checkAuthAndPromptPin();
+      setTimeout(connectSSE, 4000);
     };
   }
 
-  // Inicia conexão SSE
+  // 7. Autenticação e Desbloqueio por PIN
+  async function checkAuthAndPromptPin() {
+    try {
+      const res = await fetch('/api/auth/status');
+      const data = await res.json();
+      if (!data.authorized) {
+        pinModal.classList.remove('hidden');
+        pinInput.focus();
+      } else {
+        pinModal.classList.add('hidden');
+      }
+    } catch (e) {
+      // Ignora erro de rede temporário
+    }
+  }
+
+  async function submitPin() {
+    const pin = pinInput.value.trim();
+    if (!pin) return;
+
+    try {
+      const res = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin })
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        pinModal.classList.add('hidden');
+        pinError.style.display = 'none';
+        localStorage.setItem('echo_pin', pin);
+        connectSSE();
+      } else {
+        pinError.style.display = 'block';
+      }
+    } catch (err) {
+      pinError.textContent = 'Erro ao validar PIN. Tente novamente.';
+      pinError.style.display = 'block';
+    }
+  }
+
+  pinBtn.addEventListener('click', submitPin);
+  pinInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitPin();
+  });
+
+  // Inicialização
+  const urlParams = new URLSearchParams(window.location.search);
+  const pinFromUrl = urlParams.get('pin');
+  if (pinFromUrl) {
+    pinInput.value = pinFromUrl;
+    submitPin();
+  } else {
+    checkAuthAndPromptPin();
+  }
+
+  startIdleCycle();
   connectSSE();
 
 })();

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Echo // Estratégia Nerd</title>
-  <meta name="theme-color" content="#030712">
+  <meta name="theme-color" content="#020617">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
@@ -37,8 +37,11 @@
       <!-- Wrapper do Mascote Echo -->
       <div class="echo-wrapper mode-full" id="echo-wrapper">
         <div class="head-floating">
-          <div class="echo-face" id="echo-face">
+          <div class="echo-face theme-cyan" id="echo-face">
             
+            <!-- Braço / Mão Esquerda Externa -->
+            <span class="arm-side" id="arm-left"></span>
+
             <!-- Parêntese Esquerdo Alto -->
             <span class="parenthesis">(</span>
 
@@ -55,6 +58,9 @@
 
             <!-- Parêntese Direito Alto -->
             <span class="parenthesis">)</span>
+
+            <!-- Braço / Mão Direita Externa -->
+            <span class="arm-side" id="arm-right"></span>
 
           </div>
         </div>
@@ -83,7 +89,7 @@
 
     <!-- Rodapé -->
     <footer class="bottom-bar">
-      <span id="connection-status">WI-FI LOCAL: CONECTANDO...</span>
+      <span id="connection-status">CONECTANDO...</span>
       <span id="telemetry-bar">CPU: -- | RAM: --</span>
     </footer>
 
@@ -93,6 +99,17 @@
     </div>
 
   </main>
+
+  <!-- Modal de Autenticação por PIN -->
+  <div class="pin-modal-overlay hidden" id="pin-modal">
+    <div class="pin-modal-card">
+      <div class="pin-modal-title">Echo // Autenticação</div>
+      <div class="pin-modal-subtitle">Digite o PIN para liberar o painel remoto</div>
+      <input type="password" id="pin-input" class="pin-input-field" maxlength="8" placeholder="••••" inputmode="numeric" autocomplete="off">
+      <div class="pin-error-msg" id="pin-error">PIN incorreto. Tente novamente.</div>
+      <button class="pin-submit-btn" id="pin-btn">DESBLOQUEAR</button>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

@@ -25,17 +25,86 @@ if (fs.existsSync(estrategiaEnvPath)) {
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 4884;
+const ECHO_PIN = process.env.ECHO_PIN || '4884';
 
 app.use(express.json());
+
+// Helper de autenticação
+function parseCookies(cookieHeader) {
+  const list = {};
+  if (!cookieHeader) return list;
+  cookieHeader.split(';').forEach(cookie => {
+    let [name, ...rest] = cookie.split('=');
+    name = name?.trim();
+    if (!name) return;
+    const value = rest.join('=').trim();
+    list[name] = decodeURIComponent(value);
+  });
+  return list;
+}
+
+function isAuthorized(req) {
+  const cfIp = req.headers['cf-connecting-ip'];
+  const isFromCloudflare = Boolean(cfIp);
+
+  // Apenas conexões locais diretas (sem passar pelo Cloudflare Tunnel) são confiadas
+  const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || '';
+  const isLocalDirect = !isFromCloudflare && (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1');
+
+  if (isLocalDirect) {
+    return true;
+  }
+
+  // Requisições externas (via Cloudflare ou rede): EXIGEM PIN obrigatório
+  const pinHeader = req.headers['x-echo-pin'];
+  const pinQuery = req.query?.pin;
+  const cookies = parseCookies(req.headers.cookie);
+  const pinCookie = cookies['echo_pin'];
+
+  return (
+    String(pinHeader).trim() === ECHO_PIN ||
+    String(pinQuery).trim() === ECHO_PIN ||
+    String(pinCookie).trim() === ECHO_PIN
+  );
+}
+
+function requirePin(req, res, next) {
+  if (isAuthorized(req)) {
+    return next();
+  }
+  return res.status(401).json({
+    ok: false,
+    error: 'Acesso bloqueado: PIN de segurança inválido ou ausente.',
+    authRequired: true
+  });
+}
+
+// Endpoint para validar PIN vindo do celular
+app.post('/api/auth/verify', (req, res) => {
+  const { pin } = req.body || {};
+  if (String(pin).trim() === ECHO_PIN) {
+    res.setHeader('Set-Cookie', `echo_pin=${ECHO_PIN}; Path=/; Max-Age=31536000; SameSite=Lax`);
+    return res.json({ ok: true, message: 'Autenticado com sucesso' });
+  }
+  return res.status(401).json({ ok: false, error: 'PIN incorreto' });
+});
+
+app.get('/api/auth/status', (req, res) => {
+  res.json({ ok: true, authorized: isAuthorized(req) });
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Gerenciador de Clientes SSE (Server-Sent Events)
 let sseClients = [];
 
 // Estado Global Atual do Echo
+let idleWatchdog = null;
 let echoState = {
   mode: 'full', // 'full' (centro) ou 'info' (esquerda com dados na direita)
   state: 'idle', // 'idle', 'working', 'waiting', 'success', 'error'
+  actionType: 'idle', // 'idle', 'research', 'executing', 'waiting', 'success', 'error'
+  agentTheme: 'idle', // 'idle', 'claude', 'antigravity', 'codex'
   agent: 'ECHO',
   project: 'ESTRATÉGIA NERD',
   badge: 'STANDBY',
@@ -106,7 +175,7 @@ function broadcastEvent(eventType, eventData) {
 }
 
 // Endpoint SSE para o Celular
-app.get('/api/stream', (req, res) => {
+app.get('/api/stream', requirePin, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -132,30 +201,73 @@ app.get('/api/stream', (req, res) => {
 
 // Endpoint Webhook para receber eventos dos Agentes de IA
 app.post('/api/events', (req, res) => {
-  const { agent, event, project, tool, command, error, message } = req.body;
-  console.log(`[EVENTO RECEBIDO] ${agent || 'Desconhecido'}: ${event || 'Ação'}`);
+  const { agent, event, actionType, project, tool, command, error, message } = req.body;
+  console.log(`[EVENTO RECEBIDO] ${agent || 'Desconhecido'} (${actionType || event}): ${command || tool || message || 'Ação'}`);
 
   echoState.timestamp = Date.now();
   echoState.agent = (agent || 'AGENTE').toUpperCase();
   echoState.project = (project || 'ESTRATÉGIA NERD').toUpperCase();
 
+  // Identificação do Tema da IA
+  const rawAgent = (agent || '').toLowerCase();
+  if (rawAgent.includes('claude')) {
+    echoState.agentTheme = 'claude';
+  } else if (rawAgent.includes('antigravity') || rawAgent.includes('gemini')) {
+    echoState.agentTheme = 'antigravity';
+  } else if (rawAgent.includes('codex')) {
+    echoState.agentTheme = 'codex';
+  } else {
+    echoState.agentTheme = 'idle';
+  }
+
+  // Limpa watchdog anterior
+  if (idleWatchdog) {
+    clearTimeout(idleWatchdog);
+    idleWatchdog = null;
+  }
+
   if (event === 'SessionStart' || event === 'start') {
     echoState.mode = 'full';
     echoState.state = 'working';
+    echoState.actionType = 'research';
     echoState.badge = 'INICIADO';
     echoState.title = `${echoState.agent} iniciou uma sessão de trabalho`;
     echoState.detail = `Projeto: ${echoState.project}`;
   } 
-  else if (event === 'PreToolUse' || event === 'working' || event === 'tool_call') {
+  else if (event === 'PreToolUse' || event === 'working' || event === 'tool_call' || event === 'UserPromptSubmit') {
     echoState.mode = 'full';
     echoState.state = 'working';
-    echoState.badge = 'TRABALHANDO';
-    echoState.title = `${echoState.agent} executando ferramenta`;
-    echoState.detail = command || tool || 'Lendo e modificando arquivos...';
+    
+    // Diferencial: Pesquisando (leitura) vs Implementando (escrita)
+    if (actionType === 'executing') {
+      echoState.actionType = 'executing';
+      echoState.badge = 'IMPLEMENTANDO';
+      echoState.title = `${echoState.agent} implementando...`;
+    } else {
+      echoState.actionType = 'research';
+      echoState.badge = 'PESQUISANDO';
+      echoState.title = `${echoState.agent} pesquisando...`;
+    }
+    
+    echoState.detail = command || tool || message || 'Lendo e analisando código...';
+
+    // Watchdog: se não receber novos eventos em 20 segundos, retorna ao modo ocioso
+    idleWatchdog = setTimeout(() => {
+      if (echoState.state === 'working') {
+        echoState.state = 'idle';
+        echoState.actionType = 'idle';
+        echoState.agentTheme = 'idle';
+        echoState.badge = 'STANDBY';
+        echoState.title = 'Aguardando próxima sessão...';
+        echoState.detail = 'Nenhum agente ativo';
+        broadcastState();
+      }
+    }, 20000);
   } 
   else if (event === 'waiting_user' || event === 'ask_permission' || event === 'approval_needed') {
     echoState.mode = 'info';
     echoState.state = 'waiting';
+    echoState.actionType = 'waiting';
     echoState.badge = 'APROVAÇÃO NECESSÁRIA';
     echoState.title = `${echoState.agent} precisa de aprovação explícita`;
     echoState.detail = command || message || 'Comando aguardando autorização no terminal';
@@ -164,25 +276,29 @@ app.post('/api/events', (req, res) => {
   else if (event === 'Stop' || event === 'completed' || event === 'success') {
     echoState.mode = 'full';
     echoState.state = 'success';
+    echoState.actionType = 'success';
     echoState.badge = 'CONCLUÍDO';
     echoState.title = 'Tarefa finalizada com sucesso!';
     echoState.detail = message || 'Todos os passos e verificações foram concluídos';
     echoState.voiceMessage = 'Tudo pronto e testado com sucesso!';
 
-    // Volta ao descanso após 25 segundos
-    setTimeout(() => {
+    // Volta ao descanso após 20 segundos
+    idleWatchdog = setTimeout(() => {
       if (echoState.state === 'success') {
         echoState.state = 'idle';
+        echoState.actionType = 'idle';
+        echoState.agentTheme = 'idle';
         echoState.badge = 'STANDBY';
         echoState.title = 'Aguardando próxima sessão...';
         echoState.detail = 'Nenhum agente ativo';
         broadcastState();
       }
-    }, 25000);
+    }, 20000);
   } 
   else if (event === 'error') {
     echoState.mode = 'info';
     echoState.state = 'error';
+    echoState.actionType = 'error';
     echoState.badge = 'ERRO';
     echoState.title = `${echoState.agent} encontrou uma falha`;
     echoState.detail = error || message || 'Erro na execução';
@@ -193,8 +309,8 @@ app.post('/api/events', (req, res) => {
   res.json({ ok: true, state: echoState });
 });
 
-// Endpoint de Síntese de Voz (OpenAI TTS)
-app.post('/api/speak', async (req, res) => {
+// Endpoint de Síntese de Voz (OpenAI TTS) protegido por PIN
+app.post('/api/speak', requirePin, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Texto não fornecido' });
 

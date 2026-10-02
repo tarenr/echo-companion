@@ -71,10 +71,24 @@ function processAndExit() {
     }
   }
 
+  // Classifica automaticamente ação de leitura vs implementação
+  let actionType = 'research';
+  const writeTools = ['write_to_file', 'replace_file_content', 'edit_file', 'create_file', 'delete_file'];
+  const writeCmdRegex = /\b(git\s+(commit|add|push|rm|merge|rebase)|npm\s+(install|i|run\s+build|update)|New-Item|Set-Content|Add-Content|Remove-Item|rm\s|del\s|mkdir)\b/i;
+
+  if (writeTools.includes(toolName) || writeCmdRegex.test(commandStr)) {
+    actionType = 'executing';
+  } else if (eventType === 'PreToolUse' || eventType === 'tool_call' || eventType === 'UserPromptSubmit') {
+    actionType = 'research';
+  } else if (eventType === 'Stop' || eventType === 'completed' || eventType === 'turn_ended') {
+    actionType = 'success';
+  }
+
   // Prepara payload para o Echo
   const payload = {
     agent: agent,
     event: eventType,
+    actionType: actionType,
     tool: toolName,
     command: commandStr,
     message: customMessage || (toolName ? `Executando: ${toolName}` : ''),
