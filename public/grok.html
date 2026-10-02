@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Grok Bot // Sistema Vivo de Animações</title>
+  <title>Grok Bot // Morphing & Óculos Nerd</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /* ======================================================== */
-    /* FÍSICA ORGÂNICA: RESPIRAÇÃO & SQUASH & STRETCH */
+    /* FÍSICA ORGÂNICA DA ESFERA */
     /* ======================================================== */
     @keyframes organicBreathing {
       0%, 100% { transform: translateY(0px) scale(1, 1) rotate(0deg); }
@@ -30,14 +30,35 @@
       94% { transform: scaleY(0.06); }
     }
 
-    @keyframes barWave1 { 0%, 100% { height: 4px; } 50% { height: 14px; } }
-    @keyframes barWave2 { 0%, 100% { height: 13px; } 50% { height: 5px; } }
-    @keyframes barWave3 { 0%, 100% { height: 6px; } 50% { height: 15px; } }
+    /* ======================================================== */
+    /* MORPHING: IMPRESSORA CUSPINDO PAPEL */
+    /* ======================================================== */
+    @keyframes printerFeed {
+      0% { transform: translateY(-70px); opacity: 0; }
+      15% { transform: translateY(-50px); opacity: 1; }
+      35% { transform: translateY(-30px); }
+      55% { transform: translateY(-10px); }
+      75% { transform: translateY(12px); }
+      90%, 100% { transform: translateY(22px); opacity: 1; }
+    }
+
+    @keyframes printerJitter {
+      0%, 100% { transform: translateY(0) scale(1); }
+      20% { transform: translateY(-1.5px) scale(1.005, 0.995); }
+      40% { transform: translateY(1px) scale(0.995, 1.005); }
+      60% { transform: translateY(-1px) scale(1.003, 0.997); }
+      80% { transform: translateY(0.5px); }
+    }
+
+    /* Terminal CRT Prompt Piscando */
+    @keyframes crtBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
 
     /* ======================================================== */
-    /* MODO FALA: BOCA, GESTICULAÇÃO E BALANÇO */
+    /* MODO FALA & GESTICULAÇÃO */
     /* ======================================================== */
-    /* Abertura e fechamento dinâmico da boca em ritmo de voz */
     @keyframes speakMouth {
       0%, 100% { height: 4px; width: 14px; border-radius: 9999px; }
       20% { height: 20px; width: 18px; border-radius: 9999px; }
@@ -46,15 +67,13 @@
       85% { height: 8px; width: 14px; border-radius: 9999px; }
     }
 
-    /* Balanço afirmativo de cabeça ao conversar */
     @keyframes speakHeadNod {
       0%, 100% { transform: translateY(0px) rotate(0deg); }
-      25% { transform: translateY(-7px) rotate(2.5deg); }
+      25% { transform: translateY(-7px) rotate(2deg); }
       50% { transform: translateY(3px) rotate(-1.5deg); }
-      75% { transform: translateY(-5px) rotate(1.2deg); }
+      75% { transform: translateY(-5px) rotate(1deg); }
     }
 
-    /* Braços gesticulando em explicação */
     @keyframes gestureLeft {
       0%, 100% { transform: translate(12px, -14px) rotate(30deg); }
       50% { transform: translate(16px, -22px) rotate(48deg); }
@@ -64,14 +83,7 @@
       50% { transform: translate(-16px, -22px) rotate(-48deg); }
     }
 
-    /* ======================================================== */
-    /* OUTRAS AÇÕES E BRAÇOS */
-    /* ======================================================== */
-    @keyframes tapChin {
-      0%, 100% { transform: translate(14px, -18px) rotate(42deg); }
-      50% { transform: translate(15px, -21px) rotate(47deg); }
-    }
-
+    /* Braços Hack / Digitando */
     @keyframes hackTypeL {
       0%, 100% { transform: translate(12px, -8px) rotate(-20deg); }
       50% { transform: translate(15px, -18px) rotate(-35deg); }
@@ -81,6 +93,7 @@
       50% { transform: translate(-12px, -8px) rotate(20deg); }
     }
 
+    /* Dancinha */
     @keyframes danceBody {
       0%, 100% { transform: translateY(0px) rotate(-6deg) scale(1.02); }
       50% { transform: translateY(-16px) rotate(6deg) scale(0.98); }
@@ -94,68 +107,35 @@
       50% { transform: translate(12px, -30px) rotate(65deg); }
     }
 
-    @keyframes scratchHead {
-      0%, 100% { transform: translate(-18px, -46px) rotate(-130deg); }
-      50% { transform: translate(-22px, -50px) rotate(-145deg); }
+    /* Brilho dinâmico das lentes dos óculos de grau */
+    @keyframes nerdGlassSheen {
+      0%, 100% { opacity: 0.4; transform: translateX(-2px); }
+      50% { opacity: 0.95; transform: translateX(3px); }
     }
 
-    @keyframes callWaveL {
-      0%, 100% { transform: translate(-10px, -28px) rotate(-50deg); }
-      50% { transform: translate(-14px, -34px) rotate(-70deg); }
-    }
-    @keyframes callWaveR {
-      0%, 100% { transform: translate(14px, -34px) rotate(70deg); }
-      50% { transform: translate(10px, -28px) rotate(50deg); }
-    }
+    /* Equalizador satélite */
+    @keyframes wave1 { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+    @keyframes wave2 { 0%, 100% { height: 13px; } 50% { height: 5px; } }
+    @keyframes wave3 { 0%, 100% { height: 6px; } 50% { height: 15px; } }
 
-    @keyframes shockHead {
-      0% { transform: translateY(0) scale(1); }
-      30% { transform: translateY(-18px) scale(0.92, 1.12); }
-      60% { transform: translateY(2px) scale(1.06, 0.95); }
-      100% { transform: translateY(0) scale(1); }
-    }
-
-    @keyframes sleepFloat {
-      0%, 100% { transform: translateY(0px) rotate(8deg); }
-      50% { transform: translateY(8px) rotate(11deg); }
-    }
-    @keyframes zzzFloat {
-      0% { opacity: 0; transform: translate(0, 0) scale(0.7); }
-      50% { opacity: 1; }
-      100% { opacity: 0; transform: translate(18px, -35px) scale(1.2); }
-    }
-
-    @keyframes glitchShake {
-      0%, 100% { transform: translate(0, 0) rotate(0); }
-      20% { transform: translate(-8px, 4px) rotate(-5deg); }
-      40% { transform: translate(8px, -4px) rotate(5deg); }
-      60% { transform: translate(-5px, -3px) rotate(-3deg); }
-      80% { transform: translate(5px, 3px) rotate(3deg); }
-    }
-
-    @keyframes glassesSheen {
-      0%, 100% { opacity: 0.5; transform: translateX(0); }
-      50% { opacity: 1; transform: translateX(5px); }
-    }
-
-    @keyframes codeSpark {
-      0% { opacity: 0; transform: translateY(0) scale(0.5); }
-      50% { opacity: 1; transform: translateY(-12px) scale(1); }
-      100% { opacity: 0; transform: translateY(-24px) scale(0.7); }
-    }
-
-    /* Transições */
+    /* Classes e Transições */
     .head-orb {
       animation: organicBreathing 4.5s ease-in-out infinite, ambientGlow 4.5s ease-in-out infinite;
-      transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  border-radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  background 0.5s ease,
+                  box-shadow 0.5s ease,
+                  transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .satellite-badge {
       animation: floatSatellite 3s ease-in-out infinite;
+      transition: all 0.5s ease;
     }
     .eyes-capsule {
       animation: naturalBlink 4.2s infinite;
       transform-origin: center;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .arm {
       transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -164,33 +144,30 @@
     .glasses {
       transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .mouth {
-      transition: all 0.3s ease;
-    }
 
-    .wave-1 { animation: barWave1 0.75s ease-in-out infinite; }
-    .wave-2 { animation: barWave2 0.65s ease-in-out infinite 0.15s; }
-    .wave-3 { animation: barWave3 0.85s ease-in-out infinite 0.05s; }
+    .wave-1 { animation: wave1 0.75s ease-in-out infinite; }
+    .wave-2 { animation: wave2 0.65s ease-in-out infinite 0.15s; }
+    .wave-3 { animation: wave3 0.85s ease-in-out infinite 0.05s; }
   </style>
 </head>
-<body class="bg-[#04070e] text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center justify-between font-sans antialiased select-none overflow-x-hidden">
+<body class="bg-[#03060c] text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center justify-between font-sans antialiased select-none overflow-x-hidden">
 
   <!-- Header -->
   <header class="text-center mt-1 w-full max-w-sm">
     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-1">
       <span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span>
-      Grok Bot // Sistema Completo de Expressões
+      Grok Bot 3.0 // Morphing & Óculos Nerd
     </div>
-    <h1 class="text-lg font-bold tracking-tight text-white">Animação & Voz com Gesticulação</h1>
+    <h1 class="text-lg font-bold tracking-tight text-white">Transformações & Óculos de Grau</h1>
   </header>
 
-  <!-- Palco Central do Mascote -->
-  <main class="w-full max-w-sm bg-[#0a0f18]/90 border border-slate-800/80 rounded-[32px] p-6 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-2xl min-h-[310px] my-2">
+  <!-- Palco Central do Mascote e Morphing -->
+  <main class="w-full max-w-sm bg-[#090e17]/90 border border-slate-800/80 rounded-[32px] p-6 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-2xl min-h-[320px] my-2">
     
-    <!-- Partículas Flutuantes -->
-    <div id="particle-container" class="absolute inset-0 pointer-events-none z-40 flex items-center justify-center"></div>
+    <!-- Container de Elementos Morfados (Papel de Impressora / CRT Scanlines) -->
+    <div id="morph-overlay" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center"></div>
 
-    <!-- Wrapper do Mascote e Membros -->
+    <!-- Wrapper Central -->
     <div id="character-wrapper" class="relative my-auto flex items-center justify-center">
 
       <!-- ============================================== -->
@@ -203,9 +180,9 @@
       </div>
 
       <!-- ============================================== -->
-      <!-- SATÉLITE ORBITAL DE STATUS -->
+      <!-- SATÉLITE DE STATUS -->
       <!-- ============================================== -->
-      <div id="sat-1" class="satellite-badge absolute -top-2 -left-3 z-30 w-8 h-8 rounded-full bg-[#173b57] border border-[#3b8ac4]/60 flex items-center justify-center shadow-lg">
+      <div id="sat-1" class="satellite-badge absolute -top-2 -left-3 z-40 w-8 h-8 rounded-full bg-[#173b57] border border-[#3b8ac4]/60 flex items-center justify-center shadow-lg">
         <div class="flex items-center gap-[2.5px] h-3.5" id="sat-content">
           <span class="w-[3px] bg-[#61b8f5] rounded-full wave-1"></span>
           <span class="w-[3px] bg-[#61b8f5] rounded-full wave-2"></span>
@@ -214,38 +191,46 @@
       </div>
 
       <!-- ============================================== -->
-      <!-- CABEÇA / ESFERA 2.5D ILUMINADA -->
+      <!-- CORPO PRINCIPAL (MORFA ENTRE ESFERA / IMPRESSORA / CRT) -->
       <!-- ============================================== -->
-      <div id="head-1" class="head-orb w-36 h-36 rounded-full relative flex flex-col items-center justify-center cursor-pointer"
+      <div id="head-1" class="head-orb w-36 h-36 rounded-full relative flex flex-col items-center justify-center cursor-pointer overflow-visible"
            style="background: radial-gradient(circle at 35% 30%, #bde4ff 0%, #68b2e3 42%, #2d6b99 80%, #153852 100%);">
 
         <!-- ============================================== -->
-        <!-- ÓCULOS INTELIGENTES -->
+        <!-- ÓCULOS NERD / DEV DE GRAU (TRANSLÚCIDOS, NÃO PRAIA!) -->
         <!-- ============================================== -->
-        <div id="glasses" class="glasses absolute top-9 z-20 opacity-0 pointer-events-none transform -translate-y-8 scale-90">
-          <svg viewBox="0 0 110 44" class="w-28 h-11 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
-            <rect x="6" y="6" width="42" height="30" rx="10" fill="rgba(10, 25, 40, 0.8)" stroke="#60a5fa" stroke-width="2.8" />
-            <rect x="62" y="6" width="42" height="30" rx="10" fill="rgba(10, 25, 40, 0.8)" stroke="#60a5fa" stroke-width="2.8" />
-            <path d="M48 20 Q 55 14 62 20" fill="none" stroke="#60a5fa" stroke-width="2.8" stroke-linecap="round" />
-            <path d="M6 18 Q 0 16 -3 20" fill="none" stroke="#60a5fa" stroke-width="2.5" />
-            <path d="M104 18 Q 110 16 113 20" fill="none" stroke="#60a5fa" stroke-width="2.5" />
-            <line x1="14" y1="10" x2="34" y2="30" stroke="rgba(255,255,255,0.75)" stroke-width="2" stroke-linecap="round" style="animation: glassesSheen 2.5s infinite;" />
-            <line x1="70" y1="10" x2="90" y2="30" stroke="rgba(255,255,255,0.75)" stroke-width="2" stroke-linecap="round" style="animation: glassesSheen 2.5s infinite 0.3s;" />
+        <div id="glasses" class="glasses absolute top-9 z-30 opacity-0 pointer-events-none transform -translate-y-8 scale-90">
+          <svg viewBox="0 0 116 48" class="w-32 h-13 drop-shadow-[0_4px_12px_rgba(0,180,255,0.25)]">
+            <!-- Lente Esquerda Circular de Grau com Vidro 100% Transparente -->
+            <circle cx="28" cy="24" r="18" fill="rgba(255, 255, 255, 0.08)" stroke="#38bdf8" stroke-width="2.5" />
+            <!-- Lente Direita Circular de Grau com Vidro 100% Transparente -->
+            <circle cx="88" cy="24" r="18" fill="rgba(255, 255, 255, 0.08)" stroke="#38bdf8" stroke-width="2.5" />
+            <!-- Ponte de Metal Fina Arqueada Estilo Nerd -->
+            <path d="M46 22 Q 58 14 70 22" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" />
+            <!-- Hastes Finas Discretas -->
+            <path d="M10 22 Q 3 20 0 24" fill="none" stroke="#38bdf8" stroke-width="2" />
+            <path d="M106 22 Q 113 20 116 24" fill="none" stroke="#38bdf8" stroke-width="2" />
+            <!-- Reflexos Finos e Elegantes de Vidro de Grau (Sem Escurecimento) -->
+            <line x1="16" y1="13" x2="34" y2="33" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" style="animation: nerdGlassSheen 2.8s infinite;" />
+            <line x1="76" y1="13" x2="94" y2="33" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" style="animation: nerdGlassSheen 2.8s infinite 0.2s;" />
           </svg>
         </div>
 
         <!-- ============================================== -->
         <!-- OLHOS EXPRESSIVOS EM CÁPSULA -->
         <!-- ============================================== -->
-        <div id="eyes-1" class="eyes-capsule flex items-center gap-4 mt-2">
+        <div id="eyes-1" class="eyes-capsule flex items-center gap-4 mt-2 z-20">
           <span id="eye-l" class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
           <span id="eye-r" class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
         </div>
 
         <!-- ============================================== -->
-        <!-- BOCA DINÂMICA (PARA FALA / REAÇÕES) -->
+        <!-- BOCA DINÂMICA -->
         <!-- ============================================== -->
-        <div id="mouth-1" class="mouth h-1 w-3 bg-[#0b1b29] rounded-full opacity-0 mt-2 transition-all"></div>
+        <div id="mouth-1" class="mouth h-1 w-3 bg-[#0b1b29] rounded-full opacity-0 mt-2 z-20 transition-all"></div>
+
+        <!-- Fenda Mecânica da Impressora (Oculta por padrão) -->
+        <div id="printer-slot" class="absolute bottom-2 w-32 h-1.5 bg-[#08121e] rounded-full border border-slate-700/50 hidden z-25"></div>
 
       </div>
 
@@ -260,66 +245,56 @@
 
     </div>
 
-    <!-- Feedback e Descrição da Expressão -->
+    <!-- Status e Legenda Interativa -->
     <div class="text-center mt-5 w-full">
       <div class="text-base font-semibold text-white tracking-wide" id="label-state-1">Grok Bot Ativo (Ocioso)</div>
-      <div class="text-xs text-blue-400 font-medium mt-0.5" id="label-sub-1">Respiração com física orgânica e olhos atentos</div>
+      <div class="text-xs text-blue-400 font-medium mt-0.5" id="label-sub-1">Esfera viva com física orgânica e respiração</div>
       
-      <!-- Balão / Legenda de Fala -->
-      <div id="voice-bubble" class="mt-2.5 mx-auto max-w-xs bg-blue-950/40 border border-blue-500/30 rounded-2xl p-2.5 text-xs text-blue-200 hidden shadow-lg animate-fade-in">
-        💬 "<span id="voice-text">Mestre, analisei o código e preparei todas as tarefas para você!</span>"
+      <!-- Balão de Fala Opcional -->
+      <div id="voice-bubble" class="mt-2.5 mx-auto max-w-xs bg-blue-950/40 border border-blue-500/30 rounded-2xl p-2.5 text-xs text-blue-200 hidden shadow-lg">
+        💬 "<span id="voice-text">Mestre, o relatório do código foi impresso com sucesso!</span>"
       </div>
     </div>
   </main>
 
-  <!-- Grade de Ações no Celular (9 Poses Incluindo Fala) -->
+  <!-- Grade de Botões de Ação no Smartphone -->
   <footer class="w-full max-w-sm bg-slate-900/90 border border-slate-800 rounded-3xl p-3 flex flex-col gap-2 mb-2 backdrop-blur-md">
-    <div class="text-[10px] font-mono tracking-wider text-slate-400 text-center uppercase">ESCOLHA A ANIMAÇÃO / POSE:</div>
+    <div class="text-[10px] font-mono tracking-wider text-slate-400 text-center uppercase">ESCOLHA UMA TRANSFORMAÇÃO OU POSE:</div>
     
-    <div class="grid grid-cols-3 gap-1.5">
-      <!-- 1. Falando / Explicando (NOVO) -->
-      <button onclick="setMode('talking')" class="px-2 py-2.5 rounded-2xl bg-blue-600/35 border border-blue-400/50 text-blue-200 text-xs font-semibold flex flex-col items-center justify-center gap-1 active:scale-95 transition shadow-lg">
-        <span class="text-base">🗣️</span> <span class="text-[11px]">Falando</span>
+    <div class="grid grid-cols-2 gap-2">
+      <!-- 1. MORPHING: IMPRESSORA -->
+      <button onclick="setMode('printer')" class="px-2.5 py-2.5 rounded-2xl bg-amber-500/25 border border-amber-400/50 text-amber-200 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-lg">
+        <span class="text-lg">🖨️</span> <span>Virar Impressora</span>
       </button>
 
-      <!-- 2. Pensando com Óculos -->
-      <button onclick="setMode('thinking')" class="px-2 py-2.5 rounded-2xl bg-indigo-600/25 border border-indigo-500/40 text-indigo-300 text-xs font-semibold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-base">👓</span> <span class="text-[11px]">Pensando</span>
+      <!-- 2. MORPHING: TERMINAL RETRO CRT -->
+      <button onclick="setMode('terminal')" class="px-2.5 py-2.5 rounded-2xl bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-lg">
+        <span class="text-lg">📟</span> <span>Virar Terminal</span>
       </button>
 
-      <!-- 3. Hacker Codando -->
-      <button onclick="setMode('hacker')" class="px-2 py-2.5 rounded-2xl bg-cyan-600/25 border border-cyan-500/40 text-cyan-300 text-xs font-semibold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-base">💻</span> <span class="text-[11px]">Codando</span>
+      <!-- 3. ÓCULOS DE GRAU NERD (NOVO DESIGN CRISTALINO) -->
+      <button onclick="setMode('nerd')" class="px-2.5 py-2 rounded-2xl bg-sky-600/25 border border-sky-400/40 text-sky-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <span>👓</span> <span>Óculos de Grau Nerd</span>
       </button>
 
-      <!-- 4. Dancinha da Vitória -->
-      <button onclick="setMode('dance')" class="px-2 py-2.5 rounded-2xl bg-emerald-600/25 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-base">🕺</span> <span class="text-[11px]">Vitória</span>
+      <!-- 4. FALANDO COM GESTICULAÇÃO -->
+      <button onclick="setMode('talking')" class="px-2.5 py-2 rounded-2xl bg-blue-600/25 border border-blue-400/40 text-blue-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <span>🗣️</span> <span>Falando / Voz</span>
       </button>
 
-      <!-- 5. Dúvida / Coçando a Cabeça -->
-      <button onclick="setMode('doubt')" class="px-2 py-2.5 rounded-2xl bg-amber-600/25 border border-amber-500/40 text-amber-300 text-xs font-semibold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-base">🤔</span> <span class="text-[11px]">Dúvida</span>
+      <!-- 5. CODANDO RÁPIDO (BRAÇOS) -->
+      <button onclick="setMode('hacker')" class="px-2.5 py-2 rounded-2xl bg-cyan-600/25 border border-cyan-400/40 text-cyan-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <span>💻</span> <span>Codando Rápido</span>
       </button>
 
-      <!-- 6. Surpreso / Susto -->
-      <button onclick="setMode('surprised')" class="px-2 py-2.5 rounded-2xl bg-purple-600/25 border border-purple-500/40 text-purple-300 text-xs font-semibold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-base">😲</span> <span class="text-[11px]">Surpreso</span>
+      <!-- 6. DANCINHA DA VITÓRIA -->
+      <button onclick="setMode('dance')" class="px-2.5 py-2 rounded-2xl bg-purple-600/25 border border-purple-400/40 text-purple-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <span>🕺</span> <span>Dancinha Vitória</span>
       </button>
 
-      <!-- 7. Chamando Você (Aceno Duplo) -->
-      <button onclick="setMode('call')" class="px-2 py-2.5 rounded-2xl bg-sky-600/25 border border-sky-500/40 text-sky-300 text-xs font-semibold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-base">🙌</span> <span class="text-[11px]">Chamando</span>
-      </button>
-
-      <!-- 8. Dormindo Zzz -->
-      <button onclick="setMode('sleep')" class="px-2 py-2.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-base">😴</span> <span class="text-[11px]">Sono Zzz</span>
-      </button>
-
-      <!-- 9. Curto-Circuito / Erro -->
-      <button onclick="setMode('glitch')" class="px-2 py-2.5 rounded-2xl bg-rose-600/25 border border-rose-500/40 text-rose-300 text-xs font-semibold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-base">⚡</span> <span class="text-[11px]">Erro</span>
+      <!-- 7. VOLTAR À ESFERA NORMAL (OCIOSO) -->
+      <button onclick="setMode('idle')" class="col-span-2 px-3 py-2 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <span>🔵</span> <span>Voltar ao Normal (Esfera Ociosa)</span>
       </button>
     </div>
   </footer>
@@ -333,18 +308,34 @@
     const armL = document.getElementById('arm-left');
     const armR = document.getElementById('arm-right');
     const glasses = document.getElementById('glasses');
+    const printerSlot = document.getElementById('printer-slot');
+    const morphOverlay = document.getElementById('morph-overlay');
     const labelState = document.getElementById('label-state-1');
     const labelSub = document.getElementById('label-sub-1');
-    const particles = document.getElementById('particle-container');
     const voiceBubble = document.getElementById('voice-bubble');
 
     function resetAll() {
-      // Limpa partículas e classes de animação
-      particles.innerHTML = '';
+      morphOverlay.innerHTML = '';
+      printerSlot.classList.add('hidden');
       wrapper.style.animation = '';
+      
+      // Reseta formato da cabeça para a Esfera 2.5D padrão
+      head.style.width = '144px'; // 36 tailwind
+      head.style.height = '144px';
+      head.style.borderRadius = '9999px';
+      head.style.background = 'radial-gradient(circle at 35% 30%, #bde4ff 0%, #68b2e3 42%, #2d6b99 80%, #153852 100%)';
+      head.style.boxShadow = '';
       head.style.animation = 'organicBreathing 4.5s ease-in-out infinite, ambientGlow 4.5s ease-in-out infinite';
       head.style.transform = '';
       
+      // Reseta olhos normais
+      eyes.className = 'eyes-capsule flex items-center gap-4 mt-2 z-20';
+      eyes.innerHTML = `
+        <span class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
+        <span class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
+      `;
+      eyes.style.transform = '';
+
       armL.style.animation = '';
       armL.style.transform = '';
       armL.classList.add('opacity-0');
@@ -360,6 +351,9 @@
       mouth.classList.add('opacity-0');
       voiceBubble.classList.add('hidden');
 
+      // Satélite padrão
+      sat.style.transform = '';
+      sat.style.opacity = '1';
       sat.innerHTML = `
         <div class="flex items-center gap-[2.5px] h-3.5">
           <span class="w-[3px] bg-[#61b8f5] rounded-full wave-1"></span>
@@ -372,30 +366,128 @@
     function setMode(mode) {
       resetAll();
 
-      // ==========================================
-      // 1. FALANDO / EXPLICANDO COM GESTICULAÇÃO
-      // ==========================================
-      if (mode === 'talking') {
+      // ========================================================
+      // 1. MORPHING: IMPRESSORA CUSPINDO RELATÓRIO / PLANO
+      // ========================================================
+      if (mode === 'printer') {
+        // Morfa a esfera em retângulo de impressora moderna
+        head.style.width = '184px';
+        head.style.height = '115px';
+        head.style.borderRadius = '24px';
+        head.style.background = 'linear-gradient(145deg, #1e293b, #0f172a)';
+        head.style.boxShadow = '0 12px 35px rgba(0,0,0,0.7), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -4px 8px rgba(0,0,0,0.5)';
+        head.style.animation = 'printerJitter 0.4s ease-in-out infinite';
+
+        // Olhos viram um visor LCD compacto no canto superior
+        eyes.className = 'eyes-capsule flex items-center gap-2 -mt-4 z-20 self-end mr-6';
+        eyes.innerHTML = `
+          <div class="px-2 py-0.5 rounded bg-blue-950/70 border border-blue-400/40 flex items-center gap-1.5 shadow-inner">
+            <span class="w-2 h-4 bg-[#38bdf8] rounded-full animate-pulse"></span>
+            <span class="w-2 h-4 bg-[#38bdf8] rounded-full animate-pulse"></span>
+            <span class="text-[9px] font-mono text-blue-300 font-bold ml-1">PRINTING</span>
+          </div>
+        `;
+
+        // Satélite vira luz indicadora LED piscando no chassi
+        sat.style.transform = 'translate(10px, 8px)';
+        sat.innerHTML = `<span class="w-3.5 h-3.5 rounded-full bg-amber-400 animate-ping"></span>`;
+
+        // Mostra a fenda mecânica da impressora
+        printerSlot.classList.remove('hidden');
+
+        // Cria a folha de papel animada saindo da impressora
+        morphOverlay.innerHTML = `
+          <div class="absolute bottom-16 z-10 w-36 bg-slate-50 text-slate-900 rounded-lg p-2.5 shadow-2xl border border-slate-300 font-mono text-[9px] leading-tight"
+               style="animation: printerFeed 3.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;">
+            <div class="font-bold text-blue-700 border-b border-slate-200 pb-1 flex justify-between">
+              <span>ECHO // PLANO</span>
+              <span>100%</span>
+            </div>
+            <div class="mt-1 space-y-1 text-slate-700">
+              <div class="flex items-center gap-1 text-emerald-600 font-semibold"><span>✓</span> <span>Setup Windows OK</span></div>
+              <div class="flex items-center gap-1 text-emerald-600 font-semibold"><span>✓</span> <span>Service Worker OK</span></div>
+              <div class="flex items-center gap-1 text-emerald-600 font-semibold"><span>✓</span> <span>PWA Instalável</span></div>
+              <div class="flex items-center gap-1 text-blue-600 font-semibold"><span>⚙</span> <span>15 Tasks Forge</span></div>
+            </div>
+            <div class="mt-1.5 pt-1 border-t border-slate-200 text-[8px] text-slate-400 text-center">PRONTO PARA EXECUÇÃO</div>
+          </div>
+        `;
+
+        labelState.textContent = '🖨️ Impressora Ativa // Gerando Plano';
+        labelSub.textContent = 'Esfera morfada em impressora com relatório impresso saindo da fenda';
+      }
+
+      // ========================================================
+      // 2. MORPHING: TERMINAL RETRO CRT
+      // ========================================================
+      else if (mode === 'terminal') {
+        head.style.width = '170px';
+        head.style.height = '135px';
+        head.style.borderRadius = '18px';
+        head.style.background = 'radial-gradient(ellipse at center, #062b16 0%, #02140a 85%, #000 100%)';
+        head.style.boxShadow = '0 0 40px rgba(16, 185, 129, 0.4), inset 0 0 15px rgba(16, 185, 129, 0.3), inset 0 0 35px rgba(0,0,0,0.9)';
+        
+        sat.style.opacity = '0';
+
+        // Olhos desligam e dão lugar ao prompt do terminal verde Matrix
+        eyes.className = 'z-20 w-full px-4 text-left font-mono text-[11px] text-emerald-400';
+        eyes.innerHTML = `
+          <div class="space-y-0.5">
+            <div class="text-[9px] text-emerald-600 font-bold tracking-wider">// ECHO RETRO OS</div>
+            <div>&gt; echo --agents</div>
+            <div class="text-[10px] text-emerald-300">Claude: ONLINE</div>
+            <div class="text-[10px] text-emerald-300">Codex: ONLINE</div>
+            <div class="flex items-center gap-1 text-emerald-400">
+              <span>&gt; ready</span>
+              <span class="inline-block w-2 h-3.5 bg-emerald-400" style="animation: crtBlink 0.8s infinite;"></span>
+            </div>
+          </div>
+        `;
+
+        labelState.textContent = '📟 Terminal Retro CRT // Matrix';
+        labelSub.textContent = 'Esfera morfada em monitor vintage com prompt verde';
+      }
+
+      // ========================================================
+      // 3. ÓCULOS DE GRAU NERD (CRISTALINO, SEM SOL DE PRAIA!)
+      // ========================================================
+      else if (mode === 'nerd') {
+        head.style.background = 'radial-gradient(circle at 35% 30%, #d8f0ff 0%, #7db9e6 42%, #326f9c 80%, #163e5e 100%)';
+        head.style.transform = 'rotate(-5deg)';
+        
+        // Olhos com zoom (efeito de lente de aumento de grau) e olhando para cima
+        eyes.innerHTML = `
+          <span class="w-4 h-10 bg-[#0b1b29] rounded-full transform scale-110 shadow-inner"></span>
+          <span class="w-4 h-10 bg-[#0b1b29] rounded-full transform scale-110 shadow-inner"></span>
+        `;
+
+        // Desce os óculos com lentes cristalinas transparentes
+        glasses.classList.remove('opacity-0', '-translate-y-8', 'scale-90');
+        glasses.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+
+        // Mãozinha sobe no queixo apoiada
+        armL.classList.remove('opacity-0');
+        armL.style.transform = 'translate(14px, -18px) rotate(42deg)';
+
+        labelState.textContent = '👓 Intelectual / Óculos de Grau';
+        labelSub.textContent = 'Lentes 100% cristalinas com efeito de aumento nos olhos';
+      }
+
+      // ========================================================
+      // 4. FALANDO COM GESTICULAÇÃO E BOCA
+      // ========================================================
+      else if (mode === 'talking') {
         head.style.background = 'radial-gradient(circle at 35% 30%, #cceeff 0%, #68b2e3 42%, #226494 80%, #103b5c 100%)';
         head.style.animation = 'speakHeadNod 0.8s ease-in-out infinite, ambientGlow 3s ease-in-out infinite';
 
-        // Olhos engajados com o usuário
-        eyes.innerHTML = `
-          <span class="w-4 h-8 bg-[#0b1b29] rounded-full shadow-inner"></span>
-          <span class="w-4 h-8 bg-[#0b1b29] rounded-full shadow-inner"></span>
-        `;
-
-        // Boca abrindo e fechando com cadência natural
         mouth.classList.remove('opacity-0');
         mouth.style.animation = 'speakMouth 0.35s ease-in-out infinite alternate';
 
-        // Dois braços gesticulando para frente explicando
         armL.classList.remove('opacity-0');
         armR.classList.remove('opacity-0');
         armL.style.animation = 'gestureLeft 0.5s ease-in-out infinite alternate';
         armR.style.animation = 'gestureRight 0.5s ease-in-out infinite alternate 0.15s';
 
-        // Satélite acelerado transmitindo voz
         sat.innerHTML = `
           <div class="flex items-center gap-[2px] h-4">
             <span class="w-[3px] bg-[#38bdf8] rounded-full wave-1" style="animation-duration: 0.3s;"></span>
@@ -405,77 +497,30 @@
           </div>
         `;
 
-        // Exibe balão de fala
         voiceBubble.classList.remove('hidden');
-
-        labelState.textContent = '🗣️ Falando / Explicando';
-        labelSub.textContent = 'Boca em movimento, aceno afirmativo e gesticulação';
-
-        // Síntese de voz nativa opcional no navegador se o usuário permitir
-        try {
-          if ('speechSynthesis' in window && !window.speechSynthesis.speaking) {
-            const utter = new SpeechSynthesisUtterance("Mestre, analisei o código e preparei tudo para você!");
-            utter.lang = 'pt-BR';
-            utter.rate = 1.1;
-            window.speechSynthesis.speak(utter);
-          }
-        } catch (e) {}
+        labelState.textContent = '🗣️ Falando / Gesticulando';
+        labelSub.textContent = 'Boca animada, balanço de cabeça e braços explicando';
       }
 
-      // ==========================================
-      // 2. PENSANDO COM ÓCULOS E DEDO NO QUEIXO
-      // ==========================================
-      else if (mode === 'thinking') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #d4eeff 0%, #7db9e6 42%, #326f9c 80%, #163e5e 100%)';
-        head.style.transform = 'rotate(-6deg)';
-        
-        eyes.innerHTML = `
-          <span class="w-3.5 h-6 bg-[#0b1b29] rounded-full transform translate-y-[-3px] translate-x-[3px] shadow-inner"></span>
-          <span class="w-3.5 h-6 bg-[#0b1b29] rounded-full transform translate-y-[-3px] translate-x-[3px] shadow-inner"></span>
-        `;
-
-        glasses.classList.remove('opacity-0', '-translate-y-8', 'scale-90');
-        glasses.classList.add('opacity-100', 'translate-y-0', 'scale-100');
-
-        armL.classList.remove('opacity-0');
-        armL.style.animation = 'tapChin 0.5s ease-in-out infinite alternate';
-
-        labelState.textContent = '🧠 Analítico (Óculos & Tamborilar)';
-        labelSub.textContent = 'Óculos descem suavemente e mãozinha bate no queixo';
-      }
-
-      // ==========================================
-      // 3. HACKER / DIGITAÇÃO FURIOSA
-      // ==========================================
+      // ========================================================
+      // 5. CODANDO RÁPIDO
+      // ========================================================
       else if (mode === 'hacker') {
         head.style.background = 'radial-gradient(circle at 35% 30%, #b8f5ff 0%, #52d3ec 42%, #1b859e 80%, #0d4654 100%)';
         head.style.transform = 'scale(1.03)';
         
-        eyes.innerHTML = `
-          <span class="w-4 h-7 bg-[#051c22] rounded-full shadow-inner"></span>
-          <span class="w-4 h-7 bg-[#051c22] rounded-full shadow-inner"></span>
-        `;
-
         armL.classList.remove('opacity-0');
         armR.classList.remove('opacity-0');
         armL.style.animation = 'hackTypeL 0.18s ease-in-out infinite alternate';
         armR.style.animation = 'hackTypeR 0.18s ease-in-out infinite alternate';
 
-        particles.innerHTML = `
-          <div class="absolute bottom-16 flex gap-3 text-[10px] font-mono font-bold text-cyan-400">
-            <span style="animation: codeSpark 0.6s infinite 0.1s;">{ code }</span>
-            <span style="animation: codeSpark 0.7s infinite 0.3s;">&lt;exec/&gt;</span>
-            <span style="animation: codeSpark 0.5s infinite 0.2s;">10110</span>
-          </div>
-        `;
-
-        labelState.textContent = '💻 Modo Hacker // Digitação Furiosa';
-        labelSub.textContent = 'Braços digitando no ar com partículas de script';
+        labelState.textContent = '💻 Codando em Alta Velocidade';
+        labelSub.textContent = 'Dois braços digitando scripts freneticamente';
       }
 
-      // ==========================================
-      // 4. DANCINHA DA VITÓRIA
-      // ==========================================
+      // ========================================================
+      // 6. DANCINHA DA VITÓRIA
+      // ========================================================
       else if (mode === 'dance') {
         head.style.background = 'radial-gradient(circle at 35% 30%, #c4ffd8 0%, #4ae39f 42%, #158f5b 80%, #0b4f31 100%)';
         wrapper.style.animation = 'danceBody 0.6s ease-in-out infinite alternate';
@@ -491,115 +536,15 @@
         armR.style.animation = 'danceArmR 0.6s ease-in-out infinite alternate';
 
         labelState.textContent = '🕺 Dancinha da Vitória!';
-        labelSub.textContent = 'Comemorando resultado com balanço ritmado';
+        labelSub.textContent = 'Balanço comemorativo com braços no ar';
       }
 
-      // ==========================================
-      // 5. DÚVIDA / COÇANDO A CABEÇA
-      // ==========================================
-      else if (mode === 'doubt') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #fff2cc 0%, #f6cb65 42%, #a47c21 80%, #523c0b 100%)';
-        head.style.transform = 'rotate(-8deg)';
-
-        eyes.innerHTML = `
-          <span class="w-4 h-6 bg-[#2d2208] rounded-full transform translate-y-[-3px] shadow-inner"></span>
-          <span class="w-4 h-9 bg-[#2d2208] rounded-full transform translate-y-[-1px] shadow-inner"></span>
-        `;
-
-        armR.classList.remove('opacity-0');
-        armR.style.animation = 'scratchHead 0.4s ease-in-out infinite alternate';
-
-        particles.innerHTML = `
-          <div class="absolute -top-3 right-6 text-2xl font-bold text-amber-400 animate-bounce">?</div>
-        `;
-
-        labelState.textContent = '🤔 Hum... Deixe-me ver';
-        labelSub.textContent = 'Coçando a cabeça e calculando resposta';
-      }
-
-      // ==========================================
-      // 6. SURPRESO / SUSTO (O O)
-      // ==========================================
-      else if (mode === 'surprised') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #f5e8ff 0%, #c084fc 42%, #7e22ce 80%, #3b0764 100%)';
-        wrapper.style.animation = 'shockHead 0.9s ease-in-out infinite';
-
-        eyes.innerHTML = `
-          <div class="w-8 h-8 rounded-full bg-[#1b082e] border-2 border-white/60 flex items-center justify-center shadow-lg">
-            <span class="w-3 h-3 rounded-full bg-white"></span>
-          </div>
-          <div class="w-8 h-8 rounded-full bg-[#1b082e] border-2 border-white/60 flex items-center justify-center shadow-lg">
-            <span class="w-3 h-3 rounded-full bg-white"></span>
-          </div>
-        `;
-
-        armL.classList.remove('opacity-0');
-        armR.classList.remove('opacity-0');
-        armL.style.transform = 'translate(14px, -18px) rotate(48deg)';
-        armR.style.transform = 'translate(-14px, -18px) rotate(-48deg)';
-
-        labelState.textContent = '😲 Uau! Olha isso!';
-        labelSub.textContent = 'Olhos arregalados com mãos no rosto';
-      }
-
-      // ==========================================
-      // 7. CHAMANDO VOCÊ (ACENO DUPLO)
-      // ==========================================
-      else if (mode === 'call') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #bae6fd 0%, #38bdf8 42%, #0284c7 80%, #03496e 100%)';
-        
-        eyes.innerHTML = `
-          <span class="w-4 h-8 bg-[#042436] rounded-full shadow-inner"></span>
-          <span class="w-4 h-8 bg-[#042436] rounded-full shadow-inner"></span>
-        `;
-
-        armL.classList.remove('opacity-0');
-        armR.classList.remove('opacity-0');
-        armL.style.animation = 'callWaveL 0.35s ease-in-out infinite alternate';
-        armR.style.animation = 'callWaveR 0.35s ease-in-out infinite alternate';
-
-        labelState.textContent = '🙌 Ei Mestre, estou aqui!';
-        labelSub.textContent = 'Aceno duplo enérgico para chamar atenção';
-      }
-
-      // ==========================================
-      // 8. DORMINDO ZZZ
-      // ==========================================
-      else if (mode === 'sleep') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #cbd5e1 0%, #64748b 42%, #334155 80%, #0f172a 100%)';
-        wrapper.style.animation = 'sleepFloat 3.5s ease-in-out infinite alternate';
-
-        eyes.innerHTML = `
-          <span class="w-6 h-3 border-b-4 border-[#090d16] rounded-b-full"></span>
-          <span class="w-6 h-3 border-b-4 border-[#090d16] rounded-b-full"></span>
-        `;
-
-        particles.innerHTML = `
-          <div class="absolute -top-4 right-5 text-sm font-bold text-slate-400 font-mono" style="animation: zzzFloat 2s infinite;">Z</div>
-          <div class="absolute -top-8 right-1 text-base font-bold text-slate-300 font-mono" style="animation: zzzFloat 2s infinite 0.6s;">z</div>
-          <div class="absolute -top-12 -right-3 text-lg font-bold text-slate-200 font-mono" style="animation: zzzFloat 2s infinite 1.2s;">z</div>
-        `;
-
-        labelState.textContent = '😴 Modo Standby / Sono Zzz';
-        labelSub.textContent = 'Respiração desacelerada e descanso';
-      }
-
-      // ==========================================
-      // 9. CURTO-CIRCUITO / ERRO
-      // ==========================================
-      else if (mode === 'glitch') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #ffd4d4 0%, #f87171 45%, #b91c1c 85%, #5c0d0d 100%)';
-        head.style.animation = 'glitchShake 0.22s infinite';
-
-        eyes.innerHTML = `
-          <span class="w-6 h-1.5 bg-[#3f0707] rounded-full"></span>
-          <span class="w-6 h-1.5 bg-[#3f0707] rounded-full"></span>
-        `;
-
-        sat.innerHTML = `<span class="w-4 h-4 bg-red-500 rounded-full animate-ping"></span>`;
-
-        labelState.textContent = '⚡ Curto-Circuito!';
-        labelSub.textContent = 'Tremor de erro e satélite em alerta';
+      // ========================================================
+      // 7. OCIOSO NORMAL (VOLTAR À ESFERA PADRÃO)
+      // ========================================================
+      else if (mode === 'idle') {
+        labelState.textContent = '🔵 Grok Bot Ativo (Ocioso)';
+        labelSub.textContent = 'Forma esférica padrão com respiração suave';
       }
     }
   </script>
