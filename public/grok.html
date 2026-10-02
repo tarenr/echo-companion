@@ -3,548 +3,985 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Grok Bot // Morphing & Óculos Nerd</title>
+  <title>Grok & Coucou Bot // Laboratório Oficial</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* ======================================================== */
-    /* FÍSICA ORGÂNICA DA ESFERA */
-    /* ======================================================== */
-    @keyframes organicBreathing {
-      0%, 100% { transform: translateY(0px) scale(1, 1) rotate(0deg); }
-      30% { transform: translateY(-8px) scale(0.985, 1.02) rotate(0.8deg); }
-      65% { transform: translateY(4px) scale(1.025, 0.98) rotate(-0.5deg); }
-    }
-
-    @keyframes ambientGlow {
-      0%, 100% { box-shadow: 0 0 35px rgba(80, 185, 255, 0.4), inset 0 -8px 18px rgba(10, 35, 60, 0.65); }
-      50% { box-shadow: 0 0 65px rgba(80, 185, 255, 0.75), inset 0 -8px 18px rgba(10, 35, 60, 0.35); }
-    }
-
-    @keyframes floatSatellite {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-6px) rotate(8deg); }
-    }
-
-    @keyframes naturalBlink {
-      0%, 92%, 96%, 100% { transform: scaleY(1); }
-      94% { transform: scaleY(0.06); }
-    }
-
-    /* ======================================================== */
-    /* MORPHING: IMPRESSORA CUSPINDO PAPEL */
-    /* ======================================================== */
-    @keyframes printerFeed {
-      0% { transform: translateY(-70px); opacity: 0; }
-      15% { transform: translateY(-50px); opacity: 1; }
-      35% { transform: translateY(-30px); }
-      55% { transform: translateY(-10px); }
-      75% { transform: translateY(12px); }
-      90%, 100% { transform: translateY(22px); opacity: 1; }
-    }
-
-    @keyframes printerJitter {
-      0%, 100% { transform: translateY(0) scale(1); }
-      20% { transform: translateY(-1.5px) scale(1.005, 0.995); }
-      40% { transform: translateY(1px) scale(0.995, 1.005); }
-      60% { transform: translateY(-1px) scale(1.003, 0.997); }
-      80% { transform: translateY(0.5px); }
-    }
-
-    /* Terminal CRT Prompt Piscando */
+    /* Estilos e animações para complementos mecânicos */
     @keyframes crtBlink {
       0%, 49% { opacity: 1; }
       50%, 100% { opacity: 0; }
     }
-
-    /* ======================================================== */
-    /* MODO FALA & GESTICULAÇÃO */
-    /* ======================================================== */
-    @keyframes speakMouth {
-      0%, 100% { height: 4px; width: 14px; border-radius: 9999px; }
-      20% { height: 20px; width: 18px; border-radius: 9999px; }
-      40% { height: 10px; width: 16px; border-radius: 9999px; }
-      65% { height: 22px; width: 19px; border-radius: 9999px; }
-      85% { height: 8px; width: 14px; border-radius: 9999px; }
+    @keyframes crtScan {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100%; }
     }
-
-    @keyframes speakHeadNod {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      25% { transform: translateY(-7px) rotate(2deg); }
-      50% { transform: translateY(3px) rotate(-1.5deg); }
-      75% { transform: translateY(-5px) rotate(1deg); }
+    @keyframes floppyInsert {
+      0% { transform: translateY(50px) scale(0.9); opacity: 0; }
+      40% { transform: translateY(12px) scale(1); opacity: 1; }
+      75% { transform: translateY(4px); }
+      100% { transform: translateY(0px); opacity: 1; }
     }
-
-    @keyframes gestureLeft {
-      0%, 100% { transform: translate(12px, -14px) rotate(30deg); }
-      50% { transform: translate(16px, -22px) rotate(48deg); }
+    @keyframes paperFeedOut {
+      0% { transform: translateY(-35px) scale(0.95); opacity: 0; }
+      25% { transform: translateY(-18px) scale(1); opacity: 1; }
+      60% { transform: translateY(2px); }
+      100% { transform: translateY(14px); opacity: 1; }
     }
-    @keyframes gestureRight {
-      0%, 100% { transform: translate(-12px, -14px) rotate(-30deg); }
-      50% { transform: translate(-16px, -22px) rotate(-48deg); }
+    @keyframes rocketFlame {
+      0%, 100% { transform: scaleY(1) scaleX(1); filter: drop-shadow(0 0 12px #f97316); }
+      50% { transform: scaleY(1.25) scaleX(0.9); filter: drop-shadow(0 0 22px #ef4444); }
     }
-
-    /* Braços Hack / Digitando */
-    @keyframes hackTypeL {
-      0%, 100% { transform: translate(12px, -8px) rotate(-20deg); }
-      50% { transform: translate(15px, -18px) rotate(-35deg); }
+    @keyframes coffeeSteam {
+      0% { transform: translateY(0) scaleX(0.8); opacity: 0.7; }
+      50% { transform: translateY(-16px) scaleX(1.2); opacity: 0.4; }
+      100% { transform: translateY(-32px) scaleX(1.5); opacity: 0; }
     }
-    @keyframes hackTypeR {
-      0%, 100% { transform: translate(-15px, -18px) rotate(35deg); }
-      50% { transform: translate(-12px, -8px) rotate(20deg); }
+    @keyframes coffeeDrop {
+      0% { transform: translateY(0); opacity: 1; }
+      75% { transform: translateY(18px); opacity: 1; }
+      100% { transform: translateY(22px); opacity: 0; }
     }
-
-    /* Dancinha */
-    @keyframes danceBody {
-      0%, 100% { transform: translateY(0px) rotate(-6deg) scale(1.02); }
-      50% { transform: translateY(-16px) rotate(6deg) scale(0.98); }
-    }
-    @keyframes danceArmL {
-      0%, 100% { transform: translate(-12px, -30px) rotate(-65deg); }
-      50% { transform: translate(-8px, -20px) rotate(-40deg); }
-    }
-    @keyframes danceArmR {
-      0%, 100% { transform: translate(8px, -20px) rotate(40deg); }
-      50% { transform: translate(12px, -30px) rotate(65deg); }
-    }
-
-    /* Brilho dinâmico das lentes dos óculos de grau */
-    @keyframes nerdGlassSheen {
-      0%, 100% { opacity: 0.4; transform: translateX(-2px); }
+    @keyframes nerdSheen {
+      0%, 100% { opacity: 0.35; transform: translateX(-3px); }
       50% { opacity: 0.95; transform: translateX(3px); }
     }
-
-    /* Equalizador satélite */
-    @keyframes wave1 { 0%, 100% { height: 4px; } 50% { height: 14px; } }
-    @keyframes wave2 { 0%, 100% { height: 13px; } 50% { height: 5px; } }
-    @keyframes wave3 { 0%, 100% { height: 6px; } 50% { height: 15px; } }
-
-    /* Classes e Transições */
-    .head-orb {
-      animation: organicBreathing 4.5s ease-in-out infinite, ambientGlow 4.5s ease-in-out infinite;
-      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-                  height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-                  border-radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-                  background 0.5s ease,
-                  box-shadow 0.5s ease,
-                  transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    @keyframes speakMouthPulse {
+      0%, 100% { transform: scaleY(0.4) scaleX(0.8); }
+      50% { transform: scaleY(1.3) scaleX(1.15); }
     }
-    .satellite-badge {
-      animation: floatSatellite 3s ease-in-out infinite;
-      transition: all 0.5s ease;
-    }
-    .eyes-capsule {
-      animation: naturalBlink 4.2s infinite;
-      transform-origin: center;
-      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .arm {
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      transform-origin: top center;
-    }
-    .glasses {
-      transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    @keyframes wavePulse {
+      0%, 100% { height: 4px; }
+      50% { height: 14px; }
     }
 
-    .wave-1 { animation: wave1 0.75s ease-in-out infinite; }
-    .wave-2 { animation: wave2 0.65s ease-in-out infinite 0.15s; }
-    .wave-3 { animation: wave3 0.85s ease-in-out infinite 0.05s; }
+    .canvas-bot {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
   </style>
 </head>
 <body class="bg-[#03060c] text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center justify-between font-sans antialiased select-none overflow-x-hidden">
 
   <!-- Header -->
-  <header class="text-center mt-1 w-full max-w-sm">
+  <header class="text-center mt-0.5 w-full max-w-sm">
     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-1">
-      <span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span>
-      Grok Bot 3.0 // Morphing & Óculos Nerd
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      Coucou & Grok Bot // 60 FPS Canvas Engine
     </div>
-    <h1 class="text-lg font-bold tracking-tight text-white">Transformações & Óculos de Grau</h1>
+    <h1 class="text-lg font-bold tracking-tight text-white">Física do Coucou & Transformações</h1>
+    <p class="text-xs text-slate-400">Toque no robô para amassar (squash) ou arraste o dedo para ele seguir seu olhar!</p>
   </header>
 
-  <!-- Palco Central do Mascote e Morphing -->
-  <main class="w-full max-w-sm bg-[#090e17]/90 border border-slate-800/80 rounded-[32px] p-6 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-2xl min-h-[320px] my-2">
+  <!-- Palco Central -->
+  <main class="w-full max-w-sm bg-[#090e17]/90 border border-slate-800/80 rounded-[32px] p-4 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-2xl min-h-[350px] my-2">
     
-    <!-- Container de Elementos Morfados (Papel de Impressora / CRT Scanlines) -->
-    <div id="morph-overlay" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center"></div>
-
-    <!-- Wrapper Central -->
-    <div id="character-wrapper" class="relative my-auto flex items-center justify-center">
-
-      <!-- ============================================== -->
-      <!-- BRAÇO ESQUERDO -->
-      <!-- ============================================== -->
-      <div id="arm-left" class="arm absolute -left-7 bottom-4 z-10 opacity-0 pointer-events-none">
-        <div class="w-5 h-14 rounded-full bg-gradient-to-b from-[#68b2e3] to-[#255d85] border border-blue-400/30 shadow-md relative">
-          <div class="w-6 h-6 rounded-full bg-[#8ac9f7] absolute -bottom-1 -left-0.5 shadow-inner"></div>
-        </div>
+    <!-- Satélite de Status Flutuante -->
+    <div id="satellite" class="absolute top-4 left-5 z-40 w-8 h-8 rounded-full bg-[#173b57] border border-[#3b8ac4]/60 flex items-center justify-center shadow-lg transition-all duration-300">
+      <div id="sat-waves" class="flex items-center gap-[2.5px] h-3.5">
+        <span class="w-[3px] bg-[#61b8f5] rounded-full h-2 animate-pulse"></span>
+        <span class="w-[3px] bg-[#61b8f5] rounded-full h-3 animate-pulse" style="animation-delay: 0.15s"></span>
+        <span class="w-[3px] bg-[#61b8f5] rounded-full h-1.5 animate-pulse" style="animation-delay: 0.3s"></span>
       </div>
+    </div>
 
-      <!-- ============================================== -->
-      <!-- SATÉLITE DE STATUS -->
-      <!-- ============================================== -->
-      <div id="sat-1" class="satellite-badge absolute -top-2 -left-3 z-40 w-8 h-8 rounded-full bg-[#173b57] border border-[#3b8ac4]/60 flex items-center justify-center shadow-lg">
-        <div class="flex items-center gap-[2.5px] h-3.5" id="sat-content">
-          <span class="w-[3px] bg-[#61b8f5] rounded-full wave-1"></span>
-          <span class="w-[3px] bg-[#61b8f5] rounded-full wave-2"></span>
-          <span class="w-[3px] bg-[#61b8f5] rounded-full wave-3"></span>
-        </div>
-      </div>
+    <!-- Área de Exibição Central -->
+    <div class="relative w-full h-[220px] flex items-center justify-center" id="stage-box">
+      
+      <!-- CANVAS 2D DO BOT (Coucou Canvas Engine) -->
+      <canvas id="botCanvas" width="220" height="220" class="canvas-bot z-20 cursor-pointer drop-shadow-[0_12px_28px_rgba(0,180,255,0.25)]"></canvas>
 
-      <!-- ============================================== -->
-      <!-- CORPO PRINCIPAL (MORFA ENTRE ESFERA / IMPRESSORA / CRT) -->
-      <!-- ============================================== -->
-      <div id="head-1" class="head-orb w-36 h-36 rounded-full relative flex flex-col items-center justify-center cursor-pointer overflow-visible"
-           style="background: radial-gradient(circle at 35% 30%, #bde4ff 0%, #68b2e3 42%, #2d6b99 80%, #153852 100%);">
-
-        <!-- ============================================== -->
-        <!-- ÓCULOS NERD / DEV DE GRAU (TRANSLÚCIDOS, NÃO PRAIA!) -->
-        <!-- ============================================== -->
-        <div id="glasses" class="glasses absolute top-9 z-30 opacity-0 pointer-events-none transform -translate-y-8 scale-90">
-          <svg viewBox="0 0 116 48" class="w-32 h-13 drop-shadow-[0_4px_12px_rgba(0,180,255,0.25)]">
-            <!-- Lente Esquerda Circular de Grau com Vidro 100% Transparente -->
-            <circle cx="28" cy="24" r="18" fill="rgba(255, 255, 255, 0.08)" stroke="#38bdf8" stroke-width="2.5" />
-            <!-- Lente Direita Circular de Grau com Vidro 100% Transparente -->
-            <circle cx="88" cy="24" r="18" fill="rgba(255, 255, 255, 0.08)" stroke="#38bdf8" stroke-width="2.5" />
-            <!-- Ponte de Metal Fina Arqueada Estilo Nerd -->
-            <path d="M46 22 Q 58 14 70 22" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" />
-            <!-- Hastes Finas Discretas -->
-            <path d="M10 22 Q 3 20 0 24" fill="none" stroke="#38bdf8" stroke-width="2" />
-            <path d="M106 22 Q 113 20 116 24" fill="none" stroke="#38bdf8" stroke-width="2" />
-            <!-- Reflexos Finos e Elegantes de Vidro de Grau (Sem Escurecimento) -->
-            <line x1="16" y1="13" x2="34" y2="33" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" style="animation: nerdGlassSheen 2.8s infinite;" />
-            <line x1="76" y1="13" x2="94" y2="33" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round" style="animation: nerdGlassSheen 2.8s infinite 0.2s;" />
-          </svg>
-        </div>
-
-        <!-- ============================================== -->
-        <!-- OLHOS EXPRESSIVOS EM CÁPSULA -->
-        <!-- ============================================== -->
-        <div id="eyes-1" class="eyes-capsule flex items-center gap-4 mt-2 z-20">
-          <span id="eye-l" class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
-          <span id="eye-r" class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
-        </div>
-
-        <!-- ============================================== -->
-        <!-- BOCA DINÂMICA -->
-        <!-- ============================================== -->
-        <div id="mouth-1" class="mouth h-1 w-3 bg-[#0b1b29] rounded-full opacity-0 mt-2 z-20 transition-all"></div>
-
-        <!-- Fenda Mecânica da Impressora (Oculta por padrão) -->
-        <div id="printer-slot" class="absolute bottom-2 w-32 h-1.5 bg-[#08121e] rounded-full border border-slate-700/50 hidden z-25"></div>
-
-      </div>
-
-      <!-- ============================================== -->
-      <!-- BRAÇO DIREITO -->
-      <!-- ============================================== -->
-      <div id="arm-right" class="arm absolute -right-7 bottom-4 z-10 opacity-0 pointer-events-none">
-        <div class="w-5 h-14 rounded-full bg-gradient-to-b from-[#68b2e3] to-[#255d85] border border-blue-400/30 shadow-md relative">
-          <div class="w-6 h-6 rounded-full bg-[#8ac9f7] absolute -bottom-1 -right-0.5 shadow-inner"></div>
-        </div>
+      <!-- OVERLAY DE OBJETOS TRANSFORMADOS (PC Antigo, Impressora, Foguete, Cafeteira) -->
+      <div id="object-overlay" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center hidden">
+        <!-- Injetado dinamicamente -->
       </div>
 
     </div>
 
-    <!-- Status e Legenda Interativa -->
-    <div class="text-center mt-5 w-full">
-      <div class="text-base font-semibold text-white tracking-wide" id="label-state-1">Grok Bot Ativo (Ocioso)</div>
-      <div class="text-xs text-blue-400 font-medium mt-0.5" id="label-sub-1">Esfera viva com física orgânica e respiração</div>
-      
-      <!-- Balão de Fala Opcional -->
-      <div id="voice-bubble" class="mt-2.5 mx-auto max-w-xs bg-blue-950/40 border border-blue-500/30 rounded-2xl p-2.5 text-xs text-blue-200 hidden shadow-lg">
-        💬 "<span id="voice-text">Mestre, o relatório do código foi impresso com sucesso!</span>"
+    <!-- Legenda e Estado Atual -->
+    <div class="text-center mt-2 w-full z-40">
+      <div class="text-base font-semibold text-white tracking-wide" id="label-title">🔵 Ocioso / Respiração Orgânica</div>
+      <div class="text-xs text-blue-400 font-medium mt-0.5" id="label-desc">Física elástica Coucou com rastreamento do olhar</div>
+      <div id="speech-bubble" class="mt-2 mx-auto max-w-xs bg-blue-950/60 border border-blue-500/40 rounded-2xl p-2 text-xs text-blue-200 hidden shadow-lg">
+        💬 "<span id="speech-text">Pronto para transformar ou programar!</span>"
       </div>
     </div>
   </main>
 
-  <!-- Grade de Botões de Ação no Smartphone -->
-  <footer class="w-full max-w-sm bg-slate-900/90 border border-slate-800 rounded-3xl p-3 flex flex-col gap-2 mb-2 backdrop-blur-md">
-    <div class="text-[10px] font-mono tracking-wider text-slate-400 text-center uppercase">ESCOLHA UMA TRANSFORMAÇÃO OU POSE:</div>
+  <!-- Painel de Controles com TODAS as 14 Animações -->
+  <footer class="w-full max-w-sm bg-slate-900/90 border border-slate-800 rounded-3xl p-3 flex flex-col gap-2 mb-1 backdrop-blur-md">
     
-    <div class="grid grid-cols-2 gap-2">
-      <!-- 1. MORPHING: IMPRESSORA -->
-      <button onclick="setMode('printer')" class="px-2.5 py-2.5 rounded-2xl bg-amber-500/25 border border-amber-400/50 text-amber-200 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-lg">
-        <span class="text-lg">🖨️</span> <span>Virar Impressora</span>
+    <!-- Seletor de Abas (Expressões vs Transformações) -->
+    <div class="flex rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 text-xs font-semibold">
+      <button id="tab-btn-expr" onclick="switchTab('expr')" class="flex-1 py-1.5 rounded-lg bg-blue-600 text-white transition shadow-sm">
+        🎭 Expressões & Poses (10)
+      </button>
+      <button id="tab-btn-morph" onclick="switchTab('morph')" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+        ⚙️ Transformações (4)
+      </button>
+    </div>
+
+    <!-- ABA 1: EXPRESSÕES & POSES (10 BOTÕES ORIGINAIS INTACTOS) -->
+    <div id="tab-expr" class="grid grid-cols-2 gap-1.5 max-h-[170px] overflow-y-auto pr-0.5">
+      <button onclick="setMode('idle')" class="px-2 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>🔵</span> <span>Ocioso (Padrão)</span>
       </button>
 
-      <!-- 2. MORPHING: TERMINAL RETRO CRT -->
-      <button onclick="setMode('terminal')" class="px-2.5 py-2.5 rounded-2xl bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-lg">
-        <span class="text-lg">📟</span> <span>Virar Terminal</span>
+      <button onclick="setMode('nerd')" class="px-2 py-2 rounded-xl bg-sky-600/20 border border-sky-400/40 text-sky-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>👓</span> <span>Óculos de Grau</span>
       </button>
 
-      <!-- 3. ÓCULOS DE GRAU NERD (NOVO DESIGN CRISTALINO) -->
-      <button onclick="setMode('nerd')" class="px-2.5 py-2 rounded-2xl bg-sky-600/25 border border-sky-400/40 text-sky-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
-        <span>👓</span> <span>Óculos de Grau Nerd</span>
-      </button>
-
-      <!-- 4. FALANDO COM GESTICULAÇÃO -->
-      <button onclick="setMode('talking')" class="px-2.5 py-2 rounded-2xl bg-blue-600/25 border border-blue-400/40 text-blue-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+      <button onclick="setMode('talking')" class="px-2 py-2 rounded-xl bg-blue-600/20 border border-blue-400/40 text-blue-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
         <span>🗣️</span> <span>Falando / Voz</span>
       </button>
 
-      <!-- 5. CODANDO RÁPIDO (BRAÇOS) -->
-      <button onclick="setMode('hacker')" class="px-2.5 py-2 rounded-2xl bg-cyan-600/25 border border-cyan-400/40 text-cyan-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+      <button onclick="setMode('hacker')" class="px-2 py-2 rounded-xl bg-cyan-600/20 border border-cyan-400/40 text-cyan-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
         <span>💻</span> <span>Codando Rápido</span>
       </button>
 
-      <!-- 6. DANCINHA DA VITÓRIA -->
-      <button onclick="setMode('dance')" class="px-2.5 py-2 rounded-2xl bg-purple-600/25 border border-purple-400/40 text-purple-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+      <button onclick="setMode('dance')" class="px-2 py-2 rounded-xl bg-purple-600/20 border border-purple-400/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
         <span>🕺</span> <span>Dancinha Vitória</span>
       </button>
 
-      <!-- 7. VOLTAR À ESFERA NORMAL (OCIOSO) -->
-      <button onclick="setMode('idle')" class="col-span-2 px-3 py-2 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
-        <span>🔵</span> <span>Voltar ao Normal (Esfera Ociosa)</span>
+      <button onclick="setMode('doubt')" class="px-2 py-2 rounded-xl bg-amber-600/20 border border-amber-400/40 text-amber-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>🤔</span> <span>Dúvida (Coçando)</span>
+      </button>
+
+      <button onclick="setMode('surprised')" class="px-2 py-2 rounded-xl bg-pink-600/20 border border-pink-400/40 text-pink-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>😲</span> <span>Surpreso (O O)</span>
+      </button>
+
+      <button onclick="setMode('call')" class="px-2 py-2 rounded-xl bg-teal-600/20 border border-teal-400/40 text-teal-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>🙌</span> <span>Chamando Você</span>
+      </button>
+
+      <button onclick="setMode('sleep')" class="px-2 py-2 rounded-xl bg-indigo-600/20 border border-indigo-400/40 text-indigo-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>😴</span> <span>Dormindo Zzz</span>
+      </button>
+
+      <button onclick="setMode('glitch')" class="px-2 py-2 rounded-xl bg-red-600/20 border border-red-400/40 text-red-200 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+        <span>⚡</span> <span>Curto-Circuito</span>
       </button>
     </div>
+
+    <!-- ABA 2: TRANSFORMAÇÕES EM OBJETOS FÍSICOS REAIS (4 NOVOS OBJETOS) -->
+    <div id="tab-morph" class="grid grid-cols-2 gap-2 hidden">
+      <!-- 1. PC ANTIGO RETRÔ 90s -->
+      <button onclick="setMode('pc90s')" class="p-2.5 rounded-2xl bg-amber-600/20 border border-amber-400/40 text-amber-200 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+        <span class="text-xl">🖥️</span>
+        <span>PC Antigo 90s</span>
+        <span class="text-[9px] text-amber-300/80 font-normal">Disquete & Tubo CRT</span>
+      </button>
+
+      <!-- 2. IMPRESSORA DE MESA REALISTA -->
+      <button onclick="setMode('printer_real')" class="p-2.5 rounded-2xl bg-blue-600/20 border border-blue-400/40 text-blue-200 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+        <span class="text-xl">🖨️</span>
+        <span>Impressora Real</span>
+        <span class="text-[9px] text-blue-300/80 font-normal">Bandeja superior & papel</span>
+      </button>
+
+      <!-- 3. FOGUETE DE DEPLOY -->
+      <button onclick="setMode('rocket')" class="p-2.5 rounded-2xl bg-red-600/20 border border-red-400/40 text-red-200 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+        <span class="text-xl">🚀</span>
+        <span>Foguete Deploy</span>
+        <span class="text-[9px] text-red-300/80 font-normal">Aletas & Chamas</span>
+      </button>
+
+      <!-- 4. CAFETEIRA EXPRESSO DEV -->
+      <button onclick="setMode('coffee')" class="p-2.5 rounded-2xl bg-emerald-600/20 border border-emerald-400/40 text-emerald-200 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+        <span class="text-xl">☕</span>
+        <span>Cafeteira Dev</span>
+        <span class="text-[9px] text-emerald-300/80 font-normal">Manômetro & Vapor</span>
+      </button>
+    </div>
+
   </footer>
 
+  <!-- SCRIPT DO MOTOR COUCOU (CANVAS 2D) & TRANSFORMAÇÕES -->
   <script>
-    const wrapper = document.getElementById('character-wrapper');
-    const head = document.getElementById('head-1');
-    const eyes = document.getElementById('eyes-1');
-    const mouth = document.getElementById('mouth-1');
-    const sat = document.getElementById('sat-1');
-    const armL = document.getElementById('arm-left');
-    const armR = document.getElementById('arm-right');
-    const glasses = document.getElementById('glasses');
-    const printerSlot = document.getElementById('printer-slot');
-    const morphOverlay = document.getElementById('morph-overlay');
-    const labelState = document.getElementById('label-state-1');
-    const labelSub = document.getElementById('label-sub-1');
-    const voiceBubble = document.getElementById('voice-bubble');
+    // ========================================================
+    // MOTOR DE ANIMAÇÃO PARAMÉTRICO ESTILO COUCOU
+    // ========================================================
+    const canvas = document.getElementById('botCanvas');
+    const ctx = canvas.getContext('2d');
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = 220, H = 220;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
 
-    function resetAll() {
-      morphOverlay.innerHTML = '';
-      printerSlot.classList.add('hidden');
-      wrapper.style.animation = '';
+    const overlay = document.getElementById('object-overlay');
+    const labelTitle = document.getElementById('label-title');
+    const labelDesc = document.getElementById('label-desc');
+    const speechBubble = document.getElementById('speech-bubble');
+    const speechText = document.getElementById('speech-text');
+    const satellite = document.getElementById('satellite');
+
+    // Estado físico contínuo do robô
+    const bot = {
+      // Posição e dimensões
+      cx: 110,
+      cy: 110,
+      r: 58,
       
-      // Reseta formato da cabeça para a Esfera 2.5D padrão
-      head.style.width = '144px'; // 36 tailwind
-      head.style.height = '144px';
-      head.style.borderRadius = '9999px';
-      head.style.background = 'radial-gradient(circle at 35% 30%, #bde4ff 0%, #68b2e3 42%, #2d6b99 80%, #153852 100%)';
-      head.style.boxShadow = '';
-      head.style.animation = 'organicBreathing 4.5s ease-in-out infinite, ambientGlow 4.5s ease-in-out infinite';
-      head.style.transform = '';
+      // Variáveis físicas e de mola (Coucou params)
+      sx: 1, sy: 1,            // Escala X e Y (squash & stretch)
+      targetSx: 1, targetSy: 1,
+      yaw: 0, pitch: 0, tilt: 0, // Ângulos de orientação
+      look: { x: 0, y: 0 },    // Direção da pupila (-1 a 1 via Math.tanh)
+      open: 1,                 // Abertura do olho (1 aberto, 0 piscando)
+      blush: 0,                // Bochechas rosadas (0 a 1)
+      hands: 0,                // Altura dos bracinhos (0 a 1)
+      handL: { x: 0, y: 0, rot: 0 },
+      handR: { x: 0, y: 0, rot: 0 },
+
+      // Estado atual
+      mode: 'idle',
+      mouthOpen: 0,            // Abertura da boca falante
+      glasses: false,          // Óculos nerd
+      baseColorTop: '#bde4ff',
+      baseColorMid: '#68b2e3',
+      baseColorDark: '#1b4a6d',
+
+      // Temporizadores de ciclo
+      nextBlink: performance.now() + 2500,
+      isBlinking: false
+    };
+
+    // Função de mola elástica (Coucou spring lerp)
+    function spring(current, target, speed = 0.15) {
+      return current + (target - current) * speed;
+    }
+
+    // Squash & Stretch ao tocar (como no Coucou)
+    function squashBot() {
+      bot.sx = 1.18;
+      bot.sy = 0.82;
+      bot.blush = 0.8;
+      setTimeout(() => { bot.blush = 0; }, 600);
+    }
+    canvas.addEventListener('pointerdown', squashBot);
+
+    // Eye Tracking seguindo o toque/cursor pela tela (via Tangente Hiperbólica Math.tanh)
+    function trackPointer(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX || (e.touches && e.touches[0].clientX)) - (rect.left + rect.width / 2);
+      const y = (e.clientY || (e.touches && e.touches[0].clientY)) - (rect.top + rect.height / 2);
+      bot.look.x = Math.tanh(x / 140);
+      bot.look.y = Math.tanh(y / 140);
+    }
+    window.addEventListener('pointermove', trackPointer);
+    window.addEventListener('touchmove', trackPointer);
+
+    // Alternar Abas no Rodapé
+    function switchTab(tab) {
+      const expr = document.getElementById('tab-expr');
+      const morph = document.getElementById('tab-morph');
+      const btnE = document.getElementById('tab-btn-expr');
+      const btnM = document.getElementById('tab-btn-morph');
+
+      if (tab === 'expr') {
+        expr.classList.remove('hidden');
+        morph.classList.add('hidden');
+        btnE.className = 'flex-1 py-1.5 rounded-lg bg-blue-600 text-white transition shadow-sm';
+        btnM.className = 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      } else {
+        morph.classList.remove('hidden');
+        expr.classList.add('hidden');
+        btnM.className = 'flex-1 py-1.5 rounded-lg bg-blue-600 text-white transition shadow-sm';
+        btnE.className = 'flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      }
+    }
+
+    // ========================================================
+    // RENDERIZADOR COUCOU (CANVAS 2D)
+    // ========================================================
+    function drawCoucouBot(t) {
+      ctx.clearRect(0, 0, W, H);
+
+      // Se estiver em modo de objeto mecânico pesado (PC 90s, Impressora, Foguete, Cafeteira),
+      // o overlay HTML/SVG assume o controle do palco e o Canvas fica sutil.
+      if (['pc90s', 'printer_real', 'rocket', 'coffee'].includes(bot.mode)) {
+        return;
+      }
+
+      // 1. Atualiza Física de Mola
+      bot.sx = spring(bot.sx, bot.targetSx, 0.18);
+      bot.sy = spring(bot.sy, bot.targetSy, 0.18);
+
+      // Respiração contínua orgânica
+      const breath = Math.sin(t / 800) * 0.025;
+      const breathY = Math.sin(t / 800) * 3;
+
+      // 2. Piscar Natural
+      if (t > bot.nextBlink && !bot.isBlinking) {
+        bot.isBlinking = true;
+        bot.open = 0;
+        setTimeout(() => {
+          bot.open = 1;
+          bot.isBlinking = false;
+          bot.nextBlink = t + 2200 + Math.random() * 3000;
+        }, 120);
+      }
+
+      ctx.save();
+      ctx.translate(bot.cx, bot.cy + breathY);
+      ctx.rotate(bot.tilt);
+      ctx.scale(bot.sx + breath, bot.sy - breath);
+
+      // ==========================================
+      // A) BRAÇOS / MÃOS (Coucou Hands)
+      // ==========================================
+      if (bot.hands > 0.05) {
+        ctx.fillStyle = '#68b2e3';
+        ctx.strokeStyle = '#255d85';
+        ctx.lineWidth = 3;
+
+        // Mão Esquerda
+        ctx.save();
+        ctx.translate(bot.handL.x, bot.handL.y);
+        ctx.rotate(bot.handL.rot);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 10, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // Mão Direita
+        ctx.save();
+        ctx.translate(bot.handR.x, bot.handR.y);
+        ctx.rotate(bot.handR.rot);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 10, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ==========================================
+      // B) CORPO SQUIRCLE 2.5D (Volume em 3 Camadas)
+      // ==========================================
+      ctx.beginPath();
+      ctx.arc(0, 0, bot.r, 0, Math.PI * 2);
+
+      // Camada 1: Gradiente base luminoso
+      const gBase = ctx.createRadialGradient(-18, -20, 8, 0, 0, bot.r * 1.05);
+      gBase.addColorStop(0, bot.baseColorTop);
+      gBase.addColorStop(0.45, bot.baseColorMid);
+      gBase.addColorStop(1, bot.baseColorDark);
+      ctx.fillStyle = gBase;
+      ctx.fill();
+
+      // Camada 2: Sombra de Oclusão na base inferior
+      const gShadow = ctx.createLinearGradient(0, bot.r * 0.2, 0, bot.r);
+      gShadow.addColorStop(0, 'rgba(10, 25, 45, 0)');
+      gShadow.addColorStop(1, 'rgba(8, 20, 36, 0.65)');
+      ctx.fillStyle = gShadow;
+      ctx.fill();
+
+      // Camada 3: Brilho Especular Superior (Highlight silicone/vidro)
+      const gHighlight = ctx.createRadialGradient(-bot.r * 0.35, -bot.r * 0.35, 0, -bot.r * 0.35, -bot.r * 0.35, bot.r * 0.6);
+      gHighlight.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+      gHighlight.addColorStop(0.7, 'rgba(255, 255, 255, 0.08)');
+      gHighlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = gHighlight;
+      ctx.fill();
+
+      // ==========================================
+      // C) BOCHECHAS ROSADAS (Coucou Blush)
+      // ==========================================
+      if (bot.blush > 0.02) {
+        ctx.fillStyle = `rgba(244, 114, 182, ${0.45 * bot.blush})`;
+        ctx.beginPath();
+        ctx.ellipse(-26, 12, 10, 6, 0, 0, Math.PI * 2);
+        ctx.ellipse(26, 12, 10, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ==========================================
+      // D) OLHOS EM CÁPSULA (Eye Tracking + Clipping)
+      // ==========================================
+      ctx.save();
+      // Máscara de corte para os olhos não saírem da face
+      ctx.beginPath();
+      ctx.arc(0, 0, bot.r - 4, 0, Math.PI * 2);
+      ctx.clip();
+
+      const eyeSeparation = 22;
+      const eyeOffsetX = bot.look.x * 12 + bot.yaw * 16;
+      const eyeOffsetY = bot.look.y * 10 + bot.pitch * 12;
+
+      ctx.fillStyle = '#071626';
+
+      if (bot.mode === 'sleep') {
+        // Olhinhos fechados dormindo
+        ctx.strokeStyle = '#071626';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(-eyeSeparation + eyeOffsetX, 4 + eyeOffsetY, 10, 0.2 * Math.PI, 0.8 * Math.PI);
+        ctx.arc(eyeSeparation + eyeOffsetX, 4 + eyeOffsetY, 10, 0.2 * Math.PI, 0.8 * Math.PI);
+        ctx.stroke();
+      } else if (bot.mode === 'surprised') {
+        // Olhos arregalados redondos com brilho branco
+        const rSurprise = 12;
+        ctx.beginPath();
+        ctx.arc(-eyeSeparation + eyeOffsetX, eyeOffsetY, rSurprise, 0, Math.PI * 2);
+        ctx.arc(eyeSeparation + eyeOffsetX, eyeOffsetY, rSurprise, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-eyeSeparation + eyeOffsetX - 3, eyeOffsetY - 3, 3.5, 0, Math.PI * 2);
+        ctx.arc(eyeSeparation + eyeOffsetX - 3, eyeOffsetY - 3, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (bot.mode === 'dance') {
+        // Olhinhos de felicidade em arco ( ^ _ ^ )
+        ctx.strokeStyle = '#042217';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(-eyeSeparation, -2, 10, 1.2 * Math.PI, 1.8 * Math.PI);
+        ctx.arc(eyeSeparation, -2, 10, 1.2 * Math.PI, 1.8 * Math.PI);
+        ctx.stroke();
+      } else if (bot.mode === 'glitch') {
+        // Olhos com linhas retas tensas
+        ctx.fillStyle = '#3f0707';
+        ctx.fillRect(-eyeSeparation - 7 + eyeOffsetX, eyeOffsetY - 2, 16, 4);
+        ctx.fillRect(eyeSeparation - 7 + eyeOffsetX, eyeOffsetY - 2, 16, 4);
+      } else {
+        // Olhos padrão em cápsula (oval vertical com abertura de piscar)
+        const eyeW = 8;
+        const eyeH = 19 * Math.max(0.08, bot.open);
+        
+        ctx.beginPath();
+        ctx.ellipse(-eyeSeparation + eyeOffsetX, eyeOffsetY, eyeW, eyeH, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeSeparation + eyeOffsetX, eyeOffsetY, eyeW, eyeH, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mini reflexo especular na pupila
+        if (bot.open > 0.5) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.beginPath();
+          ctx.arc(-eyeSeparation + eyeOffsetX - 2, eyeOffsetY - 5, 2, 0, Math.PI * 2);
+          ctx.arc(eyeSeparation + eyeOffsetX - 2, eyeOffsetY - 5, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.restore();
+
+      // ==========================================
+      // E) BOCA FALANTE (Coucou Mouth)
+      // ==========================================
+      if (bot.mouthOpen > 0.05) {
+        ctx.fillStyle = '#071626';
+        ctx.beginPath();
+        ctx.ellipse(0, 18, 7, 3 + bot.mouthOpen * 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ==========================================
+      // F) ÓCULOS NERD DE GRAU (Cristalinos)
+      // ==========================================
+      if (bot.glasses) {
+        ctx.save();
+        ctx.translate(0, -2);
+
+        // Aros finos
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+
+        // Lente Esquerda
+        ctx.beginPath();
+        ctx.arc(-22, 0, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Lente Direita
+        ctx.beginPath();
+        ctx.arc(22, 0, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Ponte de metal
+        ctx.beginPath();
+        ctx.moveTo(-6, -2);
+        ctx.quadraticCurveTo(0, -7, 6, -2);
+        ctx.stroke();
+
+        // Reflexo de luz na lente
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(-31, -8);
+        ctx.lineTo(-19, 8);
+        ctx.moveTo(13, -8);
+        ctx.lineTo(25, 8);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    // Loop a 60 FPS
+    function loop(t) {
+      // Animações específicas de modo contínuo
+      if (bot.mode === 'talking') {
+        bot.mouthOpen = (Math.sin(t / 90) + 1) / 2;
+        bot.handL = { x: -68, y: 10 + Math.sin(t / 200) * 8, rot: 0.5 };
+        bot.handR = { x: 68, y: 10 + Math.cos(t / 200) * 8, rot: -0.5 };
+        bot.tilt = Math.sin(t / 400) * 0.05;
+      } else if (bot.mode === 'hacker') {
+        bot.handL = { x: -45, y: 35 + Math.sin(t / 70) * 12, rot: -0.4 };
+        bot.handR = { x: 45, y: 35 + Math.cos(t / 70) * 12, rot: 0.4 };
+        bot.tilt = 0;
+      } else if (bot.mode === 'dance') {
+        bot.handL = { x: -62, y: -25 + Math.sin(t / 250) * 16, rot: -0.9 };
+        bot.handR = { x: 62, y: -25 + Math.cos(t / 250) * 16, rot: 0.9 };
+        bot.tilt = Math.sin(t / 300) * 0.12;
+      } else if (bot.mode === 'call') {
+        bot.handL = { x: -60, y: -15 + Math.sin(t / 180) * 10, rot: -0.6 };
+        bot.handR = { x: 60, y: -15 + Math.sin(t / 180) * 10, rot: 0.6 };
+        bot.tilt = 0;
+      } else if (bot.mode === 'doubt') {
+        bot.handL = { x: 0, y: 0, rot: 0 };
+        bot.handR = { x: 48, y: -38 + Math.sin(t / 220) * 4, rot: 0.8 };
+        bot.tilt = -0.15;
+      } else if (bot.mode === 'surprised') {
+        bot.handL = { x: -50, y: 15, rot: 0.6 };
+        bot.handR = { x: 50, y: 15, rot: -0.6 };
+        bot.tilt = 0;
+      } else if (bot.mode === 'nerd') {
+        bot.handL = { x: -44, y: 24, rot: 0.7 };
+        bot.handR = { x: 0, y: 0, rot: 0 };
+        bot.tilt = -0.06;
+      } else {
+        bot.mouthOpen = 0;
+        bot.tilt = spring(bot.tilt, 0, 0.1);
+      }
+
+      drawCoucouBot(t);
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    // ========================================================
+    // MUDANÇA DE MODO E TRANSFORMAÇÕES
+    // ========================================================
+    function resetBotState() {
+      overlay.classList.add('hidden');
+      overlay.innerHTML = '';
+      canvas.classList.remove('hidden');
+      speechBubble.classList.add('hidden');
       
-      // Reseta olhos normais
-      eyes.className = 'eyes-capsule flex items-center gap-4 mt-2 z-20';
-      eyes.innerHTML = `
-        <span class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
-        <span class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
-      `;
-      eyes.style.transform = '';
-
-      armL.style.animation = '';
-      armL.style.transform = '';
-      armL.classList.add('opacity-0');
+      bot.glasses = false;
+      bot.hands = 0;
+      bot.blush = 0;
+      bot.baseColorTop = '#bde4ff';
+      bot.baseColorMid = '#68b2e3';
+      bot.baseColorDark = '#1b4a6d';
+      bot.tilt = 0;
+      bot.targetSx = 1;
+      bot.targetSy = 1;
       
-      armR.style.animation = '';
-      armR.style.transform = '';
-      armR.classList.add('opacity-0');
-
-      glasses.classList.add('opacity-0', '-translate-y-8', 'scale-90');
-      glasses.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
-
-      mouth.style.animation = '';
-      mouth.classList.add('opacity-0');
-      voiceBubble.classList.add('hidden');
-
-      // Satélite padrão
-      sat.style.transform = '';
-      sat.style.opacity = '1';
-      sat.innerHTML = `
+      satellite.className = 'absolute top-4 left-5 z-40 w-8 h-8 rounded-full bg-[#173b57] border border-[#3b8ac4]/60 flex items-center justify-center shadow-lg transition-all duration-300';
+      satellite.innerHTML = `
         <div class="flex items-center gap-[2.5px] h-3.5">
-          <span class="w-[3px] bg-[#61b8f5] rounded-full wave-1"></span>
-          <span class="w-[3px] bg-[#61b8f5] rounded-full wave-2"></span>
-          <span class="w-[3px] bg-[#61b8f5] rounded-full wave-3"></span>
+          <span class="w-[3px] bg-[#61b8f5] rounded-full h-2 animate-pulse"></span>
+          <span class="w-[3px] bg-[#61b8f5] rounded-full h-3 animate-pulse" style="animation-delay: 0.15s"></span>
+          <span class="w-[3px] bg-[#61b8f5] rounded-full h-1.5 animate-pulse" style="animation-delay: 0.3s"></span>
         </div>
       `;
     }
 
     function setMode(mode) {
-      resetAll();
+      resetBotState();
+      bot.mode = mode;
 
       // ========================================================
-      // 1. MORPHING: IMPRESSORA CUSPINDO RELATÓRIO / PLANO
+      // 1. OCIOSO NORMAL
       // ========================================================
-      if (mode === 'printer') {
-        // Morfa a esfera em retângulo de impressora moderna
-        head.style.width = '184px';
-        head.style.height = '115px';
-        head.style.borderRadius = '24px';
-        head.style.background = 'linear-gradient(145deg, #1e293b, #0f172a)';
-        head.style.boxShadow = '0 12px 35px rgba(0,0,0,0.7), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -4px 8px rgba(0,0,0,0.5)';
-        head.style.animation = 'printerJitter 0.4s ease-in-out infinite';
-
-        // Olhos viram um visor LCD compacto no canto superior
-        eyes.className = 'eyes-capsule flex items-center gap-2 -mt-4 z-20 self-end mr-6';
-        eyes.innerHTML = `
-          <div class="px-2 py-0.5 rounded bg-blue-950/70 border border-blue-400/40 flex items-center gap-1.5 shadow-inner">
-            <span class="w-2 h-4 bg-[#38bdf8] rounded-full animate-pulse"></span>
-            <span class="w-2 h-4 bg-[#38bdf8] rounded-full animate-pulse"></span>
-            <span class="text-[9px] font-mono text-blue-300 font-bold ml-1">PRINTING</span>
-          </div>
-        `;
-
-        // Satélite vira luz indicadora LED piscando no chassi
-        sat.style.transform = 'translate(10px, 8px)';
-        sat.innerHTML = `<span class="w-3.5 h-3.5 rounded-full bg-amber-400 animate-ping"></span>`;
-
-        // Mostra a fenda mecânica da impressora
-        printerSlot.classList.remove('hidden');
-
-        // Cria a folha de papel animada saindo da impressora
-        morphOverlay.innerHTML = `
-          <div class="absolute bottom-16 z-10 w-36 bg-slate-50 text-slate-900 rounded-lg p-2.5 shadow-2xl border border-slate-300 font-mono text-[9px] leading-tight"
-               style="animation: printerFeed 3.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;">
-            <div class="font-bold text-blue-700 border-b border-slate-200 pb-1 flex justify-between">
-              <span>ECHO // PLANO</span>
-              <span>100%</span>
-            </div>
-            <div class="mt-1 space-y-1 text-slate-700">
-              <div class="flex items-center gap-1 text-emerald-600 font-semibold"><span>✓</span> <span>Setup Windows OK</span></div>
-              <div class="flex items-center gap-1 text-emerald-600 font-semibold"><span>✓</span> <span>Service Worker OK</span></div>
-              <div class="flex items-center gap-1 text-emerald-600 font-semibold"><span>✓</span> <span>PWA Instalável</span></div>
-              <div class="flex items-center gap-1 text-blue-600 font-semibold"><span>⚙</span> <span>15 Tasks Forge</span></div>
-            </div>
-            <div class="mt-1.5 pt-1 border-t border-slate-200 text-[8px] text-slate-400 text-center">PRONTO PARA EXECUÇÃO</div>
-          </div>
-        `;
-
-        labelState.textContent = '🖨️ Impressora Ativa // Gerando Plano';
-        labelSub.textContent = 'Esfera morfada em impressora com relatório impresso saindo da fenda';
+      if (mode === 'idle') {
+        labelTitle.textContent = '🔵 Ocioso / Respiração Orgânica';
+        labelDesc.textContent = 'Física elástica Coucou com rastreamento do olhar';
       }
 
       // ========================================================
-      // 2. MORPHING: TERMINAL RETRO CRT
-      // ========================================================
-      else if (mode === 'terminal') {
-        head.style.width = '170px';
-        head.style.height = '135px';
-        head.style.borderRadius = '18px';
-        head.style.background = 'radial-gradient(ellipse at center, #062b16 0%, #02140a 85%, #000 100%)';
-        head.style.boxShadow = '0 0 40px rgba(16, 185, 129, 0.4), inset 0 0 15px rgba(16, 185, 129, 0.3), inset 0 0 35px rgba(0,0,0,0.9)';
-        
-        sat.style.opacity = '0';
-
-        // Olhos desligam e dão lugar ao prompt do terminal verde Matrix
-        eyes.className = 'z-20 w-full px-4 text-left font-mono text-[11px] text-emerald-400';
-        eyes.innerHTML = `
-          <div class="space-y-0.5">
-            <div class="text-[9px] text-emerald-600 font-bold tracking-wider">// ECHO RETRO OS</div>
-            <div>&gt; echo --agents</div>
-            <div class="text-[10px] text-emerald-300">Claude: ONLINE</div>
-            <div class="text-[10px] text-emerald-300">Codex: ONLINE</div>
-            <div class="flex items-center gap-1 text-emerald-400">
-              <span>&gt; ready</span>
-              <span class="inline-block w-2 h-3.5 bg-emerald-400" style="animation: crtBlink 0.8s infinite;"></span>
-            </div>
-          </div>
-        `;
-
-        labelState.textContent = '📟 Terminal Retro CRT // Matrix';
-        labelSub.textContent = 'Esfera morfada em monitor vintage com prompt verde';
-      }
-
-      // ========================================================
-      // 3. ÓCULOS DE GRAU NERD (CRISTALINO, SEM SOL DE PRAIA!)
+      // 2. ÓCULOS NERD DE GRAU
       // ========================================================
       else if (mode === 'nerd') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #d8f0ff 0%, #7db9e6 42%, #326f9c 80%, #163e5e 100%)';
-        head.style.transform = 'rotate(-5deg)';
-        
-        // Olhos com zoom (efeito de lente de aumento de grau) e olhando para cima
-        eyes.innerHTML = `
-          <span class="w-4 h-10 bg-[#0b1b29] rounded-full transform scale-110 shadow-inner"></span>
-          <span class="w-4 h-10 bg-[#0b1b29] rounded-full transform scale-110 shadow-inner"></span>
-        `;
-
-        // Desce os óculos com lentes cristalinas transparentes
-        glasses.classList.remove('opacity-0', '-translate-y-8', 'scale-90');
-        glasses.classList.add('opacity-100', 'translate-y-0', 'scale-100');
-
-        // Mãozinha sobe no queixo apoiada
-        armL.classList.remove('opacity-0');
-        armL.style.transform = 'translate(14px, -18px) rotate(42deg)';
-
-        labelState.textContent = '👓 Intelectual / Óculos de Grau';
-        labelSub.textContent = 'Lentes 100% cristalinas com efeito de aumento nos olhos';
+        bot.glasses = true;
+        bot.hands = 1;
+        bot.blush = 0.2;
+        labelTitle.textContent = '👓 Intelectual / Óculos de Grau';
+        labelDesc.textContent = 'Lentes cristalinas transparentes com mão no queixo';
       }
 
       // ========================================================
-      // 4. FALANDO COM GESTICULAÇÃO E BOCA
+      // 3. FALANDO / VOZ
       // ========================================================
       else if (mode === 'talking') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #cceeff 0%, #68b2e3 42%, #226494 80%, #103b5c 100%)';
-        head.style.animation = 'speakHeadNod 0.8s ease-in-out infinite, ambientGlow 3s ease-in-out infinite';
+        bot.hands = 1;
+        speechBubble.classList.remove('hidden');
+        speechText.textContent = 'Fala mestre! Estou monitorando as tarefas e pronto para agir!';
+        labelTitle.textContent = '🗣️ Falando / Gesticulando';
+        labelDesc.textContent = 'Boca animada em tempo real com gesticulação de mãos';
+      }
 
-        mouth.classList.remove('opacity-0');
-        mouth.style.animation = 'speakMouth 0.35s ease-in-out infinite alternate';
+      // ========================================================
+      // 4. CODANDO RÁPIDO (HACKER)
+      // ========================================================
+      else if (mode === 'hacker') {
+        bot.hands = 1;
+        bot.baseColorTop = '#b8f5ff';
+        bot.baseColorMid = '#52d3ec';
+        bot.baseColorDark = '#0e4a57';
+        labelTitle.textContent = '💻 Codando em Alta Velocidade';
+        labelDesc.textContent = 'Dois braços digitando freneticamente no ar';
+      }
 
-        armL.classList.remove('opacity-0');
-        armR.classList.remove('opacity-0');
-        armL.style.animation = 'gestureLeft 0.5s ease-in-out infinite alternate';
-        armR.style.animation = 'gestureRight 0.5s ease-in-out infinite alternate 0.15s';
+      // ========================================================
+      // 5. DANCINHA DA VITÓRIA
+      // ========================================================
+      else if (mode === 'dance') {
+        bot.hands = 1;
+        bot.blush = 0.6;
+        bot.baseColorTop = '#c4ffd8';
+        bot.baseColorMid = '#4ae39f';
+        bot.baseColorDark = '#0b4f31';
+        labelTitle.textContent = '🕺 Dancinha da Vitória!';
+        labelDesc.textContent = 'Balanço rítmico comemorativo com braços no ar';
+      }
 
-        sat.innerHTML = `
-          <div class="flex items-center gap-[2px] h-4">
-            <span class="w-[3px] bg-[#38bdf8] rounded-full wave-1" style="animation-duration: 0.3s;"></span>
-            <span class="w-[3px] bg-[#38bdf8] rounded-full wave-2" style="animation-duration: 0.25s;"></span>
-            <span class="w-[3px] bg-[#38bdf8] rounded-full wave-3" style="animation-duration: 0.35s;"></span>
-            <span class="w-[3px] bg-[#38bdf8] rounded-full wave-1" style="animation-duration: 0.28s;"></span>
+      // ========================================================
+      // 6. DÚVIDA / COÇANDO A CABEÇA
+      // ========================================================
+      else if (mode === 'doubt') {
+        bot.hands = 1;
+        bot.baseColorTop = '#fff2cc';
+        bot.baseColorMid = '#f6cb65';
+        bot.baseColorDark = '#523c0b';
+        labelTitle.textContent = '🤔 Hum... Deixe-me ver';
+        labelDesc.textContent = 'Mãozinha na cabeça calculando a resposta';
+      }
+
+      // ========================================================
+      // 7. SURPRESO (O O)
+      // ========================================================
+      else if (mode === 'surprised') {
+        bot.hands = 1;
+        bot.blush = 0.5;
+        bot.targetSx = 1.08;
+        bot.targetSy = 0.94;
+        labelTitle.textContent = '😲 Uau! Olha isso!';
+        labelDesc.textContent = 'Olhos arregalados com mãos nas bochechas';
+      }
+
+      // ========================================================
+      // 8. CHAMANDO VOCÊ (ACENO DUPLO)
+      // ========================================================
+      else if (mode === 'call') {
+        bot.hands = 1;
+        labelTitle.textContent = '🙌 Ei Mestre, estou aqui!';
+        labelDesc.textContent = 'Aceno duplo animado para chamar atenção';
+      }
+
+      // ========================================================
+      // 9. DORMINDO ZZZ
+      // ========================================================
+      else if (mode === 'sleep') {
+        bot.baseColorTop = '#cbd5e1';
+        bot.baseColorMid = '#64748b';
+        bot.baseColorDark = '#1e293b';
+        labelTitle.textContent = '😴 Modo Standby / Sono Zzz';
+        labelDesc.textContent = 'Respiração desacelerada com olhinhos fechados';
+      }
+
+      // ========================================================
+      // 10. CURTO-CIRCUITO (GLITCH)
+      // ========================================================
+      else if (mode === 'glitch') {
+        bot.baseColorTop = '#ffd4d4';
+        bot.baseColorMid = '#f87171';
+        bot.baseColorDark = '#5c0d0d';
+        satellite.innerHTML = `<span class="w-3.5 h-3.5 bg-red-500 rounded-full animate-ping"></span>`;
+        labelTitle.textContent = '⚡ Curto-Circuito!';
+        labelDesc.textContent = 'Alerta de erro com satélite em choque';
+      }
+
+      // ========================================================
+      // 11. TRANSFORMAÇÃO: PC ANTIGO 90s (MACINTOSH RETRÔ)
+      // ========================================================
+      else if (mode === 'pc90s') {
+        canvas.classList.add('hidden');
+        overlay.classList.remove('hidden');
+
+        satellite.className = 'absolute top-3 left-4 z-40 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-[9px] font-mono text-emerald-400';
+        satellite.innerHTML = `<span>1994 OS</span>`;
+
+        overlay.innerHTML = `
+          <!-- Gabinete Retrô Beige Macintosh 90s -->
+          <div class="relative w-48 h-56 rounded-2xl bg-gradient-to-b from-[#e8decb] via-[#ded2ba] to-[#c7bca1] border-2 border-[#b8ab8e] shadow-[0_20px_45px_rgba(0,0,0,0.8),inset_0_2px_4px_rgba(255,255,255,0.7)] flex flex-col items-center pt-3 px-3">
+            
+            <!-- Ranhuras de Ventilação Topo -->
+            <div class="w-28 flex justify-between gap-1 mb-2">
+              <span class="h-1 flex-1 bg-[#b8ab8e] rounded-full"></span>
+              <span class="h-1 flex-1 bg-[#b8ab8e] rounded-full"></span>
+              <span class="h-1 flex-1 bg-[#b8ab8e] rounded-full"></span>
+              <span class="h-1 flex-1 bg-[#b8ab8e] rounded-full"></span>
+            </div>
+
+            <!-- Moldura Profunda do Tubo CRT -->
+            <div class="w-40 h-28 rounded-xl bg-[#22272e] p-2 border-2 border-[#a39679] shadow-[inset_0_6px_12px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden">
+              
+              <!-- Tela de Tubo de Vidro Fósforo Verde -->
+              <div class="w-full h-full rounded-lg bg-[#041a0d] border border-emerald-900/60 p-2 text-left font-mono text-[9px] text-emerald-400 relative overflow-hidden shadow-[inset_0_0_15px_rgba(16,185,129,0.4)]">
+                <!-- Scanlines e Curvatura do Vidro -->
+                <div class="absolute inset-0 pointer-events-none opacity-25" style="background: repeating-linear-gradient(to bottom, transparent, transparent 2px, rgba(0,255,100,0.15) 3px);"></div>
+                <div class="absolute top-0 right-0 w-16 h-8 bg-gradient-to-bl from-white/15 to-transparent rounded-bl-full pointer-events-none"></div>
+
+                <div class="space-y-0.5 relative z-10">
+                  <div class="text-[8px] text-emerald-600 font-bold">// ECHO CLASSIC 128K</div>
+                  <div>&gt; BOOT SYSTEM</div>
+                  <div class="text-emerald-300 font-bold">MEM: 640KB OK</div>
+                  <div class="flex items-center gap-1 text-emerald-400 mt-1">
+                    <span>A:\&gt; ready_</span>
+                    <span class="inline-block w-1.5 h-3 bg-emerald-400 animate-pulse"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Painel Inferior: Logo Rainbow, Drive de Disquete 3.5" e LED -->
+            <div class="w-full mt-3 px-1 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <!-- Badge Colorida Retrô -->
+                <div class="w-3.5 h-4 rounded-sm bg-gradient-to-b from-blue-500 via-green-500 via-amber-400 to-red-500 shadow-sm"></div>
+                
+                <!-- Drive de Disquete 3.5" com Ranhura -->
+                <div class="w-24 h-4 bg-[#1a1f26] rounded border border-[#8a7e65] relative flex items-center px-1 shadow-inner">
+                  <div class="w-full h-1 bg-[#0b0e12] rounded-full"></div>
+                  <!-- Botão de Ejeção do Disquete -->
+                  <div class="absolute right-1 w-2.5 h-2 bg-[#d1c5ab] rounded-sm border border-slate-600"></div>
+                </div>
+
+                <!-- LED Indicador de Leitura (Piscando) -->
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+              </div>
+
+              <!-- Disquete 3.5" Físico Inserindo no Drive -->
+              <div class="w-24 mx-auto -mt-1 bg-blue-700 rounded-sm p-1 border border-blue-900 text-[6px] font-mono text-white flex items-center justify-between shadow-lg"
+                   style="animation: floppyInsert 1.8s ease-out forwards;">
+                <span class="w-4 h-2 bg-slate-300 rounded-xs inline-block"></span>
+                <span>FLOPPY 1.44M</span>
+              </div>
+            </div>
+
           </div>
         `;
 
-        voiceBubble.classList.remove('hidden');
-        labelState.textContent = '🗣️ Falando / Gesticulando';
-        labelSub.textContent = 'Boca animada, balanço de cabeça e braços explicando';
+        labelTitle.textContent = '🖥️ PC Antigo Retrô 90s // Macintosh';
+        labelDesc.textContent = 'Gabinete bege, tubo CRT de fósforo verde e drive de disquete funcional';
       }
 
       // ========================================================
-      // 5. CODANDO RÁPIDO
+      // 12. TRANSFORMAÇÃO: IMPRESSORA DE MESA REALISTA
       // ========================================================
-      else if (mode === 'hacker') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #b8f5ff 0%, #52d3ec 42%, #1b859e 80%, #0d4654 100%)';
-        head.style.transform = 'scale(1.03)';
-        
-        armL.classList.remove('opacity-0');
-        armR.classList.remove('opacity-0');
-        armL.style.animation = 'hackTypeL 0.18s ease-in-out infinite alternate';
-        armR.style.animation = 'hackTypeR 0.18s ease-in-out infinite alternate';
+      else if (mode === 'printer_real') {
+        canvas.classList.add('hidden');
+        overlay.classList.remove('hidden');
 
-        labelState.textContent = '💻 Codando em Alta Velocidade';
-        labelSub.textContent = 'Dois braços digitando scripts freneticamente';
-      }
+        satellite.className = 'absolute top-3 left-4 z-40 px-2 py-0.5 rounded bg-blue-950/80 border border-blue-500/40 text-[9px] font-mono text-blue-300';
+        satellite.innerHTML = `<span>PRINTER 300 DPI</span>`;
 
-      // ========================================================
-      // 6. DANCINHA DA VITÓRIA
-      // ========================================================
-      else if (mode === 'dance') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #c4ffd8 0%, #4ae39f 42%, #158f5b 80%, #0b4f31 100%)';
-        wrapper.style.animation = 'danceBody 0.6s ease-in-out infinite alternate';
-        
-        eyes.innerHTML = `
-          <span class="w-5 h-4 border-t-4 border-emerald-950 rounded-t-full"></span>
-          <span class="w-5 h-4 border-t-4 border-emerald-950 rounded-t-full"></span>
+        overlay.innerHTML = `
+          <div class="relative w-56 flex flex-col items-center">
+            
+            <!-- 1. Bandeja Traseira Superior Inclinada com Folhas de Papel A4 em Branco -->
+            <div class="w-36 h-10 bg-slate-700 rounded-t-lg border-2 border-slate-600 flex justify-center pt-1 shadow-md transform -skew-x-2">
+              <!-- Pilha de Folhas Brancas -->
+              <div class="w-28 h-8 bg-white rounded-t border-t border-x border-slate-300 shadow-sm flex items-center justify-center text-[7px] font-mono text-slate-400">
+                <span>A4 BLANK PAPER</span>
+              </div>
+            </div>
+
+            <!-- 2. Chassi da Impressora Bicolor (Branco Fosco com Friso Grafite) -->
+            <div class="w-52 h-24 rounded-2xl bg-gradient-to-b from-[#f8fafc] via-[#e2e8f0] to-[#cbd5e1] border-2 border-slate-400 shadow-[0_16px_35px_rgba(0,0,0,0.8),inset_0_2px_4px_rgba(255,255,255,0.9)] p-2.5 flex flex-col justify-between relative z-10">
+              
+              <!-- Tampa do Scanner com Vinco e Botões de Controle -->
+              <div class="w-full flex items-center justify-between border-b border-slate-300/80 pb-1.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                  <span class="text-[9px] font-mono font-bold text-slate-700 ml-1">ECHO PRINT JET</span>
+                </div>
+                <!-- Botão Físico Power / Cancel -->
+                <div class="flex gap-1">
+                  <div class="w-3 h-3 rounded-full bg-slate-300 border border-slate-400 shadow-inner"></div>
+                  <div class="w-3 h-3 rounded-full bg-red-400 border border-red-500 shadow-inner"></div>
+                </div>
+              </div>
+
+              <!-- Abertura Mecânica Frontal com Roletes Pretos Giratórios -->
+              <div class="w-full h-5 bg-[#0f172a] rounded-lg border border-slate-700 px-2 flex items-center justify-between relative overflow-hidden shadow-inner">
+                <!-- Roletes de borracha -->
+                <div class="w-3 h-3 rounded-full bg-slate-600 border border-slate-400 animate-spin"></div>
+                <div class="w-3 h-3 rounded-full bg-slate-600 border border-slate-400 animate-spin"></div>
+                <div class="w-3 h-3 rounded-full bg-slate-600 border border-slate-400 animate-spin"></div>
+              </div>
+
+              <!-- Base da Impressora -->
+              <div class="text-[8px] font-mono text-slate-400 text-right pr-1">READY // 100% INK</div>
+            </div>
+
+            <!-- 3. Folha de Relatório Impresso Saindo da Fenda para a Bandeja Frontal -->
+            <div class="w-40 bg-white text-slate-900 rounded-b-lg border-x-2 border-b-2 border-slate-300 p-2 shadow-2xl font-mono text-[9px] leading-tight z-20"
+                 style="animation: paperFeedOut 2.2s cubic-bezier(0.2, 1, 0.4, 1) forwards;">
+              <div class="font-bold text-blue-700 border-b border-slate-200 pb-1 flex justify-between">
+                <span>[RELATÓRIO // PLAN]</span>
+                <span class="text-emerald-600 font-bold">100% OK</span>
+              </div>
+              <div class="mt-1 space-y-0.5 text-[8px] text-slate-700">
+                <div>✓ Setup Windows Confirmado</div>
+                <div>✓ Coucou Canvas 2D Engine Ativo</div>
+                <div>✓ Todas as 14 Ações Online</div>
+              </div>
+            </div>
+
+            <!-- 4. Bandeja de Saída Estendida Inferior -->
+            <div class="w-44 h-3 bg-slate-800 rounded-b-xl border-x-2 border-b-2 border-slate-600 -mt-1 z-0 shadow-lg"></div>
+
+          </div>
         `;
 
-        armL.classList.remove('opacity-0');
-        armR.classList.remove('opacity-0');
-        armL.style.animation = 'danceArmL 0.6s ease-in-out infinite alternate';
-        armR.style.animation = 'danceArmR 0.6s ease-in-out infinite alternate';
-
-        labelState.textContent = '🕺 Dancinha da Vitória!';
-        labelSub.textContent = 'Balanço comemorativo com braços no ar';
+        labelTitle.textContent = '🖨️ Impressora de Mesa Realista';
+        labelDesc.textContent = 'Alimentador traseiro com folhas, roletes de tração e bandeja frontal';
       }
 
       // ========================================================
-      // 7. OCIOSO NORMAL (VOLTAR À ESFERA PADRÃO)
+      // 13. TRANSFORMAÇÃO: FOGUETE DE DEPLOY
       // ========================================================
-      else if (mode === 'idle') {
-        labelState.textContent = '🔵 Grok Bot Ativo (Ocioso)';
-        labelSub.textContent = 'Forma esférica padrão com respiração suave';
+      else if (mode === 'rocket') {
+        canvas.classList.add('hidden');
+        overlay.classList.remove('hidden');
+
+        satellite.className = 'absolute top-3 left-4 z-40 px-2 py-0.5 rounded bg-orange-950/80 border border-orange-500/40 text-[9px] font-mono text-orange-400';
+        satellite.innerHTML = `<span>T-MINUS 0s</span>`;
+
+        overlay.innerHTML = `
+          <div class="relative flex flex-col items-center animate-bounce" style="animation-duration: 1.2s;">
+            <!-- Ponta Cônica Aerodinâmica do Foguete -->
+            <div class="w-0 h-0 border-l-[32px] border-l-transparent border-r-[32px] border-r-transparent border-b-[44px] border-b-red-600 drop-shadow-md"></div>
+
+            <!-- Corpo Cilíndrico Metálico com Rebites -->
+            <div class="relative w-28 h-32 rounded-xl bg-gradient-to-r from-slate-200 via-slate-100 to-slate-300 border-2 border-slate-400 shadow-2xl flex flex-col items-center justify-center p-2 z-10">
+              
+              <!-- Aleta Esquerda -->
+              <div class="absolute -left-5 bottom-0 w-6 h-14 bg-red-600 rounded-tl-full border-l-2 border-slate-700 transform -skew-y-12"></div>
+              <!-- Aleta Direita -->
+              <div class="absolute -right-5 bottom-0 w-6 h-14 bg-red-600 rounded-tr-full border-r-2 border-slate-700 transform skew-y-12"></div>
+
+              <!-- Escotilha Circular com os Olhinhos do Robô Espiando -->
+              <div class="w-14 h-14 rounded-full bg-[#071626] border-4 border-slate-400 shadow-inner flex items-center justify-center gap-2">
+                <span class="w-2.5 h-5 bg-[#38bdf8] rounded-full animate-pulse"></span>
+                <span class="w-2.5 h-5 bg-[#38bdf8] rounded-full animate-pulse"></span>
+              </div>
+
+              <!-- Faixa de Identificação -->
+              <div class="mt-2 px-2 py-0.5 bg-red-600 text-white font-mono font-bold text-[8px] rounded">
+                ECHO // DEPLOY
+              </div>
+            </div>
+
+            <!-- Bocal do Motor Propulsor -->
+            <div class="w-16 h-4 bg-slate-800 rounded-b-lg border-2 border-slate-600 -mt-1 z-10"></div>
+
+            <!-- Chamas do Propulsor em Camadas Pulsantes -->
+            <div class="relative w-12 flex justify-center -mt-0.5" style="animation: rocketFlame 0.3s ease-in-out infinite alternate;">
+              <div class="w-12 h-14 bg-gradient-to-b from-yellow-300 via-orange-500 to-red-600 rounded-b-full filter blur-[1px]"></div>
+              <div class="absolute top-0 w-6 h-8 bg-white rounded-b-full filter blur-[0.5px]"></div>
+            </div>
+          </div>
+        `;
+
+        labelTitle.textContent = '🚀 Foguete de Deploy Espacial';
+        labelDesc.textContent = 'Corpo aerodinâmico, aletas, escotilha com olhos e chamas propulsoras';
+      }
+
+      // ========================================================
+      // 14. TRANSFORMAÇÃO: CAFETEIRA EXPRESSO DEV
+      // ========================================================
+      else if (mode === 'coffee') {
+        canvas.classList.add('hidden');
+        overlay.classList.remove('hidden');
+
+        satellite.className = 'absolute top-3 left-4 z-40 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-[9px] font-mono text-emerald-300';
+        satellite.innerHTML = `<span>15 BAR // 92°C</span>`;
+
+        overlay.innerHTML = `
+          <div class="relative w-48 flex flex-col items-center">
+            
+            <!-- Vapor do Café Subindo -->
+            <div class="absolute -top-7 flex gap-3 text-slate-300 pointer-events-none opacity-80">
+              <span class="text-sm font-bold" style="animation: coffeeSteam 1.6s infinite;">~</span>
+              <span class="text-base font-bold" style="animation: coffeeSteam 1.8s infinite 0.3s;">~</span>
+              <span class="text-sm font-bold" style="animation: coffeeSteam 1.4s infinite 0.6s;">~</span>
+            </div>
+
+            <!-- Corpo da Máquina de Café Expresso -->
+            <div class="w-44 h-40 rounded-2xl bg-gradient-to-b from-[#2a303c] via-[#1f242d] to-[#12151b] border-2 border-slate-600 shadow-[0_16px_35px_rgba(0,0,0,0.8),inset_0_2px_4px_rgba(255,255,255,0.2)] p-2.5 flex flex-col justify-between relative">
+              
+              <!-- Manômetro Analógico Superior & Botões -->
+              <div class="w-full flex items-center justify-between border-b border-slate-700 pb-1.5">
+                <div class="flex items-center gap-2">
+                  <!-- Manômetro Circular com Agulha -->
+                  <div class="w-7 h-7 rounded-full bg-slate-100 border-2 border-amber-600 flex items-center justify-center relative shadow-inner">
+                    <div class="w-2.5 h-0.5 bg-red-600 origin-left transform rotate-45"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-slate-900 absolute"></div>
+                  </div>
+                  <span class="text-[9px] font-mono font-bold text-amber-400">DEV // COFFEE</span>
+                </div>
+                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+              </div>
+
+              <!-- Nicho de Extração com Bico Injetor -->
+              <div class="w-full h-20 bg-[#0d1015] rounded-xl border border-slate-800 relative flex flex-col items-center justify-between p-1.5 shadow-inner">
+                <!-- Bico Dosador Injetor de Café -->
+                <div class="w-8 h-3 bg-slate-400 rounded-b border border-slate-600 relative">
+                  <!-- Gota de Café Pingando -->
+                  <div class="w-1.5 h-2 rounded-full bg-amber-900 mx-auto" style="animation: coffeeDrop 0.8s infinite;"></div>
+                </div>
+
+                <!-- Xícara de Café Quentinho Apoiada -->
+                <div class="relative w-9 h-7 rounded-b-xl bg-slate-100 border border-slate-300 shadow-md flex items-center justify-center">
+                  <!-- Alça da Xícara -->
+                  <div class="absolute -right-2 top-1 w-2.5 h-4 rounded-r-full border-2 border-slate-100 border-l-0"></div>
+                  <!-- Café dentro da xícara -->
+                  <div class="w-7 h-1.5 bg-amber-950 rounded-full -mt-3.5"></div>
+                </div>
+
+                <!-- Grade Coletora Inferior Perfurada -->
+                <div class="w-full h-1.5 bg-slate-700 rounded flex justify-around items-center px-1">
+                  <span class="w-1 h-0.5 bg-slate-900 rounded-full"></span>
+                  <span class="w-1 h-0.5 bg-slate-900 rounded-full"></span>
+                  <span class="w-1 h-0.5 bg-slate-900 rounded-full"></span>
+                  <span class="w-1 h-0.5 bg-slate-900 rounded-full"></span>
+                </div>
+              </div>
+
+              <!-- Status -->
+              <div class="text-[8px] font-mono text-emerald-400 text-center">ESPRESSO READY // COMPILING</div>
+            </div>
+
+          </div>
+        `;
+
+        labelTitle.textContent = '☕ Máquina de Café Expresso Dev';
+        labelDesc.textContent = 'Manômetro de pressão, bico dosador com café e vapor saindo da xícara';
       }
     }
   </script>
