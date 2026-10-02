@@ -3,128 +3,184 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Grok Bot // Animação com Bracinhos e Óculos</title>
+  <title>Grok Bot // Sistema Vivo de Animações</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Levitação suave ociosa */
-    @keyframes floatHead {
-      0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
-      50% { transform: translateY(-10px) rotate(1deg) scale(1.02); }
+    /* ======================================================== */
+    /* FÍSICA ORGÂNICA: RESPIRAÇÃO & SQUASH & STRETCH */
+    /* ======================================================== */
+    @keyframes organicBreathing {
+      0%, 100% {
+        transform: translateY(0px) scale(1, 1) rotate(0deg);
+      }
+      30% {
+        transform: translateY(-8px) scale(0.985, 1.02) rotate(0.8deg);
+      }
+      65% {
+        transform: translateY(4px) scale(1.025, 0.98) rotate(-0.5deg);
+      }
+    }
+
+    /* Brilho pulsante */
+    @keyframes ambientGlow {
+      0%, 100% {
+        box-shadow: 0 0 35px rgba(80, 185, 255, 0.4), inset 0 -8px 18px rgba(10, 35, 60, 0.65);
+      }
+      50% {
+        box-shadow: 0 0 65px rgba(80, 185, 255, 0.75), inset 0 -8px 18px rgba(10, 35, 60, 0.35);
+      }
     }
 
     /* Satélite orbital */
     @keyframes floatSatellite {
-      0%, 100% { transform: translateY(0px) scale(1); }
-      50% { transform: translateY(-5px) scale(1.08); }
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(8deg); }
     }
 
-    /* Piscada elástica */
-    @keyframes blinkEyes {
-      0%, 93%, 97%, 100% { transform: scaleY(1); }
-      95% { transform: scaleY(0.08); }
+    /* Piscada natural periódica */
+    @keyframes naturalBlink {
+      0%, 92%, 96%, 100% { transform: scaleY(1); }
+      94% { transform: scaleY(0.06); }
     }
 
-    /* Brilho pulsante */
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 30px rgba(78, 175, 255, 0.35), inset 0 -8px 16px rgba(10, 35, 60, 0.6); }
-      50% { box-shadow: 0 0 55px rgba(78, 175, 255, 0.7), inset 0 -8px 16px rgba(10, 35, 60, 0.3); }
+    /* Equalizador do satélite */
+    @keyframes barWave1 { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+    @keyframes barWave2 { 0%, 100% { height: 13px; } 50% { height: 5px; } }
+    @keyframes barWave3 { 0%, 100% { height: 6px; } 50% { height: 15px; } }
+
+    /* ======================================================== */
+    /* BRAÇOS & AÇÕES DINÂMICAS */
+    /* ======================================================== */
+    /* 1. Tamborilar dedos no queixo (pensador) */
+    @keyframes tapChin {
+      0%, 100% { transform: translate(14px, -18px) rotate(42deg); }
+      50% { transform: translate(15px, -21px) rotate(47deg); }
     }
 
-    /* Barras do equalizador */
-    @keyframes wave1 { 0%, 100% { height: 5px; } 50% { height: 14px; } }
-    @keyframes wave2 { 0%, 100% { height: 13px; } 50% { height: 4px; } }
-    @keyframes wave3 { 0%, 100% { height: 7px; } 50% { height: 15px; } }
-
-    /* Braços - Digitando / Codando */
-    @keyframes typingLeft {
-      0%, 100% { transform: translateY(0px) rotate(-15deg); }
-      50% { transform: translateY(-8px) rotate(-28deg); }
+    /* 2. Digitação rápida estilo hacker */
+    @keyframes hackTypeL {
+      0%, 100% { transform: translate(12px, -8px) rotate(-20deg); }
+      50% { transform: translate(15px, -18px) rotate(-35deg); }
     }
-    @keyframes typingRight {
-      0%, 100% { transform: translateY(-8px) rotate(28deg); }
-      50% { transform: translateY(0px) rotate(15deg); }
+    @keyframes hackTypeR {
+      0%, 100% { transform: translate(-15px, -18px) rotate(35deg); }
+      50% { transform: translate(-12px, -8px) rotate(20deg); }
     }
 
-    /* Braços - Comemorando */
-    @keyframes cheerLeft {
-      0%, 100% { transform: translate(-8px, -24px) rotate(-45deg); }
-      50% { transform: translate(-10px, -30px) rotate(-60deg); }
+    /* 3. Dancinha da vitória */
+    @keyframes danceBody {
+      0%, 100% { transform: translateY(0px) rotate(-6deg) scale(1.02); }
+      50% { transform: translateY(-16px) rotate(6deg) scale(0.98); }
     }
-    @keyframes cheerRight {
-      0%, 100% { transform: translate(8px, -24px) rotate(45deg); }
-      50% { transform: translate(10px, -30px) rotate(60deg); }
+    @keyframes danceArmL {
+      0%, 100% { transform: translate(-12px, -30px) rotate(-65deg); }
+      50% { transform: translate(-8px, -20px) rotate(-40deg); }
     }
-
-    /* Braço - Acenando */
-    @keyframes waveHand {
-      0%, 100% { transform: translate(8px, -26px) rotate(35deg); }
-      50% { transform: translate(10px, -24px) rotate(65deg); }
+    @keyframes danceArmR {
+      0%, 100% { transform: translate(8px, -20px) rotate(40deg); }
+      50% { transform: translate(12px, -30px) rotate(65deg); }
     }
 
-    /* Salto elástico de comemoração */
-    @keyframes jumpCelebration {
-      0% { transform: translateY(0) scale(1, 1); }
-      20% { transform: translateY(8px) scale(1.15, 0.85); }
-      50% { transform: translateY(-32px) scale(0.9, 1.15); }
-      75% { transform: translateY(0px) scale(1.08, 0.92); }
-      100% { transform: translateY(0) scale(1, 1); }
+    /* 4. Coçar a cabeça */
+    @keyframes scratchHead {
+      0%, 100% { transform: translate(-18px, -46px) rotate(-130deg); }
+      50% { transform: translate(-22px, -50px) rotate(-145deg); }
     }
 
-    /* Tremor cômico de erro */
-    @keyframes errorGlitch {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      20% { transform: translate(-6px, 4px) rotate(-4deg); }
-      40% { transform: translate(6px, -4px) rotate(4deg); }
+    /* 5. Aceno duplo chamando atenção */
+    @keyframes callWaveL {
+      0%, 100% { transform: translate(-10px, -28px) rotate(-50deg); }
+      50% { transform: translate(-14px, -34px) rotate(-70deg); }
+    }
+    @keyframes callWaveR {
+      0%, 100% { transform: translate(14px, -34px) rotate(70deg); }
+      50% { transform: translate(10px, -28px) rotate(50deg); }
+    }
+
+    /* 6. Surpreso / Susto */
+    @keyframes shockHead {
+      0% { transform: translateY(0) scale(1); }
+      30% { transform: translateY(-18px) scale(0.92, 1.12); }
+      60% { transform: translateY(2px) scale(1.06, 0.95); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    /* 7. Dormindo Zzz */
+    @keyframes sleepFloat {
+      0%, 100% { transform: translateY(0px) rotate(8deg); }
+      50% { transform: translateY(8px) rotate(11deg); }
+    }
+    @keyframes zzzFloat {
+      0% { opacity: 0; transform: translate(0, 0) scale(0.7); }
+      50% { opacity: 1; }
+      100% { opacity: 0; transform: translate(18px, -35px) scale(1.2); }
+    }
+
+    /* 8. Tremor de erro / glitch */
+    @keyframes glitchShake {
+      0%, 100% { transform: translate(0, 0) rotate(0); }
+      20% { transform: translate(-8px, 4px) rotate(-5deg); }
+      40% { transform: translate(8px, -4px) rotate(5deg); }
       60% { transform: translate(-5px, -3px) rotate(-3deg); }
       80% { transform: translate(5px, 3px) rotate(3deg); }
     }
 
-    /* Reflexo de luz nos óculos */
-    @keyframes glassesGlare {
-      0%, 100% { opacity: 0.6; transform: translateX(0); }
-      50% { opacity: 1; transform: translateX(4px); }
+    /* Óculos reflexo de luz */
+    @keyframes glassesSheen {
+      0%, 100% { opacity: 0.5; transform: translateX(0); }
+      50% { opacity: 1; transform: translateX(5px); }
     }
 
-    /* Classes auxiliares */
+    /* Partículas de código na digitação */
+    @keyframes codeSpark {
+      0% { opacity: 0; transform: translateY(0) scale(0.5); }
+      50% { opacity: 1; transform: translateY(-12px) scale(1); }
+      100% { opacity: 0; transform: translateY(-24px) scale(0.7); }
+    }
+
+    /* Transições gerais */
     .head-orb {
-      animation: floatHead 3.8s ease-in-out infinite, pulseGlow 3.8s ease-in-out infinite;
-      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: organicBreathing 4.5s ease-in-out infinite, ambientGlow 4.5s ease-in-out infinite;
+      transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .satellite-badge {
-      animation: floatSatellite 2.8s ease-in-out infinite;
+      animation: floatSatellite 3s ease-in-out infinite;
     }
     .eyes-capsule {
-      animation: blinkEyes 4.2s infinite;
+      animation: naturalBlink 4.2s infinite;
       transform-origin: center;
-      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .arm {
-      transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       transform-origin: top center;
     }
     .glasses {
       transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    .wave-1 { animation: wave1 0.75s ease-in-out infinite; }
-    .wave-2 { animation: wave2 0.65s ease-in-out infinite 0.15s; }
-    .wave-3 { animation: wave3 0.85s ease-in-out infinite 0.05s; }
+    .wave-1 { animation: barWave1 0.75s ease-in-out infinite; }
+    .wave-2 { animation: barWave2 0.65s ease-in-out infinite 0.15s; }
+    .wave-3 { animation: barWave3 0.85s ease-in-out infinite 0.05s; }
   </style>
 </head>
-<body class="bg-[#05080e] text-slate-100 min-h-screen p-4 flex flex-col items-center justify-between font-sans antialiased select-none">
+<body class="bg-[#04070e] text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center justify-between font-sans antialiased select-none overflow-x-hidden">
 
-  <!-- Topo -->
-  <div class="text-center mt-2 max-w-sm">
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-2">
+  <!-- Header -->
+  <header class="text-center mt-1 w-full max-w-sm">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-1">
       <span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span>
-      Grok Bot 2.0 // Bracinhos & Óculos
+      Grok Bot // Laboratório de Animações
     </div>
-    <h1 class="text-xl font-bold tracking-tight text-white">Animação & Reações Expandidas</h1>
-  </div>
+    <h1 class="text-lg font-bold tracking-tight text-white">Expressões & Física Viva</h1>
+  </header>
 
-  <!-- Palco Central: Mascote Completo -->
-  <div class="w-full max-w-sm bg-[#0c111a]/90 border border-slate-800/80 rounded-3xl p-6 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-xl min-h-[300px] my-3">
+  <!-- Palco Central do Mascote -->
+  <main class="w-full max-w-sm bg-[#0a0f18]/90 border border-slate-800/80 rounded-[32px] p-6 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-2xl min-h-[310px] my-2">
     
+    <!-- Partículas Flutuantes (Zzz / Código / Dúvida) -->
+    <div id="particle-container" class="absolute inset-0 pointer-events-none z-40 flex items-center justify-center"></div>
+
     <!-- Wrapper do Mascote e Membros -->
     <div id="character-wrapper" class="relative my-auto flex items-center justify-center">
 
@@ -134,12 +190,12 @@
       <div id="arm-left" class="arm absolute -left-7 bottom-4 z-10 opacity-0 pointer-events-none">
         <div class="w-5 h-14 rounded-full bg-gradient-to-b from-[#68b2e3] to-[#255d85] border border-blue-400/30 shadow-md relative">
           <!-- Mãozinha -->
-          <div class="w-6 h-6 rounded-full bg-[#82c6f5] absolute -bottom-1 -left-0.5 shadow-inner"></div>
+          <div class="w-6 h-6 rounded-full bg-[#8ac9f7] absolute -bottom-1 -left-0.5 shadow-inner"></div>
         </div>
       </div>
 
       <!-- ============================================== -->
-      <!-- SATÉLITE DE STATUS -->
+      <!-- SATÉLITE ORBITAL DE STATUS -->
       <!-- ============================================== -->
       <div id="sat-1" class="satellite-badge absolute -top-2 -left-3 z-30 w-8 h-8 rounded-full bg-[#173b57] border border-[#3b8ac4]/60 flex items-center justify-center shadow-lg">
         <div class="flex items-center gap-[2.5px] h-3.5" id="sat-content">
@@ -150,33 +206,33 @@
       </div>
 
       <!-- ============================================== -->
-      <!-- CABEÇA / ESFERA 2.5D -->
+      <!-- CABEÇA / ESFERA 2.5D ILUMINADA -->
       <!-- ============================================== -->
       <div id="head-1" class="head-orb w-36 h-36 rounded-full relative flex items-center justify-center cursor-pointer"
            style="background: radial-gradient(circle at 35% 30%, #bde4ff 0%, #68b2e3 42%, #2d6b99 80%, #153852 100%);">
 
         <!-- ============================================== -->
-        <!-- ÓCULOS DE PENSADOR (SLIDE IN / OUT) -->
+        <!-- ÓCULOS INTELIGENTES (SLIDE-DOWN OVERSHOOT) -->
         <!-- ============================================== -->
         <div id="glasses" class="glasses absolute top-9 z-20 opacity-0 pointer-events-none transform -translate-y-8 scale-90">
-          <svg viewBox="0 0 110 44" class="w-28 h-11 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]">
-            <!-- Armação e Lente Esquerda -->
-            <rect x="6" y="6" width="42" height="30" rx="10" fill="rgba(11, 27, 41, 0.75)" stroke="#60a5fa" stroke-width="2.8" />
-            <!-- Armação e Lente Direita -->
-            <rect x="62" y="6" width="42" height="30" rx="10" fill="rgba(11, 27, 41, 0.75)" stroke="#60a5fa" stroke-width="2.8" />
+          <svg viewBox="0 0 110 44" class="w-28 h-11 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+            <!-- Lente Esquerda -->
+            <rect x="6" y="6" width="42" height="30" rx="10" fill="rgba(10, 25, 40, 0.8)" stroke="#60a5fa" stroke-width="2.8" />
+            <!-- Lente Direita -->
+            <rect x="62" y="6" width="42" height="30" rx="10" fill="rgba(10, 25, 40, 0.8)" stroke="#60a5fa" stroke-width="2.8" />
             <!-- Ponte Central -->
             <path d="M48 20 Q 55 14 62 20" fill="none" stroke="#60a5fa" stroke-width="2.8" stroke-linecap="round" />
-            <!-- Hastes Laterais -->
+            <!-- Hastes -->
             <path d="M6 18 Q 0 16 -3 20" fill="none" stroke="#60a5fa" stroke-width="2.5" />
             <path d="M104 18 Q 110 16 113 20" fill="none" stroke="#60a5fa" stroke-width="2.5" />
-            <!-- Brilho / Reflexo Diagonal nas Lentes -->
-            <line x1="14" y1="10" x2="34" y2="30" stroke="rgba(255,255,255,0.75)" stroke-width="2" stroke-linecap="round" style="animation: glassesGlare 2.5s infinite;" />
-            <line x1="70" y1="10" x2="90" y2="30" stroke="rgba(255,255,255,0.75)" stroke-width="2" stroke-linecap="round" style="animation: glassesGlare 2.5s infinite 0.3s;" />
+            <!-- Reflexo Dinâmico nas Lentes -->
+            <line x1="14" y1="10" x2="34" y2="30" stroke="rgba(255,255,255,0.75)" stroke-width="2" stroke-linecap="round" style="animation: glassesSheen 2.5s infinite;" />
+            <line x1="70" y1="10" x2="90" y2="30" stroke="rgba(255,255,255,0.75)" stroke-width="2" stroke-linecap="round" style="animation: glassesSheen 2.5s infinite 0.3s;" />
           </svg>
         </div>
 
         <!-- ============================================== -->
-        <!-- OLHOS DE CÁPSULA -->
+        <!-- OLHOS EXPRESSIVOS EM CÁPSULA -->
         <!-- ============================================== -->
         <div id="eyes-1" class="eyes-capsule flex items-center gap-4 mt-1">
           <span id="eye-l" class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
@@ -191,73 +247,83 @@
       <div id="arm-right" class="arm absolute -right-7 bottom-4 z-10 opacity-0 pointer-events-none">
         <div class="w-5 h-14 rounded-full bg-gradient-to-b from-[#68b2e3] to-[#255d85] border border-blue-400/30 shadow-md relative">
           <!-- Mãozinha -->
-          <div class="w-6 h-6 rounded-full bg-[#82c6f5] absolute -bottom-1 -right-0.5 shadow-inner"></div>
+          <div class="w-6 h-6 rounded-full bg-[#8ac9f7] absolute -bottom-1 -right-0.5 shadow-inner"></div>
         </div>
       </div>
 
     </div>
 
-    <!-- Feedback de Texto -->
+    <!-- Feedback e Descrição da Expressão -->
     <div class="text-center mt-5">
       <div class="text-base font-semibold text-white tracking-wide" id="label-state-1">Grok Bot Ativo (Ocioso)</div>
-      <div class="text-xs text-blue-400 font-medium mt-0.5" id="label-sub-1">Levitação suave com olhos acompanhando o ambiente</div>
+      <div class="text-xs text-blue-400 font-medium mt-0.5" id="label-sub-1">Respiração com física orgânica e olhos atentos</div>
     </div>
-  </div>
+  </main>
 
-  <!-- Botões de Ação para o Celular -->
-  <div class="w-full max-w-sm bg-slate-900/90 border border-slate-800 rounded-3xl p-3 flex flex-col gap-2 mb-2 backdrop-blur-md">
-    <div class="text-[11px] font-mono tracking-wider text-slate-400 text-center uppercase">TOQUE PARA MUDAR A AÇÃO:</div>
+  <!-- Grade de Ações no Celular (8 Poses Exclusivas) -->
+  <footer class="w-full max-w-sm bg-slate-900/90 border border-slate-800 rounded-3xl p-3 flex flex-col gap-2 mb-2 backdrop-blur-md">
+    <div class="text-[10px] font-mono tracking-wider text-slate-400 text-center uppercase">ESCOLHA A ANIMAÇÃO / POSE:</div>
     
     <div class="grid grid-cols-2 gap-2">
       <!-- 1. Pensando com Óculos -->
-      <button onclick="setMode('thinking')" class="px-3 py-2.5 rounded-2xl bg-indigo-600/25 border border-indigo-500/40 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+      <button onclick="setMode('thinking')" class="px-3 py-2 rounded-2xl bg-indigo-600/25 border border-indigo-500/40 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
         👓 <span>Pensando (Óculos)</span>
       </button>
 
-      <!-- 2. Codando com Braços -->
-      <button onclick="setMode('coding')" class="px-3 py-2.5 rounded-2xl bg-cyan-600/25 border border-cyan-500/40 text-cyan-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
-        💻 <span>Codando (Braços)</span>
+      <!-- 2. Hacker Codando -->
+      <button onclick="setMode('hacker')" class="px-3 py-2 rounded-2xl bg-cyan-600/25 border border-cyan-500/40 text-cyan-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        💻 <span>Codando Rápido</span>
       </button>
 
-      <!-- 3. Vitória / Comemoração -->
-      <button onclick="setMode('victory')" class="px-3 py-2.5 rounded-2xl bg-emerald-600/25 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
-        🎉 <span>Vitória (Salto)</span>
+      <!-- 3. Dancinha da Vitória -->
+      <button onclick="setMode('dance')" class="px-3 py-2 rounded-2xl bg-emerald-600/25 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        🕺 <span>Dancinha Vitória</span>
       </button>
 
-      <!-- 4. Acenando -->
-      <button onclick="setMode('waving')" class="px-3 py-2.5 rounded-2xl bg-amber-600/25 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
-        👋 <span>Acenando (Tchau)</span>
+      <!-- 4. Dúvida / Coçando a Cabeça -->
+      <button onclick="setMode('doubt')" class="px-3 py-2 rounded-2xl bg-amber-600/25 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        🤔 <span>Coçando Cabeça</span>
       </button>
 
-      <!-- 5. Ocioso / Respiração -->
-      <button onclick="setMode('idle')" class="px-3 py-2.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
-        💤 <span>Ocioso Normal</span>
+      <!-- 5. Surpreso / Susto -->
+      <button onclick="setMode('surprised')" class="px-3 py-2 rounded-2xl bg-purple-600/25 border border-purple-500/40 text-purple-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        😲 <span>Surpreso (O O)</span>
       </button>
 
-      <!-- 6. Erro com Tremor -->
-      <button onclick="setMode('error')" class="px-3 py-2.5 rounded-2xl bg-rose-600/25 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
-        ⚠️ <span>Curto / Erro</span>
+      <!-- 6. Chamando Você (Aceno Duplo) -->
+      <button onclick="setMode('call')" class="px-3 py-2 rounded-2xl bg-sky-600/25 border border-sky-500/40 text-sky-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        🙌 <span>Chamando Você</span>
+      </button>
+
+      <!-- 7. Dormindo Zzz -->
+      <button onclick="setMode('sleep')" class="px-3 py-2 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        😴 <span>Dormindo Zzz</span>
+      </button>
+
+      <!-- 8. Curto-Circuito / Erro -->
+      <button onclick="setMode('glitch')" class="px-3 py-2 rounded-2xl bg-rose-600/25 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+        ⚡ <span>Curto-Circuito</span>
       </button>
     </div>
-  </div>
+  </footer>
 
   <script>
     const wrapper = document.getElementById('character-wrapper');
     const head = document.getElementById('head-1');
     const eyes = document.getElementById('eyes-1');
-    const eyeL = document.getElementById('eye-l');
-    const eyeR = document.getElementById('eye-r');
     const sat = document.getElementById('sat-1');
     const armL = document.getElementById('arm-left');
     const armR = document.getElementById('arm-right');
     const glasses = document.getElementById('glasses');
     const labelState = document.getElementById('label-state-1');
     const labelSub = document.getElementById('label-sub-1');
+    const particles = document.getElementById('particle-container');
 
     function resetAll() {
-      // Reseta classes de animações de braços e cabeça
+      // Limpa partículas e classes de animação
+      particles.innerHTML = '';
       wrapper.style.animation = '';
-      head.style.animation = 'floatHead 3.8s ease-in-out infinite, pulseGlow 3.8s ease-in-out infinite';
+      head.style.animation = 'organicBreathing 4.5s ease-in-out infinite, ambientGlow 4.5s ease-in-out infinite';
       head.style.transform = '';
       
       armL.style.animation = '';
@@ -283,123 +349,197 @@
     function setMode(mode) {
       resetAll();
 
-      if (mode === 'idle') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #bde4ff 0%, #68b2e3 42%, #2d6b99 80%, #153852 100%)';
-        eyes.innerHTML = `
-          <span class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
-          <span class="w-4 h-9 bg-[#0b1b29] rounded-full shadow-inner"></span>
-        `;
-        labelState.textContent = 'Grok Bot Ativo (Ocioso)';
-        labelSub.textContent = 'Levitação suave com olhos atentos ao ambiente';
-      }
-
       // ==========================================
-      // 1. PENSANDO: Óculos descem + mão no queixo
+      // 1. PENSANDO COM ÓCULOS E DEDO NO QUEIXO
       // ==========================================
-      else if (mode === 'thinking') {
+      if (mode === 'thinking') {
         head.style.background = 'radial-gradient(circle at 35% 30%, #d4eeff 0%, #7db9e6 42%, #326f9c 80%, #163e5e 100%)';
-        head.style.transform = 'rotate(-5deg)';
+        head.style.transform = 'rotate(-6deg)';
         
-        // Olhos olhando para cima/pensativo
+        // Olhar analítico para cima
         eyes.innerHTML = `
-          <span class="w-3.5 h-6 bg-[#0b1b29] rounded-full transform translate-y-[-2px] translate-x-[3px] shadow-inner"></span>
-          <span class="w-3.5 h-6 bg-[#0b1b29] rounded-full transform translate-y-[-2px] translate-x-[3px] shadow-inner"></span>
+          <span class="w-3.5 h-6 bg-[#0b1b29] rounded-full transform translate-y-[-3px] translate-x-[3px] shadow-inner"></span>
+          <span class="w-3.5 h-6 bg-[#0b1b29] rounded-full transform translate-y-[-3px] translate-x-[3px] shadow-inner"></span>
         `;
 
         // Desce os Óculos
         glasses.classList.remove('opacity-0', '-translate-y-8', 'scale-90');
         glasses.classList.add('opacity-100', 'translate-y-0', 'scale-100');
 
-        // Mãozinha esquerda sobe no queixo
+        // Mãozinha no queixo tamborilando
         armL.classList.remove('opacity-0');
-        armL.style.transform = 'translate(14px, -18px) rotate(42deg)';
+        armL.style.animation = 'tapChin 0.5s ease-in-out infinite alternate';
 
-        labelState.textContent = '🧠 Modo Analítico (Pensando)';
-        labelSub.textContent = 'Óculos ativados e calculando raciocínio';
+        labelState.textContent = '🧠 Analítico (Óculos & Tamborilar)';
+        labelSub.textContent = 'Óculos descem suavemente e mãozinha bate no queixo';
       }
 
       // ==========================================
-      // 2. CODANDO: Dois bracinhos digitando rápido
+      // 2. HACKER / DIGITAÇÃO FURIOSA
       // ==========================================
-      else if (mode === 'coding') {
+      else if (mode === 'hacker') {
         head.style.background = 'radial-gradient(circle at 35% 30%, #b8f5ff 0%, #52d3ec 42%, #1b859e 80%, #0d4654 100%)';
+        head.style.transform = 'scale(1.03)';
         
-        // Olhos focados e atentos
         eyes.innerHTML = `
           <span class="w-4 h-7 bg-[#051c22] rounded-full shadow-inner"></span>
           <span class="w-4 h-7 bg-[#051c22] rounded-full shadow-inner"></span>
         `;
 
-        // Ativa os dois braços digitando
+        // Ativa braços em alta rotação de digitação
         armL.classList.remove('opacity-0');
         armR.classList.remove('opacity-0');
-        armL.style.animation = 'typingLeft 0.3s ease-in-out infinite alternate';
-        armR.style.animation = 'typingRight 0.3s ease-in-out infinite alternate';
+        armL.style.animation = 'hackTypeL 0.18s ease-in-out infinite alternate';
+        armR.style.animation = 'hackTypeR 0.18s ease-in-out infinite alternate';
 
-        labelState.textContent = '💻 Codando a Todo Vapor!';
-        labelSub.textContent = 'Braços digitando scripts e executando tarefas';
+        // Partículas de código verde/ciano saindo das mãos
+        particles.innerHTML = `
+          <div class="absolute bottom-16 flex gap-3 text-[10px] font-mono font-bold text-cyan-400">
+            <span style="animation: codeSpark 0.6s infinite 0.1s;">{ code }</span>
+            <span style="animation: codeSpark 0.7s infinite 0.3s;">&lt;exec/&gt;</span>
+            <span style="animation: codeSpark 0.5s infinite 0.2s;">10110</span>
+          </div>
+        `;
+
+        labelState.textContent = '💻 Modo Hacker // Digitação Furiosa';
+        labelSub.textContent = 'Braços digitando no ar com partículas de script';
       }
 
       // ==========================================
-      // 3. VITÓRIA / SUCESSO: Salto e braços no ar
+      // 3. DANCINHA DA VITÓRIA
       // ==========================================
-      else if (mode === 'victory') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #c2ffd9 0%, #4ce49a 42%, #16935b 80%, #0c5233 100%)';
+      else if (mode === 'dance') {
+        head.style.background = 'radial-gradient(circle at 35% 30%, #c4ffd8 0%, #4ae39f 42%, #158f5b 80%, #0b4f31 100%)';
+        wrapper.style.animation = 'danceBody 0.6s ease-in-out infinite alternate';
         
-        // Olhos sorrindo (arcos)
+        // Olhos felizes em arco
         eyes.innerHTML = `
           <span class="w-5 h-4 border-t-4 border-emerald-950 rounded-t-full"></span>
           <span class="w-5 h-4 border-t-4 border-emerald-950 rounded-t-full"></span>
         `;
 
-        // Braços erguidos comemorando
         armL.classList.remove('opacity-0');
         armR.classList.remove('opacity-0');
-        armL.style.animation = 'cheerLeft 0.5s ease-in-out infinite';
-        armR.style.animation = 'cheerRight 0.5s ease-in-out infinite';
+        armL.style.animation = 'danceArmL 0.6s ease-in-out infinite alternate';
+        armR.style.animation = 'danceArmR 0.6s ease-in-out infinite alternate';
 
-        // Pula com celebração
-        wrapper.style.animation = 'jumpCelebration 1s ease-in-out infinite';
-
-        labelState.textContent = '🎉 Sucesso Absoluto!';
-        labelSub.textContent = 'Tarefa concluída e comemoração ativada';
+        labelState.textContent = '🕺 Dancinha da Vitória!';
+        labelSub.textContent = 'Comemorando resultado com balanço ritmado';
       }
 
       // ==========================================
-      // 4. ACENANDO: Braço direito dando tchau
+      // 4. DÚVIDA / COÇANDO A CABEÇA
       // ==========================================
-      else if (mode === 'waving') {
-        head.style.background = 'radial-gradient(circle at 35% 30%, #fff0c7 0%, #f7c963 42%, #a87e22 80%, #57400d 100%)';
-        head.style.transform = 'rotate(4deg)';
+      else if (mode === 'doubt') {
+        head.style.background = 'radial-gradient(circle at 35% 30%, #fff2cc 0%, #f6cb65 42%, #a47c21 80%, #523c0b 100%)';
+        head.style.transform = 'rotate(-8deg)';
 
         eyes.innerHTML = `
-          <span class="w-4 h-8 bg-[#2d2208] rounded-full shadow-inner"></span>
-          <span class="w-4 h-8 bg-[#2d2208] rounded-full shadow-inner"></span>
+          <span class="w-4 h-6 bg-[#2d2208] rounded-full transform translate-y-[-3px] shadow-inner"></span>
+          <span class="w-4 h-9 bg-[#2d2208] rounded-full transform translate-y-[-1px] shadow-inner"></span>
         `;
 
+        // Braço direito sobe coçando o topo da cabeça
         armR.classList.remove('opacity-0');
-        armR.style.animation = 'waveHand 0.4s ease-in-out infinite';
+        armR.style.animation = 'scratchHead 0.4s ease-in-out infinite alternate';
 
-        labelState.textContent = '👋 Olá Mestre!';
-        labelSub.textContent = 'Acenando e chamando sua atenção';
+        // Ponto de interrogação flutuante
+        particles.innerHTML = `
+          <div class="absolute -top-3 right-6 text-2xl font-bold text-amber-400 animate-bounce">?</div>
+        `;
+
+        labelState.textContent = '🤔 Hum... Deixe-me ver';
+        labelSub.textContent = 'Coçando a cabeça e calculando resposta';
       }
 
       // ==========================================
-      // 5. ERRO: Tremor de glitch + fendas
+      // 5. SURPRESO / SUSTO (O O)
       // ==========================================
-      else if (mode === 'error') {
+      else if (mode === 'surprised') {
+        head.style.background = 'radial-gradient(circle at 35% 30%, #f5e8ff 0%, #c084fc 42%, #7e22ce 80%, #3b0764 100%)';
+        wrapper.style.animation = 'shockHead 0.9s ease-in-out infinite';
+
+        // Olhos arregalados circulares O O
+        eyes.innerHTML = `
+          <div class="w-8 h-8 rounded-full bg-[#1b082e] border-2 border-white/60 flex items-center justify-center shadow-lg">
+            <span class="w-3 h-3 rounded-full bg-white"></span>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-[#1b082e] border-2 border-white/60 flex items-center justify-center shadow-lg">
+            <span class="w-3 h-3 rounded-full bg-white"></span>
+          </div>
+        `;
+
+        // Mãos na bochecha (susto)
+        armL.classList.remove('opacity-0');
+        armR.classList.remove('opacity-0');
+        armL.style.transform = 'translate(14px, -18px) rotate(48deg)';
+        armR.style.transform = 'translate(-14px, -18px) rotate(-48deg)';
+
+        labelState.textContent = '😲 Uau! Olha isso!';
+        labelSub.textContent = 'Olhos arregalados com mãos no rosto';
+      }
+
+      // ==========================================
+      // 6. CHAMANDO VOCÊ (ACENO DUPLO)
+      // ==========================================
+      else if (mode === 'call') {
+        head.style.background = 'radial-gradient(circle at 35% 30%, #bae6fd 0%, #38bdf8 42%, #0284c7 80%, #03496e 100%)';
+        
+        eyes.innerHTML = `
+          <span class="w-4 h-8 bg-[#042436] rounded-full shadow-inner"></span>
+          <span class="w-4 h-8 bg-[#042436] rounded-full shadow-inner"></span>
+        `;
+
+        // Dois braços acenando no alto
+        armL.classList.remove('opacity-0');
+        armR.classList.remove('opacity-0');
+        armL.style.animation = 'callWaveL 0.35s ease-in-out infinite alternate';
+        armR.style.animation = 'callWaveR 0.35s ease-in-out infinite alternate';
+
+        labelState.textContent = '🙌 Ei Mestre, estou aqui!';
+        labelSub.textContent = 'Aceno duplo enérgico para chamar atenção';
+      }
+
+      // ==========================================
+      // 7. DORMINDO ZZZ
+      // ==========================================
+      else if (mode === 'sleep') {
+        head.style.background = 'radial-gradient(circle at 35% 30%, #cbd5e1 0%, #64748b 42%, #334155 80%, #0f172a 100%)';
+        wrapper.style.animation = 'sleepFloat 3.5s ease-in-out infinite alternate';
+
+        // Olhos fechados relaxados
+        eyes.innerHTML = `
+          <span class="w-6 h-3 border-b-4 border-[#090d16] rounded-b-full"></span>
+          <span class="w-6 h-3 border-b-4 border-[#090d16] rounded-b-full"></span>
+        `;
+
+        // Bolhas de Zzz flutuantes
+        particles.innerHTML = `
+          <div class="absolute -top-4 right-5 text-sm font-bold text-slate-400 font-mono" style="animation: zzzFloat 2s infinite;">Z</div>
+          <div class="absolute -top-8 right-1 text-base font-bold text-slate-300 font-mono" style="animation: zzzFloat 2s infinite 0.6s;">z</div>
+          <div class="absolute -top-12 -right-3 text-lg font-bold text-slate-200 font-mono" style="animation: zzzFloat 2s infinite 1.2s;">z</div>
+        `;
+
+        labelState.textContent = '😴 Modo Standby / Sono Zzz';
+        labelSub.textContent = 'Respiração desacelerada e descanso';
+      }
+
+      // ==========================================
+      // 8. CURTO-CIRCUITO / ERRO
+      // ==========================================
+      else if (mode === 'glitch') {
         head.style.background = 'radial-gradient(circle at 35% 30%, #ffd4d4 0%, #f87171 45%, #b91c1c 85%, #5c0d0d 100%)';
-        head.style.animation = 'errorGlitch 0.25s infinite';
+        head.style.animation = 'glitchShake 0.22s infinite';
 
         eyes.innerHTML = `
-          <span class="w-5 h-1.5 bg-[#3f0707] rounded-full"></span>
-          <span class="w-5 h-1.5 bg-[#3f0707] rounded-full"></span>
+          <span class="w-6 h-1.5 bg-[#3f0707] rounded-full"></span>
+          <span class="w-6 h-1.5 bg-[#3f0707] rounded-full"></span>
         `;
 
         sat.innerHTML = `<span class="w-4 h-4 bg-red-500 rounded-full animate-ping"></span>`;
 
-        labelState.textContent = '⚠️ Curto-Circuito / Falha';
-        labelSub.textContent = 'Comando encontrou erro de execução';
+        labelState.textContent = '⚡ Curto-Circuito!';
+        labelSub.textContent = 'Tremor de erro e satélite em alerta';
       }
     }
   </script>
