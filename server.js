@@ -350,12 +350,55 @@ app.post('/api/events', (req, res) => {
   res.json({ ok: true, state: echoState });
 });
 
-// Endpoint de Síntese de Voz (Microsoft Edge Neural TTS com fallback OpenAI)
+// Endpoint de Síntese de Voz (Google Gemini Puck como Primário + Edge TTS Antonio como Fallback)
 app.post('/api/speak', requirePin, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Texto não fornecido' });
 
-  // 1. Tenta gerar áudio gratuito via Microsoft Edge Neural TTS (voz natural pt-BR Antonio)
+  // 1. Motor Primário: Google Gemini Native Audio (Voz Puck)
+  if (GEMINI_API_KEY) {
+    try {
+      const payload = {
+        contents: [{ parts: [{ text: `Diga em português com voz natural e expressiva exatamente: "${text}"` }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: 'Puck'
+              }
+            }
+          }
+        }
+      };
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const inlineData = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+        if (inlineData && inlineData.data) {
+          const audioBuffer = Buffer.from(inlineData.data, 'base64');
+          res.set({
+            'Content-Type': inlineData.mimeType || 'audio/wav',
+            'Content-Length': audioBuffer.length,
+            'Cache-Control': 'no-cache'
+          });
+          return res.send(audioBuffer);
+        }
+      } else {
+        console.warn(`Gemini TTS falhou (status ${response.status}), ativando Edge TTS fallback...`);
+      }
+    } catch (geminiErr) {
+      console.warn('Erro ao chamar Gemini TTS:', geminiErr.message);
+    }
+  }
+
+  // 2. Fallback 1: Microsoft Edge Neural TTS (voz natural pt-BR Antonio)
   try {
     const tts = new MsEdgeTTS();
     await tts.setMetadata('pt-BR-AntonioNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
@@ -383,7 +426,7 @@ app.post('/api/speak', requirePin, async (req, res) => {
     console.warn('Falha ao instanciar Edge TTS, tentando OpenAI fallback:', err.message);
   }
 
-  // 2. Fallback OpenAI TTS (se houver chave e créditos)
+  // 3. Fallback 2: OpenAI TTS (se houver chave e créditos)
   generateOpenAISpeech(text, res);
 });
 

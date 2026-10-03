@@ -12,7 +12,7 @@ O Echo atua como um companheiro inteligente de mesa capaz de responder perguntas
 [ Usuário (Voz / Web PWA) ]
               │
               ▼
-   [ Echo Server (4884) ] ── (Edge Neural TTS: pt-BR-AntonioNeural)
+   [ Echo Server (4884) ] ── (Gemini TTS: Puck [primário] | Edge Neural: Antonio [fallback])
               │
     ┌─────────┴───────────────────────────────┐
     ▼                                         ▼

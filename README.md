@@ -33,7 +33,7 @@ Ele monitora em tempo real:
      - Relaxando / dançando: `~( ˘ _ ˘ ~)`
      - Repouso suave: `( ^ _ ^ )` piscando naturalmente.
 5. **Telemetria do PC**: Uso contínuo de CPU e memória RAM (com alarme automático quando a CPU ultrapassa 90%).
-6. **Voz Neural**: Fala com a voz oficial *Echo* da OpenAI (usando a chave existente em `estrategia-nerd/.env`).
+6. **Voz Oficial Nativa Google Gemini (Puck)**: Fala com a voz oficial *Puck* do modelo `gemini-3.8-flash-tts` em áudio WAV de alta fidelidade (usando a `GEMINI_API_KEY`), com fallbacks redundantes para Microsoft Edge Neural TTS (`pt-BR-AntonioNeural`) e OpenAI.
 
 ---
 
