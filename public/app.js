@@ -606,6 +606,15 @@
   const pinInput = document.getElementById('pin-input');
   const pinBtn = document.getElementById('pin-btn');
   const pinError = document.getElementById('pin-error');
+  const rotateBtn = document.getElementById('rotate-btn');
+
+  function getAuthHeaders() {
+    const pin = localStorage.getItem('echo_pin') || '4884';
+    return {
+      'Content-Type': 'application/json',
+      'x-echo-pin': pin
+    };
+  }
 
   // Estado da Aplicação
   let audioUnlocked = false;
@@ -648,15 +657,29 @@
   // ========================================================
   // 6. ÁUDIO, WAKE LOCK & TRAVA DE ORIENTAÇÃO PAISAGEM
   // ========================================================
-  function enforceLandscape() {
+  async function enforceLandscape() {
     try {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen().catch(() => {});
+      }
       if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(() => {});
+        await screen.orientation.lock('landscape').catch(() => {});
       }
     } catch (e) {}
   }
   window.addEventListener('load', enforceLandscape);
   window.addEventListener('orientationchange', enforceLandscape);
+
+  if (rotateBtn) {
+    rotateBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      enforceLandscape();
+    });
+    rotateBtn.addEventListener('touchend', (e) => {
+      e.stopPropagation();
+      enforceLandscape();
+    });
+  }
 
   async function unlockAudioAndWakeLock() {
     enforceLandscape();
@@ -728,43 +751,85 @@
       currentAudio = null;
       stopSpeakingAnim();
     }
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
 
     startSpeakingAnim();
 
+    let playedServerAudio = false;
+
+    // 1. Tenta áudio de alta qualidade do servidor (OpenAI TTS voz 'echo')
     try {
       const response = await fetch('/api/speak', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
+        credentials: 'same-origin',
         body: JSON.stringify({ text })
       });
 
-      if (!response.ok) throw new Error(`TTS HTTP error: ${response.status}`);
+      if (response.ok) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('audio')) {
+          const blob = await response.blob();
+          const audioUrl = URL.createObjectURL(blob);
+          currentAudio = new Audio(audioUrl);
 
-      const blob = await response.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      currentAudio = new Audio(audioUrl);
+          currentAudio.onended = () => {
+            stopSpeakingAnim();
+            currentAudio = null;
+            URL.revokeObjectURL(audioUrl);
+            resumeListeningIfHandsFree();
+          };
+          currentAudio.onerror = () => {
+            stopSpeakingAnim();
+            currentAudio = null;
+            resumeListeningIfHandsFree();
+          };
 
-      currentAudio.onended = () => {
-        stopSpeakingAnim();
-        currentAudio = null;
-        URL.revokeObjectURL(audioUrl);
-        resumeListeningIfHandsFree();
-      };
-      currentAudio.onerror = () => {
-        stopSpeakingAnim();
-        currentAudio = null;
-        resumeListeningIfHandsFree();
-      };
-
-      await currentAudio.play();
+          await currentAudio.play();
+          playedServerAudio = true;
+          return;
+        }
+      }
     } catch (err) {
-      console.warn('Fallback voz sintetizada local:', err.message);
-      // Mantém falando fofo por 2.5 segundos como fallback
-      setTimeout(() => {
-        stopSpeakingAnim();
-        resumeListeningIfHandsFree();
-      }, 2400);
+      console.warn('Servidor TTS indisponível ou sem cota:', err.message);
     }
+
+    // 2. Fallback de voz nativo do dispositivo (SpeechSynthesis em pt-BR)
+    // Funciona 100% no celular (Android/iOS) sem depender de cota de API
+    if (!playedServerAudio && 'speechSynthesis' in window) {
+      try {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'pt-BR';
+        utter.rate = 1.08;
+        utter.pitch = 1.04;
+
+        const voices = window.speechSynthesis.getVoices();
+        const ptVoice = voices.find(v => v.lang === 'pt-BR' || v.lang.startsWith('pt')) || null;
+        if (ptVoice) utter.voice = ptVoice;
+
+        utter.onend = () => {
+          stopSpeakingAnim();
+          resumeListeningIfHandsFree();
+        };
+        utter.onerror = () => {
+          stopSpeakingAnim();
+          resumeListeningIfHandsFree();
+        };
+
+        window.speechSynthesis.speak(utter);
+        return;
+      } catch (synthErr) {
+        console.warn('SpeechSynthesis error:', synthErr);
+      }
+    }
+
+    // 3. Fallback acústico com bips do mascote CouCou
+    setTimeout(() => {
+      stopSpeakingAnim();
+      resumeListeningIfHandsFree();
+    }, Math.min(3000, Math.max(1200, text.length * 60)));
   }
 
   function resumeListeningIfHandsFree() {
@@ -779,7 +844,6 @@
   let handsFreeMode = true; // Modo Mãos Livres ativo por padrão
   let processingSpeech = false;
   let speechDebounceTimer = null;
-  let accumulatedSpeech = '';
 
   function setupSpeechRecognition() {
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -806,29 +870,34 @@
       if (processingSpeech || mochi.speaking) return;
 
       let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          accumulatedSpeech += ' ' + event.results[i][0].transcript;
+      let final = '';
+
+      for (let i = 0; i < event.results.length; ++i) {
+        const item = event.results[i];
+        if (item.isFinal) {
+          final += item[0].transcript + ' ';
         } else {
-          interim += event.results[i][0].transcript;
+          interim += item[0].transcript;
         }
       }
 
-      const textToShow = (accumulatedSpeech + ' ' + interim).trim();
-      if (textToShow) {
+      const spoken = (final + interim).trim();
+      if (spoken) {
         voiceTranscription.classList.remove('hidden');
-        transcriptionText.textContent = textToShow;
+        transcriptionText.textContent = spoken;
       }
 
-      // Quando o usuário termina a frase (pausa de 1.1s de silêncio), envia para resposta falada!
-      clearTimeout(speechDebounceTimer);
-      speechDebounceTimer = setTimeout(() => {
-        const sentence = (accumulatedSpeech || interim).trim();
-        accumulatedSpeech = '';
-        if (sentence && sentence.length >= 2) {
-          processAndRespond(sentence);
-        }
-      }, 1100);
+      // Quando detectar fala com pelo menos 2 caracteres, agenda o processamento
+      if (spoken.length >= 2) {
+        clearTimeout(speechDebounceTimer);
+        speechDebounceTimer = setTimeout(() => {
+          const phraseToProcess = (final || interim || spoken).trim();
+          if (phraseToProcess && phraseToProcess.length >= 2 && !processingSpeech && !mochi.speaking) {
+            try { recognition.stop(); } catch(e) {}
+            processAndRespond(phraseToProcess);
+          }
+        }, 850);
+      }
     };
 
     recognition.onerror = (e) => {
@@ -861,7 +930,8 @@
     try {
       const res = await fetch('/api/converse', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
+        credentials: 'same-origin',
         body: JSON.stringify({ message: text })
       });
       const data = await res.json();
@@ -871,7 +941,7 @@
       panelVoice.style.display = 'block';
       voiceText.textContent = reply;
 
-      // Responde falando com voz oficial, mexendo a boca e mãos
+      // Responde falando com voz (OpenAI TTS ou síntese nativa do celular)
       await speak(reply);
     } catch (err) {
       console.warn('Erro ao conversar:', err);
@@ -1033,7 +1103,10 @@
 
   async function checkAuthAndPromptPin() {
     try {
-      const res = await fetch('/api/auth/status');
+      const res = await fetch('/api/auth/status', {
+        headers: getAuthHeaders(),
+        credentials: 'same-origin'
+      });
       const data = await res.json();
       if (!data.authorized) {
         pinModal.classList.remove('hidden');
