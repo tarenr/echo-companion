@@ -110,7 +110,26 @@ Para evitar poluir o visual minimalista do mascote durante a navegação normal,
 
 ---
 
-## 6. Infraestrutura e Inicialização em Background (Task Scheduler)
+## 7. Física Facial e Geometria 3D da Boca
+
+A boca do robô é acoplada à matriz de rotação esférica tridimensional da cabeça, garantindo que o rosto se mova organicamente como uma única entidade:
+
+1. **Centralização Tridimensional**:
+   - A boca utiliza o ângulo de rotação horizontal (`mouthYaw = s.yaw`), ficando sempre posicionada exatamente no centro entre o olho esquerdo e o olho direito.
+   - Acompanha o pitch e o roll (`mouthPitch = P.eye.p - 0.20 + s.pitch + s.roll`), inclinando-se junto com a postura da cabeça.
+2. **Envelope Rígido de Segurança**:
+   - Para evitar que a boca escape da face em inclinações extremas, suas coordenadas são travadas em um envelope proporcional:
+     * `mx = clamp(mx, -rx * 0.45, rx * 0.45)` (garante mais de 50px de folga até as bordas laterais).
+     * `my = clamp(my, ry * 0.12, ry * 0.55)` (garante posicionamento correto entre os olhos e o queixo).
+   - A renderização é protegida pelo `x.clip(path)` da superelipse corporal, impossibilitando qualquer pixel de ultrapassar o corpo do robô.
+3. **Alternância Estrita de Estados (`_` vs `o`)**:
+   - **Ao falar (`s.mouthOpen > 0.05`)**: elipse preenchida `o` com abertura vertical modulada pelas sílabas da voz neural.
+   - **Em repouso (`s.mouthOpen <= 0.05`)**: traço fechado sutil `_` estilo Kaomoji com cantos arredondados (`lineCap: round`).
+   - **Dormindo (`sleeping`)**: boca oculta para preservar o semblante calmo `( ˘ _ ˘ )`.
+
+---
+
+## 8. Infraestrutura e Inicialização em Background (Task Scheduler)
 
 O Echo foi desenhado para operar como infraestrutura nativa e silenciosa do Windows, sem requerer que qualquer assistente de código ou terminal de IDE mantenha processos em execução:
 

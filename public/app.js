@@ -492,12 +492,45 @@
         }
       }
 
-      // 5. Boca Falante
-      if (s.mouthOpen > 0.05) {
-        x.fillStyle = P.ink;
-        x.beginPath();
-        x.ellipse(0, ry * 0.28, 6, 2 + s.mouthOpen * 7, 0, 0, Math.PI * 2);
-        x.fill();
+      // 5. Boca (projeção esférica 3D centralizada na face com envelope de segurança)
+      const mouthYaw = s.yaw;
+      let mouthPitch = P.eye.p - 0.20 + s.pitch + s.roll;
+      mouthPitch = ((mouthPitch + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+
+      const cpMouth = Math.cos(mouthPitch);
+      if (Math.cos(mouthYaw) * cpMouth >= 0.04) {
+        let mx = Math.sin(mouthYaw) * cpMouth * rx;
+        let my = -Math.sin(mouthPitch) * ry;
+
+        // Envelope rígido de segurança: jamais permite a boca escapar do rosto
+        mx = clamp(mx, -rx * 0.45, rx * 0.45);
+        my = clamp(my, ry * 0.12, ry * 0.55);
+
+        const mfx = Math.max(0.20, Math.cos(mouthYaw));
+        const mfy = Math.max(0.20, cpMouth);
+
+        x.save();
+        x.clip(path);
+        x.translate(mx, my);
+        x.scale(mfx, mfy);
+
+        if (s.mouthOpen > 0.05) {
+          // Boca falando 'o' (abertura dinâmica sincronizada com as sílabas)
+          x.fillStyle = P.ink;
+          x.beginPath();
+          x.ellipse(0, 0, 5.5, 2.5 + s.mouthOpen * 6.5, 0, 0, Math.PI * 2);
+          x.fill();
+        } else if (this.state !== 'sleeping') {
+          // Boca fechada '_' (traço sutil Kaomoji com cantos arredondados)
+          x.strokeStyle = P.ink;
+          x.lineWidth = 2.2;
+          x.lineCap = 'round';
+          x.beginPath();
+          x.moveTo(-3.5, 0);
+          x.lineTo(3.5, 0);
+          x.stroke();
+        }
+        x.restore();
       }
 
       // 6. Olhos 2D

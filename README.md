@@ -26,7 +26,7 @@ Ele monitora em tempo real:
    - **Chamando aprovação:** Braços erguidos acenando `\( ? o ? )/` em dourado.
    - **Comemorando vitória:** Braços comemorando `*\ ( ^ _ ^ ) /*` em esmeralda.
    - **Falha / Erro:** Braços caídos `¯\_( x _ x )_/¯` em vermelho.
-   - **Regra estrita da boca:** A boca varia ESTRITAMENTE entre `_` (fechada) e `o` (aberta/falando).
+   - **Regra estrita e física da boca:** A boca varia ESTRITAMENTE entre `_` (fechada/repouso) e `o` (aberta/falando). Possui projeção esférica 3D acoplada aos eixos de rotação da face (yaw, pitch e roll), mantendo-se sempre centrada entre os olhos com perspectiva e envelope de segurança rígido que impede a boca de sair do rosto sob qualquer ângulo de visualização.
 4. **Modo Informação Lateral (`mode-info`)**:
    - Ao responder consultas estruturadas de dados (Backups, Telemetria, Saldos bancários, Faturas de cartão, Contas a pagar, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), o mascote desliza suavemente para o canto esquerdo da tela e fixa o olhar para a direita (`mochi.look.x = 0.85`), abrindo o painel lateral com cards neon informativos.
    - Ao finalizar a fala e apresentação dos dados, retorna suavemente para o centro da tela (`.mode-full`).
