@@ -2,3 +2,10 @@ node_modules/
 .env
 *.log
 data/*.sqlite
+
+# Midias e estudos temporarios de animacao
+public/*.webm
+public/thumb-*.png
+public/grok-case-study.gif
+public/coucou-original.html
+
