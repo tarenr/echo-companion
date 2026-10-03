@@ -1051,12 +1051,14 @@
   // ========================================================
   // 7. SÍNTESE DE VOZ COM SINCRONIA DE BOCA E MÃOS
   // ========================================================
-  function startSpeakingAnim() {
+  function startSpeakingAnim(withCoucouBleeps = false) {
     mochi.speaking = true;
     clearInterval(speechTimer);
-    speechTimer = setInterval(() => {
-      Snd.play('speech');
-    }, 180);
+    if (withCoucouBleeps) {
+      speechTimer = setInterval(() => {
+        Snd.play('speech');
+      }, 180);
+    }
   }
 
   function stopSpeakingAnim() {
@@ -1080,11 +1082,9 @@
       try { window.speechSynthesis.cancel(); } catch (e) {}
     }
 
-    startSpeakingAnim();
-
     let playedServerAudio = false;
 
-    // 1. Tenta áudio de alta qualidade do servidor (OpenAI TTS voz 'echo')
+    // 1. Tenta áudio de alta qualidade do servidor (Edge TTS oficial pt-BR-AntonioNeural)
     try {
       const response = await fetch('/api/speak', {
         method: 'POST',
@@ -1099,6 +1099,11 @@
           const blob = await response.blob();
           const audioUrl = URL.createObjectURL(blob);
           currentAudio = new Audio(audioUrl);
+
+          currentAudio.onplay = () => {
+            // Inicia o movimento da boca no exato instante em que o áudio começa a tocar
+            startSpeakingAnim(false);
+          };
 
           currentAudio.onended = () => {
             stopSpeakingAnim();
@@ -1134,6 +1139,9 @@
         const ptVoice = voices.find(v => v.lang === 'pt-BR' || v.lang.startsWith('pt')) || null;
         if (ptVoice) utter.voice = ptVoice;
 
+        utter.onstart = () => {
+          startSpeakingAnim(false);
+        };
         utter.onend = () => {
           stopSpeakingAnim();
           resumeListeningIfHandsFree();
@@ -1151,6 +1159,7 @@
     }
 
     // 3. Fallback acústico com bips do mascote CouCou
+    startSpeakingAnim(true);
     setTimeout(() => {
       stopSpeakingAnim();
       resumeListeningIfHandsFree();

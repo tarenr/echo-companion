@@ -617,18 +617,21 @@ body {
   background: rgba(4, 22, 34, 0.95);
   border: 1px solid var(--cyan-neon);
   color: #e2e8f0;
-  padding: 0.45rem 1.1rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 0.75rem 1.2rem;
+  border-radius: 18px;
+  font-size: 0.76rem;
+  line-height: 1.45;
   backdrop-filter: blur(12px);
   box-shadow: 0 4px 25px rgba(0, 212, 255, 0.35);
   z-index: 45;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  max-width: 90%;
+  gap: 0.6rem;
+  width: auto;
+  max-width: min(90vw, 420px);
   text-align: center;
+  box-sizing: border-box;
+  word-break: break-word;
   transition: all 0.3s ease;
 }
 
@@ -846,10 +849,12 @@ body.sleep-mode .bottom-bar {
 
   /* Transcrição de voz flutuante com margem e respiro no modo retrato */
   .voice-transcription {
-    top: 2rem;
-    max-width: 88%;
-    font-size: 0.74rem;
-    padding: 0.42rem 1.1rem;
+    top: 1.8rem;
+    max-width: min(88vw, 380px);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    padding: 0.75rem 1.15rem;
+    border-radius: 18px;
     box-shadow: 0 0 16px rgba(0, 229, 255, 0.35);
   }
 
