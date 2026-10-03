@@ -19,14 +19,29 @@ process.on('exit', (code) => {
 // Carrega variáveis do ambiente do Estratégia Nerd se existir
 const estrategiaEnvPath = path.resolve('C:/Users/WINDOWS/Projects/estrategia-nerd/.env');
 let OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+let GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+let GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || 'gemini-3.8-flash';
+let GEMINI_TEXT_MODEL_FALLBACK = process.env.GEMINI_TEXT_MODEL_FALLBACK || 'gemini-3.5-flash';
 
 if (fs.existsSync(estrategiaEnvPath)) {
   try {
     const envContent = fs.readFileSync(estrategiaEnvPath, 'utf8');
-    const match = envContent.match(/^OPENAI_API_KEY=(.+)$/m);
-    if (match && match[1]) {
-      OPENAI_API_KEY = match[1].trim().replace(/^['"]|['"]$/g, '');
-      console.log('✅ OPENAI_API_KEY carregada com sucesso do Estratégia Nerd!');
+    const matchOpenAI = envContent.match(/^OPENAI_API_KEY=(.+)$/m);
+    if (matchOpenAI && matchOpenAI[1]) {
+      OPENAI_API_KEY = matchOpenAI[1].trim().replace(/^['"]|['"]$/g, '');
+    }
+    const matchGemini = envContent.match(/^GEMINI_API_KEY=(.+)$/m);
+    if (matchGemini && matchGemini[1]) {
+      GEMINI_API_KEY = matchGemini[1].trim().replace(/^['"]|['"]$/g, '');
+      console.log('✅ GEMINI_API_KEY carregada com sucesso do Estratégia Nerd!');
+    }
+    const matchModel = envContent.match(/^GEMINI_TEXT_MODEL=(.+)$/m);
+    if (matchModel && matchModel[1]) {
+      GEMINI_TEXT_MODEL = matchModel[1].trim().replace(/^['"]|['"]$/g, '');
+    }
+    const matchModelFallback = envContent.match(/^GEMINI_TEXT_MODEL_FALLBACK=(.+)$/m);
+    if (matchModelFallback && matchModelFallback[1]) {
+      GEMINI_TEXT_MODEL_FALLBACK = matchModelFallback[1].trim().replace(/^['"]|['"]$/g, '');
     }
   } catch (err) {
     console.warn('⚠️ Não foi possível ler .env do Estratégia Nerd:', err.message);
@@ -396,6 +411,28 @@ async function generateOpenAISpeech(text, res) {
   }
 }
 
+// Helper de consulta ao The Forge em tempo real
+async function getForgeSummary() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch('http://127.0.0.1:4477/api/projects', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const list = await res.json();
+      if (Array.isArray(list)) {
+        const names = list.map(p => p.nome || p.slug || p.caminho_pasta?.split('\\').pop() || 'Projeto').filter(Boolean);
+        return {
+          online: true,
+          count: list.length,
+          projects: names.slice(0, 10).join(', ')
+        };
+      }
+    }
+  } catch (e) {}
+  return { online: false, count: 0, projects: '' };
+}
+
 // Endpoint de Conversação / Resposta Inteligente do Echo
 app.post('/api/converse', requirePin, async (req, res) => {
   const { message } = req.body || {};
@@ -403,7 +440,7 @@ app.post('/api/converse', requirePin, async (req, res) => {
 
   const textLower = message.toLowerCase().trim();
 
-  // 1. Respostas instantâneas com latência zero para saudações e telemetria
+  // 1. Respostas instantâneas para saudações e telemetria básica
   let quickReply = null;
   if (/^(bom dia|olá|ola|e aí|e ai|fala echo|opa)/i.test(textLower)) {
     quickReply = "Bom dia, Mestre! Estratégia Nerd online e todos os sistemas operando!";
@@ -411,9 +448,9 @@ app.post('/api/converse', requirePin, async (req, res) => {
     quickReply = "Boa tarde, Mestre! Monitorando tudo por aqui.";
   } else if (/^(boa noite)/i.test(textLower)) {
     quickReply = "Boa noite, Mestre! Deixo os módulos em prontidão.";
-  } else if (/como est[aá]|computador|status do pc|telemetria|cpu|ram/i.test(textLower)) {
+  } else if (/como est[aá] o (computador|pc)|status do pc|telemetria|cpu|ram/i.test(textLower)) {
     quickReply = `O computador está com ${echoState.telemetry.cpuPercent}% de CPU e ${echoState.telemetry.ramPercent}% de memória RAM em uso.`;
-  } else if (/est[aá] me ouvindo|me ouve|teste/i.test(textLower)) {
+  } else if (/est[aá] me ouvindo|me ouve|teste de voz/i.test(textLower)) {
     quickReply = "Estou te ouvindo perfeitamente, Mestre!";
   } else if (/obrigado|valeu|show|perfeito/i.test(textLower)) {
     quickReply = "Sempre às ordens, Mestre!";
@@ -426,49 +463,69 @@ app.post('/api/converse', requirePin, async (req, res) => {
     return res.json({ ok: true, reply: quickReply, source: 'fast-local' });
   }
 
-  // 2. Consulta inteligente via OpenAI Chat Completion se houver chave configurada
-  if (OPENAI_API_KEY) {
+  // 2. Consulta inteligente via Google Gemini (com contexto local do The Forge e do PC)
+  if (GEMINI_API_KEY) {
     try {
-      const completion = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          temperature: 0.7,
-          max_tokens: 80,
-          messages: [
-            {
-              role: 'system',
-              content: `Você é o Echo, o mascote e companheiro de mesa do projeto Estratégia Nerd. 
-Você é leal, bem-humorado, nerd e prestativo. Chama o usuário respeitosamente de 'Mestre'.
-REGRAS MANDATÓRIAS:
-- Responda SEMPRE em português do Brasil de forma concisa e natural para ser falada em áudio (máximo 1 ou 2 frases curtas).
-- Não use emojis longos ou formatações markdown pesadas (pois o texto será sintetizado por voz).
-- Telemetria atual: CPU em ${echoState.telemetry.cpuPercent}%, RAM em ${echoState.telemetry.ramPercent}%.`
-            },
-            {
-              role: 'user',
-              content: message
-            }
-          ]
-        })
-      });
+      const forgeInfo = await getForgeSummary();
+      let forgeContext = forgeInfo.online 
+        ? `The Forge (painel de projetos local) está ONLINE com ${forgeInfo.count} projetos: ${forgeInfo.projects}.`
+        : `The Forge está offline no momento.`;
 
-      if (completion.ok) {
-        const data = await completion.json();
-        const reply = data.choices?.[0]?.message?.content?.trim();
-        if (reply) {
-          echoState.voiceOrigin = 'converse';
-          echoState.voiceMessage = reply;
-          broadcastState();
-          return res.json({ ok: true, reply, source: 'openai' });
+      const systemPrompt = `Você é o Echo, o mascote físico e companheiro de mesa do projeto Estratégia Nerd.
+Você é leal, bem-humorado, geek, prestativo e carismático. Chama o usuário respeitosamente de 'Mestre'.
+INFORMAÇÕES EM TEMPO REAL:
+- Hardware do computador: CPU em ${echoState.telemetry.cpuPercent}%, RAM em ${echoState.telemetry.ramPercent}%.
+- ${forgeContext}
+- Projeto ativo no momento: ${echoState.project}.
+REGRAS OBRIGATÓRIAS:
+- Responda SEMPRE em português do Brasil de forma concisa e natural para ser falada em áudio (no MÁXIMO 1 a 2 frases curtas).
+- Não use emojis, asteriscos, markdown, listas ou formatações pesadas (o texto será sintetizado por voz diretamente).
+- Se perguntado sobre o Forge ou projetos, mencione os projetos que você sabe que estão catalogados.`;
+
+      const models = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash'];
+      let reply = null;
+
+      for (const model of models) {
+        try {
+          const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+          const response = await fetch(geminiEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': GEMINI_API_KEY
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{ text: `${systemPrompt}\n\nPergunta do Mestre: "${message}"\nSua resposta curta por voz:` }]
+              }],
+              generationConfig: {
+                maxOutputTokens: 100,
+                temperature: 0.7
+              }
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            if (text) {
+              reply = text.replace(/[*#_`]/g, ''); // Limpa qualquer formatação markdown
+              break;
+            }
+          }
+        } catch (e) {
+          console.warn(`Erro no modelo Gemini ${model}:`, e.message);
         }
       }
+
+      if (reply) {
+        echoState.voiceOrigin = 'converse';
+        echoState.voiceMessage = reply;
+        broadcastState();
+        return res.json({ ok: true, reply, source: 'gemini' });
+      }
     } catch (err) {
-      console.warn('Erro ao chamar OpenAI Chat:', err.message);
+      console.warn('Erro ao chamar Gemini:', err.message);
     }
   }
 

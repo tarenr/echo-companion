@@ -833,6 +833,13 @@
   }
 
   function resumeListeningIfHandsFree() {
+    // Limpa a bolha de diálogo para não deixar texto antigo retido na tela
+    setTimeout(() => {
+      if (!isListening && !mochi.speaking) {
+        voiceTranscription.classList.add('hidden');
+      }
+    }, 1200);
+
     if (handsFreeMode && audioUnlocked) {
       // Cooldown de 1.5s para garantir que todo o eco do alto-falante se dissipe no ambiente
       setTimeout(startListening, 1500);
@@ -855,7 +862,7 @@
 
     recognition = new Speech();
     recognition.lang = 'pt-BR';
-    recognition.continuous = true;
+    recognition.continuous = false; // Modo sentença única: zera buffer e impede o bug de duplicação do Android
     recognition.interimResults = true;
 
     recognition.onstart = () => {
@@ -870,34 +877,33 @@
     recognition.onresult = (event) => {
       if (processingSpeech || mochi.speaking) return;
 
-      let interim = '';
-      let final = '';
+      // Pega apenas a sentença atual sem concatenar com históricos anteriores
+      const current = event.results[event.results.length - 1];
+      if (!current || !current[0]) return;
+      const text = current[0].transcript.trim();
 
-      for (let i = 0; i < event.results.length; ++i) {
-        const item = event.results[i];
-        if (item.isFinal) {
-          final += item[0].transcript + ' ';
-        } else {
-          interim += item[0].transcript;
-        }
-      }
-
-      const spoken = (final + interim).trim();
-      if (spoken) {
+      if (text) {
         voiceTranscription.classList.remove('hidden');
-        transcriptionText.textContent = spoken;
+        transcriptionText.textContent = text;
       }
 
-      // Quando detectar fala com pelo menos 2 caracteres, agenda o processamento
-      if (spoken.length >= 2) {
+      // Se a frase finalizou ou teve pausa de silêncio, processa imediatamente
+      if (current.isFinal && text.length >= 2) {
         clearTimeout(speechDebounceTimer);
         speechDebounceTimer = setTimeout(() => {
-          const phraseToProcess = (final || interim || spoken).trim();
-          if (phraseToProcess && phraseToProcess.length >= 2 && !processingSpeech && !mochi.speaking) {
+          if (!processingSpeech && !mochi.speaking) {
             try { recognition.stop(); } catch(e) {}
-            processAndRespond(phraseToProcess);
+            processAndRespond(text);
           }
-        }, 850);
+        }, 500);
+      } else if (text.length >= 2) {
+        clearTimeout(speechDebounceTimer);
+        speechDebounceTimer = setTimeout(() => {
+          if (!processingSpeech && !mochi.speaking) {
+            try { recognition.stop(); } catch(e) {}
+            processAndRespond(text);
+          }
+        }, 900);
       }
     };
 
@@ -911,9 +917,11 @@
 
     recognition.onend = () => {
       isListening = false;
-      // Se estiver no modo mãos livres e não estiver falando, reinicia o microfone
+      micBtn.classList.remove('listening');
+      micLabel.textContent = handsFreeMode ? 'MÃOS LIVRES' : 'MUDO';
+      // Reinicia escuta limpa no modo mãos livres se não estiver falando
       if (handsFreeMode && !mochi.speaking && !processingSpeech && audioUnlocked) {
-        setTimeout(startListening, 450);
+        setTimeout(startListening, 400);
       } else if (!handsFreeMode) {
         stopListening();
       }
