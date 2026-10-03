@@ -605,3 +605,90 @@ body.sleep-mode .bottom-bar {
   transition: opacity 1.6s ease-in-out;
 }
 
+/* ========================================================
+   MODO RETRATO RESPONSIVO (Smartphone em Pé / Vertical)
+   ======================================================== */
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  .echo-screen {
+    padding: env(safe-area-inset-top, 1.2rem) 1rem env(safe-area-inset-bottom, 1.2rem) 1rem;
+  }
+
+  .stage {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    width: 100%;
+  }
+
+  #echo-canvas {
+    width: 260px;
+    height: 260px;
+    max-width: 80vw;
+    max-height: 80vw;
+  }
+
+  /* Em pé, o mascote desliza suavemente para cima quando o painel de info abre */
+  .echo-wrapper.mode-full {
+    transform: translateY(0) scale(1);
+  }
+
+  .echo-wrapper.mode-info {
+    transform: translateY(-20%) scale(0.74);
+  }
+
+  /* O painel de informações fica posicionado na metade inferior em modo retrato */
+  .info-panel {
+    position: absolute;
+    right: auto;
+    left: 50%;
+    top: auto;
+    bottom: 4%;
+    width: 92%;
+    max-width: 440px;
+    padding-left: 0;
+    padding-top: 1rem;
+    border-left: none;
+    border-top: 2px solid rgba(0, 229, 255, 0.25);
+    align-items: center;
+    text-align: center;
+    transform: translate(-50%, 30px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .info-panel.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .info-panel .progress-track {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .info-panel .sub-detail-text {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .info-panel .voice-subtitle {
+    text-align: center;
+    max-width: 90%;
+  }
+
+  /* Transcrição de voz flutuante ajustada no modo retrato */
+  .voice-transcription {
+    top: 0.5rem;
+    max-width: 90%;
+    font-size: 0.76rem;
+  }
+
+  /* Notificação toast ajustada no modo retrato */
+  .audio-toast {
+    bottom: 2rem;
+    font-size: 0.72rem;
+  }
+}
+
+

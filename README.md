@@ -27,9 +27,10 @@ Ele monitora em tempo real:
    - **Comemorando vitória:** Braços comemorando `*\ ( ^ _ ^ ) /*` em esmeralda.
    - **Falha / Erro:** Braços caídos `¯\_( x _ x )_/¯` em vermelho.
    - **Regra estrita e física da boca:** A boca varia ESTRITAMENTE entre `_` (fechada/repouso) e `o` (aberta/falando). Possui projeção esférica 3D acoplada aos eixos de rotação da face (yaw, pitch e roll), mantendo-se sempre centrada entre os olhos com perspectiva e envelope de segurança rígido que impede a boca de sair do rosto sob qualquer ângulo de visualização.
-4. **Modo Informação Lateral (`mode-info`)**:
-   - Ao responder consultas estruturadas de dados (Backups, Telemetria, Saldos bancários, Faturas de cartão, Contas a pagar, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), o mascote desliza suavemente para o canto esquerdo da tela e fixa o olhar para a direita (`mochi.look.x = 0.85`), abrindo o painel lateral com cards neon informativos.
-   - Ao finalizar a fala e apresentação dos dados, retorna suavemente para o centro da tela (`.mode-full`).
+4. **Design Responsivo Híbrido (Retrato & Paisagem)**:
+   - **Em pé (Retrato / Celular na mesa):** O mascote ocupa a parte superior e, ao responder consultas estruturadas de dados (Backups, Telemetria, Bancos, Cartões, Contas, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), desliza suavemente para cima e direciona o olhar para baixo (`mochi.look.y = 0.85`), abrindo o painel de cards neon na metade inferior sem espremer o texto.
+   - **Deitado (Paisagem):** O mascote desliza suavemente para a esquerda e fixa o olhar para a direita (`mochi.look.x = 0.85`), mantendo o painel lateral clássico.
+   - **Rotação Livre e Fluida:** O PWA opera com `orientation: any`, adaptando-se instantaneamente em tempo real quando o celular é girado. Ao finalizar a apresentação dos dados, retorna suavemente para o centro da tela (`.mode-full`).
 5. **Ciclo de Ociosidade e Modo Dormindo (`sleeping`)**:
    - **Ocioso (Idle):** Em repouso, alterna a cada 20 a 30s entre poses orgânicas (`¯\_( ¬ _ ¬ )_/¯`, `~( ˘ _ ˘ ~)`, `( ^ _ ^ )`).
    - **Xícara de Café (`coffee`):** Ativado após 3 minutos sem interação.

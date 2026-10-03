@@ -941,29 +941,49 @@
   requestAnimationFrame(tick);
 
   // ========================================================
-  // 6. ÁUDIO, WAKE LOCK & TRAVA DE ORIENTAÇÃO PAISAGEM
+  // 6. DESIGN RESPONSIVO HÍBRIDO (RETRATO & PAISAGEM)
   // ========================================================
-  async function enforceLandscape() {
+  function isPortrait() {
+    return window.innerHeight > window.innerWidth;
+  }
+
+  function setLookForInfoMode() {
+    if (isPortrait()) {
+      // No modo retrato, o painel fica embaixo: olha para baixo
+      mochi.look.x = 0;
+      mochi.look.y = 0.85;
+    } else {
+      // No modo paisagem, o painel fica à direita: olha para a direita
+      mochi.look.x = 0.85;
+      mochi.look.y = 0.05;
+    }
+  }
+
+  function handleOrientationUpdate() {
+    if (echoWrapper.classList.contains('mode-info')) {
+      setLookForInfoMode();
+    }
+  }
+
+  window.addEventListener('resize', handleOrientationUpdate);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(handleOrientationUpdate, 150);
+  });
+
+  async function toggleFullscreen() {
     try {
       if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
         await document.documentElement.requestFullscreen().catch(() => {});
-      }
-      if (screen.orientation && screen.orientation.lock) {
-        await screen.orientation.lock('landscape').catch(() => {});
+      } else if (document.exitFullscreen) {
+        await document.exitFullscreen().catch(() => {});
       }
     } catch (e) {}
   }
-  window.addEventListener('load', enforceLandscape);
-  window.addEventListener('orientationchange', enforceLandscape);
 
   if (rotateBtn) {
     rotateBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      enforceLandscape();
-    });
-    rotateBtn.addEventListener('touchend', (e) => {
-      e.stopPropagation();
-      enforceLandscape();
+      toggleFullscreen();
     });
   }
 
@@ -1229,9 +1249,8 @@
     panelVoice.style.display = 'block';
     voiceText.textContent = replyText;
 
-    // Robô olha expressivamente para a direita em direção aos dados
-    mochi.look.x = 0.85;
-    mochi.look.y = 0.05;
+    // Robô olha expressivamente em direção aos dados (direita no landscape, baixo no portrait)
+    setLookForInfoMode();
 
     clearTimeout(infoCardTimeout);
     const duration = Math.max(9000, (replyText.length * 75) + 5000);
@@ -1358,9 +1377,8 @@
     if (isInfoMode) {
       echoWrapper.className = 'echo-wrapper mode-info';
       infoPanel.classList.add('visible');
-      // O robô olha expressivamente para a direita (em direção aos dados)
-      mochi.look.x = 0.85;
-      mochi.look.y = 0.05;
+      // O robô olha expressivamente em direção aos dados (direita no landscape, baixo no portrait)
+      setLookForInfoMode();
     } else {
       echoWrapper.className = 'echo-wrapper mode-full';
       infoPanel.classList.remove('visible');
