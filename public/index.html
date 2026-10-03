@@ -37,36 +37,14 @@
     <!-- Palco Central -->
     <section class="stage">
       
-      <!-- Wrapper do Mascote Echo -->
+      <!-- Transcrição de Voz em Tempo Real -->
+      <div class="voice-transcription hidden" id="voice-transcription">
+        <span class="pulse-mic">🎙️</span> <span id="transcription-text">Ouvindo você...</span>
+      </div>
+
+      <!-- Wrapper do Mascote Echo 2D Vetorial -->
       <div class="echo-wrapper mode-full" id="echo-wrapper">
-        <div class="head-floating">
-          <div class="echo-face theme-cyan" id="echo-face">
-            
-            <!-- Braço / Mão Esquerda Externa -->
-            <span class="arm-side" id="arm-left"></span>
-
-            <!-- Parêntese Esquerdo Alto -->
-            <span class="parenthesis">(</span>
-
-            <!-- Miolo: 2 Linhas (Olhos e Boca) -->
-            <div class="face-core">
-              <div class="eyes-row">
-                <span class="eye" id="eye-left">^</span>
-                <span class="eye" id="eye-right">^</span>
-              </div>
-              <div class="mouth-row">
-                <span class="mouth" id="mouth">_</span>
-              </div>
-            </div>
-
-            <!-- Parêntese Direito Alto -->
-            <span class="parenthesis">)</span>
-
-            <!-- Braço / Mão Direita Externa -->
-            <span class="arm-side" id="arm-right"></span>
-
-          </div>
-        </div>
+        <canvas id="echo-canvas" width="280" height="280"></canvas>
       </div>
 
       <!-- Painel Lateral de Informações / Alertas (Lado Direito) -->
@@ -92,7 +70,13 @@
 
     <!-- Rodapé -->
     <footer class="bottom-bar">
-      <span id="connection-status">CONECTANDO...</span>
+      <div class="footer-left">
+        <span id="connection-status">CONECTANDO...</span>
+        <button id="mic-btn" class="mic-button" title="Ativar microfone para falar com Echo" aria-label="Microfone">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+          <span id="mic-label">OUVIR</span>
+        </button>
+      </div>
       <span id="telemetry-bar">CPU: -- | RAM: --</span>
     </footer>
 
