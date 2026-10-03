@@ -3,8 +3,18 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const qrcode = require('qrcode-terminal');
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
+const memory = require('./src/memory');
+const tools = require('./src/tools');
+
+// Inicializa banco de memória persistente SQLite
+memory.initMemory().then(() => {
+  console.log('🧠 Memória persistente SQLite do Echo inicializada com sucesso!');
+}).catch(err => {
+  console.warn('⚠️ Falha ao inicializar memória SQLite:', err.message);
+});
+
+const qrcode = require('qrcode-terminal');
 
 process.on('uncaughtException', (err, origin) => {
   fs.appendFileSync(path.resolve(__dirname, 'crash.log'), `[${new Date().toISOString()}] UncaughtException: ${err?.stack || err} (origin: ${origin})\n`);
@@ -411,29 +421,7 @@ async function generateOpenAISpeech(text, res) {
   }
 }
 
-// Helper de consulta ao The Forge em tempo real
-async function getForgeSummary() {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    const res = await fetch('http://127.0.0.1:4477/api/projects', { signal: controller.signal });
-    clearTimeout(timeout);
-    if (res.ok) {
-      const list = await res.json();
-      if (Array.isArray(list)) {
-        const names = list.map(p => p.nome || p.slug || p.caminho_pasta?.split('\\').pop() || 'Projeto').filter(Boolean);
-        return {
-          online: true,
-          count: list.length,
-          projects: names.slice(0, 10).join(', ')
-        };
-      }
-    }
-  } catch (e) {}
-  return { online: false, count: 0, projects: '' };
-}
-
-// Endpoint de Conversação / Resposta Inteligente do Echo
+// Endpoint de Conversação / Resposta Inteligente do Echo com Gemini Function Calling & Memória
 app.post('/api/converse', requirePin, async (req, res) => {
   const { message } = req.body || {};
   if (!message) return res.status(400).json({ error: 'Mensagem vazia' });
@@ -442,48 +430,100 @@ app.post('/api/converse', requirePin, async (req, res) => {
 
   // 1. Respostas instantâneas para saudações e telemetria básica
   let quickReply = null;
+  let quickAccessory = 'none';
+
   if (/^(bom dia|olá|ola|e aí|e ai|fala echo|opa)/i.test(textLower)) {
     quickReply = "Bom dia, Mestre! Estratégia Nerd online e todos os sistemas operando!";
   } else if (/^(boa tarde)/i.test(textLower)) {
     quickReply = "Boa tarde, Mestre! Monitorando tudo por aqui.";
   } else if (/^(boa noite)/i.test(textLower)) {
     quickReply = "Boa noite, Mestre! Deixo os módulos em prontidão.";
-  } else if (/como est[aá] o (computador|pc)|status do pc|telemetria|cpu|ram/i.test(textLower)) {
+  } else if (/como est[aá] o (computador|pc)|status do pc|telemetria|\b(cpu|ram)\b/i.test(textLower)) {
     quickReply = `O computador está com ${echoState.telemetry.cpuPercent}% de CPU e ${echoState.telemetry.ramPercent}% de memória RAM em uso.`;
+    quickAccessory = 'lupa';
   } else if (/est[aá] me ouvindo|me ouve|teste de voz/i.test(textLower)) {
     quickReply = "Estou te ouvindo perfeitamente, Mestre!";
   } else if (/obrigado|valeu|show|perfeito/i.test(textLower)) {
     quickReply = "Sempre às ordens, Mestre!";
+    quickAccessory = 'celebration';
   }
 
   if (quickReply) {
+    try {
+      await memory.addMessage('user', message);
+      await memory.addMessage('model', quickReply);
+    } catch (_) {}
+
     echoState.voiceOrigin = 'converse';
     echoState.voiceMessage = quickReply;
     broadcastState();
-    return res.json({ ok: true, reply: quickReply, source: 'fast-local' });
+    broadcastEvent('mascot_state', { accessory: quickAccessory, text: quickReply });
+    return res.json({ ok: true, reply: quickReply, accessory: quickAccessory, source: 'fast-local' });
   }
 
-  // 2. Consulta inteligente via Google Gemini (com contexto local do The Forge e do PC)
+  // Notifica o mascote para animação de digitação/pensamento
+  broadcastEvent('mascot_state', { accessory: 'typing', text: 'Processando...' });
+
+  // 2. Consulta inteligente via Google Gemini com Function Calling e Memória Persistente
   if (GEMINI_API_KEY) {
     try {
-      const forgeInfo = await getForgeSummary();
-      let forgeContext = forgeInfo.online 
-        ? `The Forge (painel de projetos local) está ONLINE com ${forgeInfo.count} projetos: ${forgeInfo.projects}.`
-        : `The Forge está offline no momento.`;
+      // Carrega histórico recente e preferências da memória
+      let history = [];
+      let prefs = {};
+      try {
+        history = await memory.getRecentHistory(6);
+        prefs = await memory.getAllPreferences();
+      } catch (_) {}
 
-      const systemPrompt = `Você é o Echo, o mascote físico e companheiro de mesa do projeto Estratégia Nerd.
+      const prefsStr = Object.keys(prefs).length > 0
+        ? `Preferências salvas do Mestre: ${JSON.stringify(prefs)}.`
+        : 'Nenhuma preferência específica gravada ainda.';
+
+      const systemPrompt = `Você é o Echo, o mascote físico e companheiro de mesa do ecossistema Estratégia Nerd.
 Você é leal, bem-humorado, geek, prestativo e carismático. Chama o usuário respeitosamente de 'Mestre'.
 INFORMAÇÕES EM TEMPO REAL:
 - Hardware do computador: CPU em ${echoState.telemetry.cpuPercent}%, RAM em ${echoState.telemetry.ramPercent}%.
-- ${forgeContext}
-- Projeto ativo no momento: ${echoState.project}.
+- Projeto ativo na tela: ${echoState.project}.
+- ${prefsStr}
+SUAS FERRAMENTAS DISPONÍVEIS (Function Calling):
+- consultar_saldos_bancos: para saldos de todos os bancos do Strategy Hub (Mercado Pago, Itaú, XP, PicPay, etc.) e total consolidado.
+- consultar_cartoes_credito: para faturas abertas, limites e vencimentos de cartões.
+- consultar_contas_a_pagar: para despesas pendentes do mês.
+- consultar_projetos_forge: para lista de projetos e progresso no The Forge.
+- consultar_tarefas_forge: para tarefas pendentes ou concluídas de projetos no The Forge.
+- consultar_status_backup_forge: para checar integridade dos backups (estritamente somente-leitura).
+- consultar_agendamento_posts: para posts agendados do Blog e Instagram do Estratégia Nerd.
+- consultar_metricas_blog: para visualizações, artigos e categorias do blog.
+- consultar_metricas_instagram: para posts, curtidas, comentários e seguidores do Instagram.
+- consultar_treino_e_streak_gym_os: para treino do dia, missão, streak de treinos e nível/XP no Gym OS.
+- gravar_preferencia_usuario: para guardar na memória de longo prazo fatos ditos pelo Mestre.
 REGRAS OBRIGATÓRIAS:
 - Responda SEMPRE em português do Brasil de forma concisa e natural para ser falada em áudio (no MÁXIMO 1 a 2 frases curtas).
-- Não use emojis, asteriscos, markdown, listas ou formatações pesadas (o texto será sintetizado por voz diretamente).
-- Se perguntado sobre o Forge ou projetos, mencione os projetos que você sabe que estão catalogados.`;
+- Não use emojis, asteriscos, markdown, tabelas ou formatações pesadas (o texto será sintetizado por voz diretamente).
+- Sempre que a pergunta exigir dados dos sistemas locais, USE as ferramentas correspondentes.`;
+
+      // Monta histórico de mensagens para a chamada
+      const contents = [];
+      for (const h of history) {
+        contents.push({
+          role: h.role === 'model' ? 'model' : 'user',
+          parts: [{ text: h.content }]
+        });
+      }
+      contents.push({
+        role: 'user',
+        parts: [{ text: `${systemPrompt}\n\nMensagem do Mestre: "${message}"` }]
+      });
+
+      const geminiTools = [
+        {
+          functionDeclarations: tools.functionDeclarations
+        }
+      ];
 
       const models = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash'];
-      let reply = null;
+      let finalReply = null;
+      let finalAccessory = 'none';
 
       for (const model of models) {
         try {
@@ -495,21 +535,87 @@ REGRAS OBRIGATÓRIAS:
               'x-goog-api-key': GEMINI_API_KEY
             },
             body: JSON.stringify({
-              contents: [{
-                parts: [{ text: `${systemPrompt}\n\nPergunta do Mestre: "${message}"\nSua resposta curta por voz:` }]
-              }],
+              contents,
+              tools: geminiTools,
               generationConfig: {
-                maxOutputTokens: 100,
-                temperature: 0.7
+                maxOutputTokens: 150,
+                temperature: 0.6
               }
             })
           });
 
-          if (response.ok) {
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+          if (!response.ok) {
+            continue;
+          }
+
+          const data = await response.json();
+          const candidateParts = data.candidates?.[0]?.content?.parts || [];
+          const functionCallPart = candidateParts.find(p => p.functionCall);
+
+          if (functionCallPart) {
+            const fc = functionCallPart.functionCall;
+            console.log(`[ECHO TOOLS] Executando tool: ${fc.name}`, fc.args);
+
+            // Animação de Lupa/Inspeção no Mascote enquanto a ferramenta é consultada
+            broadcastEvent('mascot_state', { accessory: 'lupa', text: `Consultando ${fc.name}...` });
+
+            const toolResult = await tools.executeTool(fc.name, fc.args || {});
+
+            // Define acessório temático baseado na ferramenta
+            if (['consultar_saldos_bancos', 'consultar_cartoes_credito', 'consultar_contas_a_pagar'].includes(fc.name)) {
+              finalAccessory = 'printer';
+            } else if (['consultar_treino_e_streak_gym_os', 'gravar_preferencia_usuario'].includes(fc.name)) {
+              finalAccessory = 'celebration';
+            } else {
+              finalAccessory = 'lupa';
+            }
+
+            // Segunda rodada: devolve o resultado da tool para o Gemini sintetizar a fala
+            contents.push({ role: 'model', parts: candidateParts });
+            contents.push({
+              role: 'user',
+              parts: [
+                {
+                  functionResponse: {
+                    name: fc.name,
+                    response: {
+                      name: fc.name,
+                      content: toolResult
+                    }
+                  }
+                }
+              ]
+            });
+
+            const followUpRes = await fetch(geminiEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': GEMINI_API_KEY
+              },
+              body: JSON.stringify({
+                contents,
+                tools: geminiTools,
+                generationConfig: {
+                  maxOutputTokens: 150,
+                  temperature: 0.6
+                }
+              })
+            });
+
+            if (followUpRes.ok) {
+              const followUpData = await followUpRes.json();
+              const text = followUpData.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+              if (text) {
+                finalReply = text.replace(/[*#_`]/g, '');
+                break;
+              }
+            }
+          } else {
+            // Resposta conversacional direta sem ferramentas
+            const text = candidateParts[0]?.text?.trim();
             if (text) {
-              reply = text.replace(/[*#_`]/g, ''); // Limpa qualquer formatação markdown
+              finalReply = text.replace(/[*#_`]/g, '');
               break;
             }
           }
@@ -518,14 +624,21 @@ REGRAS OBRIGATÓRIAS:
         }
       }
 
-      if (reply) {
+      if (finalReply) {
+        // Grava histórico na memória SQLite
+        try {
+          await memory.addMessage('user', message);
+          await memory.addMessage('model', finalReply);
+        } catch (_) {}
+
         echoState.voiceOrigin = 'converse';
-        echoState.voiceMessage = reply;
+        echoState.voiceMessage = finalReply;
         broadcastState();
-        return res.json({ ok: true, reply, source: 'gemini' });
+        broadcastEvent('mascot_state', { accessory: finalAccessory, text: finalReply });
+        return res.json({ ok: true, reply: finalReply, accessory: finalAccessory, source: 'gemini-tools' });
       }
     } catch (err) {
-      console.warn('Erro ao chamar Gemini:', err.message);
+      console.warn('Erro ao processar conversa no Gemini:', err.message);
     }
   }
 
@@ -534,7 +647,8 @@ REGRAS OBRIGATÓRIAS:
   echoState.voiceOrigin = 'converse';
   echoState.voiceMessage = fallback;
   broadcastState();
-  return res.json({ ok: true, reply: fallback, source: 'fallback' });
+  broadcastEvent('mascot_state', { accessory: 'none', text: fallback });
+  return res.json({ ok: true, reply: fallback, accessory: 'none', source: 'fallback' });
 });
 
 // Obtém o IP da rede Wi-Fi local para o QR Code

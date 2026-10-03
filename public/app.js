@@ -162,7 +162,8 @@
       this.look = { x: 0, y: 0 };
       this.t0 = NOW();
       this.last = NOW();
-      this.speaking = false;
+      this.accessory = 'none';
+      this.confetti = [];
 
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = 280 * dpr;
@@ -170,6 +171,50 @@
       canvas.style.width = '280px';
       canvas.style.height = '280px';
       this.x.scale(dpr, dpr);
+    }
+
+    setAccessory(name, duration = 0) {
+      this.accessory = name || 'none';
+      if (name === 'celebration') {
+        this.emote('proud', 3000);
+        this.anim('oy', [[-0.18, 180, E.out], [0.05, 140, E.inOut], [0, 160, E.back]]);
+        this.initConfetti();
+        Snd.play('finish');
+      } else if (name === 'lupa') {
+        this.anim('oy', [[-0.05, 200, E.out], [0, 200, E.back]]);
+      } else if (name === 'typing') {
+        this.anim('hands', [[1, 150, E.out]]);
+      } else if (name === 'coffee') {
+        this.anim('hands', [[1, 200, E.out]]);
+      }
+      if (duration > 0) {
+        clearTimeout(this._accTimer);
+        this._accTimer = setTimeout(() => {
+          if (this.accessory === name) {
+            this.accessory = 'none';
+          }
+        }, duration);
+      }
+    }
+
+    initConfetti() {
+      this.confetti = [];
+      const colors = ['#00d4ff', '#b829dd', '#10b981', '#f5a524', '#ff4081', '#ffffff'];
+      for (let i = 0; i < 28; i++) {
+        this.confetti.push({
+          x: (Math.random() - 0.5) * 220,
+          y: -110 - Math.random() * 80,
+          vx: (Math.random() - 0.5) * 60,
+          vy: 50 + Math.random() * 70,
+          w: 5 + Math.random() * 6,
+          h: 4 + Math.random() * 5,
+          rot: Math.random() * 6,
+          vRot: (Math.random() - 0.5) * 8,
+          color: colors[i % colors.length],
+          life: 2.5 + Math.random() * 1.5,
+          age: 0
+        });
+      }
     }
 
     anim(p, keys, after) {
@@ -496,6 +541,171 @@
           x.beginPath(); x.arc(0, 0, R * 0.13, 0, Math.PI * 2); x.fill();
         }
         x.restore();
+      }
+
+      // ========================================================
+      // RENDERIZAÇÃO DOS 5 ACESSÓRIOS 2D DO MASCOTE
+      // ========================================================
+      if (this.accessory === 'lupa') {
+        const t = NOW() / 1000;
+        const lx = rx * 0.45 + Math.sin(t * 3.5) * 8;
+        const ly = ry * 0.12 + Math.cos(t * 2.8) * 6;
+        const lRad = R * 0.32;
+
+        x.save();
+        x.translate(lx, ly);
+
+        // Vidro com reflexo azul translúcido
+        x.fillStyle = 'rgba(0, 212, 255, 0.22)';
+        x.beginPath();
+        x.arc(0, 0, lRad, 0, Math.PI * 2);
+        x.fill();
+
+        // Arco de reflexo branco no topo
+        x.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        x.lineWidth = 2.5;
+        x.beginPath();
+        x.arc(0, 0, lRad * 0.78, -Math.PI * 0.85, -Math.PI * 0.15);
+        x.stroke();
+
+        // Aro metálico neon cyan
+        x.strokeStyle = '#00d4ff';
+        x.lineWidth = 4;
+        x.beginPath();
+        x.arc(0, 0, lRad, 0, Math.PI * 2);
+        x.stroke();
+
+        // Cabo da lupa
+        x.strokeStyle = '#041622';
+        x.lineWidth = 6;
+        x.lineCap = 'round';
+        x.beginPath();
+        x.moveTo(lRad * 0.7, lRad * 0.7);
+        x.lineTo(lRad * 1.5, lRad * 1.5);
+        x.stroke();
+
+        x.strokeStyle = '#00d4ff';
+        x.lineWidth = 3;
+        x.beginPath();
+        x.moveTo(lRad * 0.75, lRad * 0.75);
+        x.lineTo(lRad * 1.45, lRad * 1.45);
+        x.stroke();
+
+        x.restore();
+      } else if (this.accessory === 'typing') {
+        const t = NOW() / 1000;
+        const kw = R * 1.55, kh = R * 0.46;
+        const kx = -kw / 2, ky = ry * 0.65;
+
+        x.save();
+        x.fillStyle = '#041622';
+        x.strokeStyle = '#00d4ff';
+        x.lineWidth = 2;
+        rr(x, kx, ky, kw, kh, 8);
+        x.fill();
+        x.stroke();
+
+        const rows = 3, cols = 7;
+        const tw = (kw - 18) / cols, th = (kh - 12) / rows;
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const active = Math.sin(t * 12 + r * 3 + c * 2) > 0.4;
+            x.fillStyle = active ? '#00d4ff' : 'rgba(0, 212, 255, 0.28)';
+            rr(x, kx + 9 + c * tw, ky + 6 + r * th, tw - 3, th - 3, 2);
+            x.fill();
+          }
+        }
+        x.restore();
+      } else if (this.accessory === 'printer') {
+        const t = NOW() / 1000;
+        const pw = R * 0.85, ph = R * 0.52;
+        const px = rx * 0.45, py = ry * 0.45;
+
+        x.save();
+        x.translate(px, py);
+
+        x.fillStyle = '#041622';
+        x.strokeStyle = '#10b981';
+        x.lineWidth = 2.5;
+        rr(x, -pw / 2, -ph / 2, pw, ph, 6);
+        x.fill();
+        x.stroke();
+
+        x.fillStyle = '#10b981';
+        x.beginPath();
+        x.arc(pw / 2 - 8, -ph / 2 + 8, 3, 0, Math.PI * 2);
+        x.fill();
+
+        const rw = pw * 0.65, rh = R * 0.75;
+        const scrollOff = (t * 28) % 8;
+        x.fillStyle = '#ffffff';
+        x.strokeStyle = '#cbd5e1';
+        x.lineWidth = 1;
+        rr(x, -rw / 2, -ph / 2 - rh + 4, rw, rh, 3);
+        x.fill();
+        x.stroke();
+
+        x.fillStyle = '#0284c7';
+        for (let l = 0; l < 5; l++) {
+          const ly = -ph / 2 - rh + 12 + l * 9 + scrollOff;
+          if (ly < -ph / 2) {
+            x.fillRect(-rw / 2 + 5, ly, rw - 10, 2);
+          }
+        }
+        x.restore();
+      } else if (this.accessory === 'coffee') {
+        const t = NOW() / 1000;
+        const cxMug = rx * 0.72, cyMug = ry * 0.35;
+        const mw = R * 0.55, mh = R * 0.48;
+
+        x.save();
+        x.translate(cxMug, cyMug);
+
+        x.fillStyle = '#f8fafc';
+        x.strokeStyle = '#0284c7';
+        x.lineWidth = 2.2;
+        rr(x, -mw / 2, -mh / 2, mw, mh, 5);
+        x.fill();
+        x.stroke();
+
+        x.strokeStyle = '#f8fafc';
+        x.lineWidth = 4;
+        x.beginPath();
+        x.arc(mw / 2 + 2, 0, mh * 0.28, -Math.PI / 2, Math.PI / 2);
+        x.stroke();
+
+        x.fillStyle = '#451a03';
+        x.beginPath();
+        x.ellipse(0, -mh / 2 + 4, mw * 0.42, 4, 0, 0, Math.PI * 2);
+        x.fill();
+
+        x.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+        x.lineWidth = 2;
+        x.lineCap = 'round';
+        for (let s = -1; s <= 1; s++) {
+          const sx = s * 7;
+          const wave = Math.sin(t * 3.5 + s) * 4;
+          x.beginPath();
+          x.moveTo(sx, -mh / 2 - 2);
+          x.quadraticCurveTo(sx + wave, -mh / 2 - 14, sx - wave / 2, -mh / 2 - 26);
+          x.stroke();
+        }
+        x.restore();
+      } else if (this.accessory === 'celebration' && this.confetti.length > 0) {
+        const dtConf = 0.016;
+        for (const c of this.confetti) {
+          c.age += dtConf;
+          c.x += c.vx * dtConf;
+          c.y += c.vy * dtConf;
+          c.rot += c.vRot * dtConf;
+
+          x.save();
+          x.translate(c.x, c.y);
+          x.rotate(c.rot);
+          x.fillStyle = c.color;
+          x.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+          x.restore();
+        }
       }
 
       x.restore();
@@ -946,12 +1156,17 @@
       const data = await res.json();
       const reply = data?.reply || "Olá, Mestre! Estratégia Nerd online.";
 
+      if (data?.accessory && data.accessory !== 'none') {
+        mochi.setAccessory(data.accessory, 5000);
+      }
+
       transcriptionText.textContent = reply;
       panelVoice.style.display = 'block';
       voiceText.textContent = reply;
 
       // Responde falando com voz oficial neural, mexendo a boca e mãos
       await speak(reply);
+      resetInactivity();
     } catch (err) {
       console.warn('Erro ao conversar:', err);
       mochi.setState('idle');
@@ -1097,10 +1312,29 @@
       try {
         const data = JSON.parse(event.data);
         renderState(data);
+        resetInactivity();
       } catch (e) {
         console.error('Erro ao processar estado SSE:', e);
       }
     };
+
+    sseSource.addEventListener('mascot_state', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.accessory) {
+          mochi.setAccessory(data.accessory, 5000);
+        }
+        if (data.text) {
+          transcriptionText.textContent = data.text;
+          voiceTranscription.classList.remove('hidden');
+        }
+        resetInactivity();
+      } catch (_) {}
+    });
+
+    sseSource.addEventListener('telemetry_alert', () => {
+      resetInactivity();
+    });
 
     sseSource.onerror = (err) => {
       connectionStatus.textContent = 'DESCONECTADO // RECONECTANDO...';
@@ -1175,6 +1409,26 @@
   } else {
     checkAuthAndPromptPin();
   }
+
+  // ========================================================
+  // 11. TEMPORIZADOR DE INATIVIDADE (ANIMAÇÃO DE CAFÉ)
+  // ========================================================
+  let inactivityTimer = null;
+  function resetInactivity() {
+    clearTimeout(inactivityTimer);
+    if (mochi && mochi.accessory === 'coffee') {
+      mochi.setAccessory('none');
+    }
+    inactivityTimer = setTimeout(() => {
+      if (mochi && !mochi.speaking && !isListening && !processingSpeech) {
+        mochi.setAccessory('coffee');
+      }
+    }, 180000); // 3 minutos
+  }
+
+  window.addEventListener('pointerdown', resetInactivity, { passive: true });
+  window.addEventListener('keydown', resetInactivity, { passive: true });
+  resetInactivity();
 
   setupSpeechRecognition();
   connectSSE();
