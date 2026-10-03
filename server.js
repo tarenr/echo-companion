@@ -7,6 +7,7 @@ const { spawn } = require('child_process');
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
 const memory = require('./src/memory');
 const tools = require('./src/tools');
+const briefing = require('./src/connectors/briefing');
 
 // Inicializa banco de memória persistente SQLite
 memory.initMemory().then(() => {
@@ -511,6 +512,37 @@ async function generateOpenAISpeech(text, res) {
   }
 }
 
+// Endpoint de Briefing Consolidado do Sistema (Serviços, Backups, Forge e Emails)
+app.post('/api/briefing', requirePin, async (req, res) => {
+  try {
+    const report = await briefing.getDailyBriefing();
+    const reply = report.fala_sugerida;
+    const card = report.card;
+    const accessory = 'lupa';
+
+    try {
+      await memory.addMessage('user', 'Executar briefing e verificações do sistema');
+      await memory.addMessage('model', reply);
+    } catch (_) {}
+
+    echoState.voiceOrigin = 'converse';
+    echoState.voiceMessage = reply;
+    broadcastState();
+    broadcastEvent('mascot_state', { accessory, text: reply });
+
+    return res.json({
+      ok: true,
+      reply,
+      accessory,
+      card,
+      dados: report.dados,
+      source: 'briefing-engine'
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Endpoint de Conversação / Resposta Inteligente do Echo com Gemini Function Calling & Memória
 app.post('/api/converse', requirePin, async (req, res) => {
   const { message } = req.body || {};
@@ -548,6 +580,11 @@ app.post('/api/converse', requirePin, async (req, res) => {
     };
   } else if (/est[aá] me ouvindo|me ouve|teste de voz/i.test(textLower)) {
     quickReply = "Estou te ouvindo perfeitamente, Mestre!";
+  } else if (/briefing|verificar sistema|verificações|verificacoes|check-in|status do dia|relat[oó]rio geral/i.test(textLower)) {
+    const report = await briefing.getDailyBriefing();
+    quickReply = report.fala_sugerida;
+    quickAccessory = 'lupa';
+    quickCard = report.card;
   } else if (/obrigado|valeu|show|perfeito/i.test(textLower)) {
     quickReply = "Sempre às ordens, Mestre!";
     quickAccessory = 'celebration';
@@ -601,6 +638,7 @@ INFORMAÇÕES EM TEMPO REAL:
 - Projeto ativo na tela: ${echoState.project}.
 - ${prefsStr}
 SUAS FERRAMENTAS DISPONÍVEIS (Function Calling):
+- executar_briefing_sistema: para executar um relatório geral com saudação, status de todos os 24 serviços e bancos, backups/tarefas que rodaram e tarefas pendentes no The Forge.
 - consultar_saldos_bancos: para saldos de todos os bancos do Strategy Hub (Mercado Pago, Itaú, XP, PicPay, etc.) e total consolidado.
 - consultar_cartoes_credito: para faturas abertas, limites e vencimentos de cartões.
 - consultar_contas_a_pagar: para despesas pendentes do mês.
@@ -616,7 +654,8 @@ SUAS FERRAMENTAS DISPONÍVEIS (Function Calling):
 REGRAS OBRIGATÓRIAS:
 - Responda SEMPRE em português do Brasil de forma concisa e natural para ser falada em áudio (no MÁXIMO 1 a 2 frases curtas).
 - Não use emojis, asteriscos, markdown, tabelas ou formatações pesadas (o texto será sintetizado por voz diretamente).
-- Sempre que a pergunta exigir dados dos sistemas locais, USE as ferramentas correspondentes.`;
+- Sempre que a pergunta exigir dados dos sistemas locais, USE as ferramentas correspondentes.
+- No briefing do sistema, mencione SEMPRE em voz alta os serviços online, as tarefas agendadas/backups que rodaram e a contagem de tarefas pendentes no Forge.`;
 
       // Monta histórico de mensagens para a chamada
       const contents = [];
@@ -713,6 +752,13 @@ REGRAS OBRIGATÓRIAS:
                 title: 'Despesas & Contas',
                 detail1: toolResult?.total_pendente ? `Total: ${toolResult.total_pendente}` : 'Contas consultadas',
                 detail2: 'Strategy Hub'
+              };
+            } else if (fc.name === 'executar_briefing_sistema') {
+              finalCard = toolResult?.card || {
+                badge: 'BRIEFING DO SISTEMA',
+                title: 'Tudo Operacional',
+                detail1: 'Serviços, Backups e The Forge',
+                detail2: 'Relatório diário consolidado'
               };
             } else if (fc.name === 'consultar_projetos_forge' || fc.name === 'consultar_tarefas_forge') {
               finalCard = {

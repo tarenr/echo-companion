@@ -884,6 +884,8 @@
   const connectionStatus = document.getElementById('connection-status');
   const telemetryBar = document.getElementById('telemetry-bar');
   const audioToast = document.getElementById('audio-toast');
+  const briefingBtn = document.getElementById('briefing-btn');
+  const briefingLabel = document.getElementById('briefing-label');
   const micBtn = document.getElementById('mic-btn');
   const micLabel = document.getElementById('mic-label');
   const voiceTranscription = document.getElementById('voice-transcription');
@@ -1270,7 +1272,7 @@
     setLookForInfoMode();
 
     clearTimeout(infoCardTimeout);
-    const duration = Math.max(9000, (replyText.length * 75) + 5000);
+    const duration = Math.max(18000, (replyText.length * 100) + 12000);
     infoCardTimeout = setTimeout(() => {
       if (echoWrapper.classList.contains('mode-info') && currentState?.mode !== 'info') {
         echoWrapper.className = 'echo-wrapper mode-full';
@@ -1351,7 +1353,7 @@
     micLabel.textContent = handsFreeMode ? 'ATIVO' : 'OUVIR';
     setTimeout(() => {
       if (!isListening && !mochi.speaking) voiceTranscription.classList.add('hidden');
-    }, 2800);
+    }, 7000);
 
     if (currentState) {
       renderState(currentState);
@@ -1378,6 +1380,68 @@
       stopListening();
     }
   });
+
+  // Briefing Consolidado (Verificações, Saudação e Status do Dia)
+  let isBriefingRunning = false;
+
+  async function triggerBriefing() {
+    if (isBriefingRunning || processingSpeech || mochi.speaking) return;
+    isBriefingRunning = true;
+    unlockAudioAndWakeLock();
+    pauseRecognition();
+
+    if (briefingBtn) {
+      briefingBtn.classList.add('loading');
+      briefingLabel.textContent = '...';
+    }
+
+    mochi.setState('thinking');
+    transcriptionText.textContent = '"Executando Briefing do Sistema..."';
+    voiceTranscription.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/briefing', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'same-origin'
+      });
+      const data = await res.json();
+      const reply = data?.reply || "Briefing concluído com sucesso, Mestre!";
+
+      if (data?.accessory && data.accessory !== 'none') {
+        mochi.setAccessory(data.accessory, 6000);
+      }
+
+      if (data?.card) {
+        displayInfoCard(data.card, reply);
+      }
+
+      transcriptionText.textContent = reply;
+      panelVoice.style.display = 'block';
+      voiceText.textContent = reply;
+
+      // Fala neural brasileira de alta fidelidade
+      await speak(reply);
+      resetInactivity();
+    } catch (err) {
+      console.warn('Erro ao executar briefing:', err);
+      mochi.setState('idle');
+      resumeListeningIfHandsFree();
+    } finally {
+      isBriefingRunning = false;
+      if (briefingBtn) {
+        briefingBtn.classList.remove('loading');
+        briefingLabel.textContent = 'CHECK';
+      }
+    }
+  }
+
+  if (briefingBtn) {
+    briefingBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      triggerBriefing();
+    });
+  }
 
   // ========================================================
   // 9. RENDERIZAÇÃO DE ESTADOS DO PC VIA SSE

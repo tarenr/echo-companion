@@ -3,9 +3,18 @@ const forge = require('./connectors/forge');
 const estrategiaNerd = require('./connectors/estrategiaNerd');
 const gymOs = require('./connectors/gymOs');
 const servicesMonitor = require('./connectors/servicesMonitor');
+const briefing = require('./connectors/briefing');
 const memory = require('./memory');
 
 const functionDeclarations = [
+  {
+    name: 'executar_briefing_sistema',
+    description: 'Executa um briefing e relatório geral consolidado do sistema: status dos 24 serviços e bancos (NerdOPS/Forge), tarefas agendadas e backups que rodaram recentemente no Windows, tarefas pendentes no The Forge e contagem de e-mails.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {}
+    }
+  },
   {
     name: 'consultar_monitor_servicos',
     description: 'Consulta o status operacional em tempo real de todos os serviços monitorados no computador (NerdOPS / The Forge): Apps locais, Bancos de Dados (SQLite, MySQL, MariaDB, PostgreSQL), Túneis do Cloudflare e APIs externas dos 5 projetos do ecossistema.',
@@ -202,6 +211,10 @@ async function executeTool(name, args = {}) {
 
       case 'consultar_status_backup_forge':
         result = await forge.getBackupStatus();
+        break;
+
+      case 'executar_briefing_sistema':
+        result = await briefing.getDailyBriefing();
         break;
 
       case 'consultar_monitor_servicos':
