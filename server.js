@@ -607,6 +607,7 @@ SUAS FERRAMENTAS DISPONÍVEIS (Function Calling):
 - consultar_projetos_forge: para lista de projetos e progresso no The Forge.
 - consultar_tarefas_forge: para tarefas pendentes ou concluídas de projetos no The Forge.
 - consultar_status_backup_forge: para checar integridade dos backups (estritamente somente-leitura).
+- consultar_monitor_servicos: para checar em tempo real se os apps, bancos de dados, túneis Cloudflare e integrações dos projetos estão online.
 - consultar_agendamento_posts: para posts agendados do Blog e Instagram do Estratégia Nerd.
 - consultar_metricas_blog: para visualizações, artigos e categorias do blog.
 - consultar_metricas_instagram: para posts, curtidas, comentários e seguidores do Instagram.
@@ -719,6 +720,13 @@ REGRAS OBRIGATÓRIAS:
                 title: 'Projetos & Tarefas',
                 detail1: toolResult?.total_encontradas ? `${toolResult.total_encontradas} tarefas encontradas` : 'Painel central',
                 detail2: 'Status atualizado'
+              };
+            } else if (fc.name === 'consultar_monitor_servicos') {
+              finalCard = {
+                badge: 'MONITOR DE SERVIÇOS',
+                title: toolResult?.todos_online ? 'Todos os Serviços Online' : `${toolResult?.online}/${toolResult?.total_servicos} Online`,
+                detail1: toolResult?.resumo || 'Serviços verificados',
+                detail2: 'NerdOPS / The Forge'
               };
             } else if (fc.name === 'consultar_agendamento_posts') {
               finalCard = {

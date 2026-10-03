@@ -108,6 +108,19 @@ O Echo inclui um despachante universal ultrarrápido (`bin/dispatcher.js`) que e
 
 ---
 
+## 🧠 Conectores e Inteligência do Ecossistema (Function Calling)
+
+O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado diretamente aos sistemas e bancos de dados locais do ecossistema Estratégia Nerd via Function Calling:
+
+- 🟢 **Monitor de Serviços em Tempo Real (`consultar_monitor_servicos`):** Conecta-se ao monitor contínuo NerdOPS (`:5000`) com fallback para o The Forge (`:4477`), checando a saúde operacional de todos os apps locais, bancos de dados (SQLite, MySQL, MariaDB, PostgreSQL), túneis Cloudflare e integrações de todos os 5 projetos em menos de 50ms.
+- 💰 **Finanças Pessoais Strategy Hub (`consultar_saldos_bancos`, `consultar_cartoes_credito`, `consultar_contas_a_pagar`):** Saldos consolidados e por instituição (Mercado Pago, Itaú, XP, PicPay), limites e faturas abertas de cartões e contas a pagar do mês.
+- 🔨 **Painel Central The Forge (`consultar_projetos_forge`, `consultar_tarefas_forge`, `consultar_status_backup_forge`):** Progresso e status de cada projeto, tarefas pendentes/concluídas e integridade dos backups locais.
+- 📱 **Conteúdo Estratégia Nerd (`consultar_agendamento_posts`, `consultar_metricas_blog`, `consultar_metricas_instagram`):** Fila de postagens agendadas, métricas de audiência, curtidas, comentários e inscritos.
+- ⚔️ **RPG & Hábitos GYM-OS (`consultar_treino_e_streak_gym_os`):** Treino planejado para o dia, streak de dias consecutivos e evolução de nível/XP no RPG da vida real.
+- 🧠 **Memória de Longo Prazo (`gravar_preferencia_usuario`, `consultar_preferencias_usuario`):** Banco local SQLite que preserva preferências, hábitos e fatos ensinados pelo usuário ao Echo.
+
+---
+
 ## 🏗️ Estrutura do Projeto
 
 ```text
@@ -120,6 +133,15 @@ echo-companion/
 │   ├── index.html          # Interface OLED limpa com modal de PIN
 │   ├── manifest.json       # Configuração PWA para tela cheia
 │   └── styles.css          # Estilização Neon, temas por IA e física dos braços
+├── src/
+│   ├── connectors/         # Conectores com os projetos locais
+│   │   ├── estrategiaNerd.js # Métricas e agendamentos do Blog/Instagram
+│   │   ├── forge.js        # Projetos, tarefas e status de backups
+│   │   ├── gymOs.js        # Treinos, streaks e missões RPG
+│   │   ├── servicesMonitor.js # Monitor em tempo real de serviços, bancos e túneis (NerdOPS)
+│   │   └── strategyHub.js  # Saldos bancários, cartões e contas a pagar
+│   ├── memory.js           # Memória de longo prazo e preferências em SQLite
+│   └── tools.js            # Definição e execução das ferramentas de Function Calling
 ├── package.json            # Dependências mínimas
 ├── server.js               # Hub local (SSE, webhook, telemetria, TTS, trava de PIN)
 └── README.md               # Documentação técnica e guia de uso

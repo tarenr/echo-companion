@@ -2,9 +2,32 @@ const strategyHub = require('./connectors/strategyHub');
 const forge = require('./connectors/forge');
 const estrategiaNerd = require('./connectors/estrategiaNerd');
 const gymOs = require('./connectors/gymOs');
+const servicesMonitor = require('./connectors/servicesMonitor');
 const memory = require('./memory');
 
 const functionDeclarations = [
+  {
+    name: 'consultar_monitor_servicos',
+    description: 'Consulta o status operacional em tempo real de todos os serviços monitorados no computador (NerdOPS / The Forge): Apps locais, Bancos de Dados (SQLite, MySQL, MariaDB, PostgreSQL), Túneis do Cloudflare e APIs externas dos 5 projetos do ecossistema.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        projeto: {
+          type: 'STRING',
+          description: 'Nome opcional do projeto para filtrar (ex: Echo, Strategy Hub, GYM-OS, The Forge, Estratégia Nerd)'
+        },
+        tipo: {
+          type: 'STRING',
+          enum: ['todos', 'app', 'db', 'tunnel', 'integracao'],
+          description: 'Tipo de serviço desejado (todos, app, db para bancos, tunnel para túneis cloudflare, integracao)'
+        },
+        apenas_problemas: {
+          type: 'BOOLEAN',
+          description: 'Se verdadeiro, traz apenas serviços que estejam offline ou com problemas'
+        }
+      }
+    }
+  },
   {
     name: 'consultar_saldos_bancos',
     description: 'Consulta os saldos de todas as contas bancárias (Mercado Pago, Itaú, XP, PicPay, etc.) no Strategy Hub, o saldo total consolidado e quebra por instituição.',
@@ -179,6 +202,14 @@ async function executeTool(name, args = {}) {
 
       case 'consultar_status_backup_forge':
         result = await forge.getBackupStatus();
+        break;
+
+      case 'consultar_monitor_servicos':
+        result = await servicesMonitor.getServicesStatus({
+          projeto: args.projeto,
+          tipo: args.tipo || 'todos',
+          apenas_problemas: Boolean(args.apenas_problemas)
+        });
         break;
 
       case 'consultar_agendamento_posts':
