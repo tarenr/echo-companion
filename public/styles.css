@@ -441,8 +441,13 @@ body {
 .mic-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   padding: 0.22rem 0.6rem;
+  height: 24px;
+  min-width: 68px;
+  box-sizing: border-box;
+  white-space: nowrap;
   border-radius: 9999px;
   background: rgba(0, 212, 255, 0.12);
   border: 1px solid rgba(0, 212, 255, 0.4);
@@ -463,13 +468,19 @@ body {
   background: #b829dd;
   border-color: #f0abfc;
   color: #ffffff;
-  box-shadow: 0 0 20px rgba(184, 41, 221, 0.8);
+  box-shadow: 0 0 16px rgba(184, 41, 221, 0.8);
   animation: pulse-mic-btn 1.1s infinite ease-in-out;
 }
 
 @keyframes pulse-mic-btn {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(184, 41, 221, 0.5);
+    border-color: rgba(240, 171, 252, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(184, 41, 221, 0.95), 0 0 30px rgba(184, 41, 221, 0.5);
+    border-color: rgba(240, 171, 252, 1);
+  }
 }
 
 .voice-transcription {

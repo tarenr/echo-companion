@@ -1191,7 +1191,7 @@
     recognition.onstart = () => {
       isListening = true;
       micBtn.classList.add('listening');
-      micLabel.textContent = handsFreeMode ? 'MÃOS LIVRES' : 'OUVINDO...';
+      micLabel.textContent = handsFreeMode ? 'ATIVO' : 'OUVIR';
       voiceTranscription.classList.remove('hidden');
       transcriptionText.textContent = 'Ouvindo você...';
       mochi.setState('listening');
@@ -1241,7 +1241,7 @@
     recognition.onend = () => {
       isListening = false;
       micBtn.classList.remove('listening');
-      micLabel.textContent = handsFreeMode ? 'MÃOS LIVRES' : 'MUDO';
+      micLabel.textContent = handsFreeMode ? 'ATIVO' : 'OUVIR';
       // Reinicia escuta limpa no modo mãos livres se não estiver falando
       if (handsFreeMode && !mochi.speaking && !processingSpeech && audioUnlocked) {
         setTimeout(startListening, 400);
@@ -1348,7 +1348,7 @@
   function stopListening() {
     isListening = false;
     micBtn.classList.remove('listening');
-    micLabel.textContent = handsFreeMode ? 'MÃOS LIVRES' : 'MUDO';
+    micLabel.textContent = handsFreeMode ? 'ATIVO' : 'OUVIR';
     setTimeout(() => {
       if (!isListening && !mochi.speaking) voiceTranscription.classList.add('hidden');
     }, 2800);
@@ -1366,10 +1366,14 @@
     handsFreeMode = !handsFreeMode;
     if (handsFreeMode) {
       micBtn.classList.add('listening');
-      micLabel.textContent = 'MÃOS LIVRES';
+      micLabel.textContent = 'ATIVO';
+      micBtn.title = 'Mãos livres ativo (toque para pausar)';
       startListening();
     } else {
       handsFreeMode = false;
+      micBtn.classList.remove('listening');
+      micLabel.textContent = 'OUVIR';
+      micBtn.title = 'Ativar microfone para falar com Echo';
       pauseRecognition();
       stopListening();
     }
