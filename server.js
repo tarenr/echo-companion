@@ -136,7 +136,15 @@ app.get('/api/auth/status', (req, res) => {
   res.json({ ok: true, authorized: isAuthorized(req) });
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('sw.js') || filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // Gerenciador de Clientes SSE (Server-Sent Events)
 let sseClients = [];
