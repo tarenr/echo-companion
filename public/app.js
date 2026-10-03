@@ -646,9 +646,20 @@
   requestAnimationFrame(tick);
 
   // ========================================================
-  // 6. ÁUDIO & WAKE LOCK
+  // 6. ÁUDIO, WAKE LOCK & TRAVA DE ORIENTAÇÃO PAISAGEM
   // ========================================================
+  function enforceLandscape() {
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch (e) {}
+  }
+  window.addEventListener('load', enforceLandscape);
+  window.addEventListener('orientationchange', enforceLandscape);
+
   async function unlockAudioAndWakeLock() {
+    enforceLandscape();
     if (!audioUnlocked) {
       audioUnlocked = true;
       audioToast.classList.add('hidden');
@@ -669,6 +680,11 @@
       }
 
       requestWakeLock();
+
+      // Inicia escuta mãos livres contínua após o primeiro toque
+      if (handsFreeMode) {
+        setTimeout(startListening, 600);
+      }
     }
   }
   screen.addEventListener('click', unlockAudioAndWakeLock);
@@ -703,6 +719,10 @@
 
   async function speak(text) {
     if (!text) return;
+    
+    // Pausa reconhecimento temporariamente para o Echo não ouvir a própria voz
+    pauseRecognition();
+
     if (currentAudio) {
       currentAudio.pause();
       currentAudio = null;
@@ -728,23 +748,39 @@
         stopSpeakingAnim();
         currentAudio = null;
         URL.revokeObjectURL(audioUrl);
+        resumeListeningIfHandsFree();
       };
       currentAudio.onerror = () => {
         stopSpeakingAnim();
         currentAudio = null;
+        resumeListeningIfHandsFree();
       };
 
       await currentAudio.play();
     } catch (err) {
       console.warn('Fallback voz sintetizada local:', err.message);
       // Mantém falando fofo por 2.5 segundos como fallback
-      setTimeout(stopSpeakingAnim, 2400);
+      setTimeout(() => {
+        stopSpeakingAnim();
+        resumeListeningIfHandsFree();
+      }, 2400);
+    }
+  }
+
+  function resumeListeningIfHandsFree() {
+    if (handsFreeMode && audioUnlocked) {
+      setTimeout(startListening, 650);
     }
   }
 
   // ========================================================
-  // 8. ESCUTA ATIVA POR VOZ (MICROFONE / WEB SPEECH API)
+  // 8. ESCUTA ATIVA CONTÍNUA POR VOZ (MÃOS LIVRES)
   // ========================================================
+  let handsFreeMode = true; // Modo Mãos Livres ativo por padrão
+  let processingSpeech = false;
+  let speechDebounceTimer = null;
+  let accumulatedSpeech = '';
+
   function setupSpeechRecognition() {
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Speech) {
@@ -754,54 +790,120 @@
 
     recognition = new Speech();
     recognition.lang = 'pt-BR';
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
 
     recognition.onstart = () => {
       isListening = true;
       micBtn.classList.add('listening');
-      micLabel.textContent = 'OUVINDO...';
+      micLabel.textContent = handsFreeMode ? 'MÃOS LIVRES' : 'OUVINDO...';
       voiceTranscription.classList.remove('hidden');
       transcriptionText.textContent = 'Ouvindo você...';
       mochi.setState('listening');
-      Snd.play('listen');
     };
 
     recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map(r => r[0].transcript)
-        .join('');
-      transcriptionText.textContent = transcript || 'Ouvindo você...';
+      if (processingSpeech || mochi.speaking) return;
+
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          accumulatedSpeech += ' ' + event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+
+      const textToShow = (accumulatedSpeech + ' ' + interim).trim();
+      if (textToShow) {
+        voiceTranscription.classList.remove('hidden');
+        transcriptionText.textContent = textToShow;
+      }
+
+      // Quando o usuário termina a frase (pausa de 1.1s de silêncio), envia para resposta falada!
+      clearTimeout(speechDebounceTimer);
+      speechDebounceTimer = setTimeout(() => {
+        const sentence = (accumulatedSpeech || interim).trim();
+        accumulatedSpeech = '';
+        if (sentence && sentence.length >= 2) {
+          processAndRespond(sentence);
+        }
+      }, 1100);
     };
 
     recognition.onerror = (e) => {
-      console.warn('SpeechRecognition erro:', e.error);
-      stopListening();
+      console.warn('SpeechRecognition status:', e.error);
+      if (e.error === 'not-allowed') {
+        handsFreeMode = false;
+        stopListening();
+      }
     };
 
     recognition.onend = () => {
-      stopListening();
+      isListening = false;
+      // Se estiver no modo mãos livres e não estiver falando, reinicia o microfone
+      if (handsFreeMode && !mochi.speaking && !processingSpeech && audioUnlocked) {
+        setTimeout(startListening, 300);
+      } else if (!handsFreeMode) {
+        stopListening();
+      }
     };
   }
 
+  async function processAndRespond(text) {
+    if (processingSpeech || mochi.speaking) return;
+    processingSpeech = true;
+    pauseRecognition();
+
+    mochi.setState('thinking');
+    transcriptionText.textContent = `"${text}"`;
+
+    try {
+      const res = await fetch('/api/converse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      const reply = data?.reply || "Olá, Mestre! Estratégia Nerd online.";
+
+      transcriptionText.textContent = reply;
+      panelVoice.style.display = 'block';
+      voiceText.textContent = reply;
+
+      // Responde falando com voz oficial, mexendo a boca e mãos
+      await speak(reply);
+    } catch (err) {
+      console.warn('Erro ao conversar:', err);
+      const fallback = "Bom dia, Mestre! Estratégia Nerd pronto para o trabalho.";
+      transcriptionText.textContent = fallback;
+      await speak(fallback);
+    } finally {
+      processingSpeech = false;
+    }
+  }
+
+  function pauseRecognition() {
+    if (recognition && isListening) {
+      try { recognition.stop(); } catch(e){}
+    }
+  }
+
   function startListening() {
-    if (!recognition) return;
+    if (!recognition || isListening || mochi.speaking || processingSpeech) return;
     try {
       recognition.start();
-    } catch (e) {
-      stopListening();
-    }
+    } catch (e) {}
   }
 
   function stopListening() {
     isListening = false;
     micBtn.classList.remove('listening');
-    micLabel.textContent = 'OUVIR';
+    micLabel.textContent = handsFreeMode ? 'MÃOS LIVRES' : 'MUDO';
     setTimeout(() => {
-      if (!isListening) voiceTranscription.classList.add('hidden');
+      if (!isListening && !mochi.speaking) voiceTranscription.classList.add('hidden');
     }, 2800);
 
-    // Volta ao estado anterior ou idle
     if (currentState) {
       renderState(currentState);
     } else {
@@ -812,11 +914,15 @@
   micBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     unlockAudioAndWakeLock();
-    if (isListening) {
-      recognition && recognition.stop();
-      stopListening();
-    } else {
+    handsFreeMode = !handsFreeMode;
+    if (handsFreeMode) {
+      micBtn.classList.add('listening');
+      micLabel.textContent = 'MÃOS LIVRES';
       startListening();
+    } else {
+      handsFreeMode = false;
+      pauseRecognition();
+      stopListening();
     }
   });
 

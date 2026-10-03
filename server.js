@@ -366,6 +366,87 @@ app.post('/api/speak', requirePin, async (req, res) => {
   }
 });
 
+// Endpoint de Conversação / Resposta Inteligente do Echo
+app.post('/api/converse', requirePin, async (req, res) => {
+  const { message } = req.body || {};
+  if (!message) return res.status(400).json({ error: 'Mensagem vazia' });
+
+  const textLower = message.toLowerCase().trim();
+
+  // 1. Respostas instantâneas com latência zero para saudações e telemetria
+  let quickReply = null;
+  if (/^(bom dia|olá|ola|e aí|e ai|fala echo|opa)/i.test(textLower)) {
+    quickReply = "Bom dia, Mestre! Estratégia Nerd online e todos os sistemas operando!";
+  } else if (/^(boa tarde)/i.test(textLower)) {
+    quickReply = "Boa tarde, Mestre! Monitorando tudo por aqui.";
+  } else if (/^(boa noite)/i.test(textLower)) {
+    quickReply = "Boa noite, Mestre! Deixo os módulos em prontidão.";
+  } else if (/como est[aá]|computador|status do pc|telemetria|cpu|ram/i.test(textLower)) {
+    quickReply = `O computador está com ${echoState.telemetry.cpuPercent}% de CPU e ${echoState.telemetry.ramPercent}% de memória RAM em uso.`;
+  } else if (/est[aá] me ouvindo|me ouve|teste/i.test(textLower)) {
+    quickReply = "Estou te ouvindo perfeitamente, Mestre!";
+  } else if (/obrigado|valeu|show|perfeito/i.test(textLower)) {
+    quickReply = "Sempre às ordens, Mestre!";
+  }
+
+  if (quickReply) {
+    echoState.voiceMessage = quickReply;
+    broadcastState();
+    return res.json({ ok: true, reply: quickReply, source: 'fast-local' });
+  }
+
+  // 2. Consulta inteligente via OpenAI Chat Completion se houver chave configurada
+  if (OPENAI_API_KEY) {
+    try {
+      const completion = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          temperature: 0.7,
+          max_tokens: 80,
+          messages: [
+            {
+              role: 'system',
+              content: `Você é o Echo, o mascote e companheiro de mesa do projeto Estratégia Nerd. 
+Você é leal, bem-humorado, nerd e prestativo. Chama o usuário respeitosamente de 'Mestre'.
+REGRAS MANDATÓRIAS:
+- Responda SEMPRE em português do Brasil de forma concisa e natural para ser falada em áudio (máximo 1 ou 2 frases curtas).
+- Não use emojis longos ou formatações markdown pesadas (pois o texto será sintetizado por voz).
+- Telemetria atual: CPU em ${echoState.telemetry.cpuPercent}%, RAM em ${echoState.telemetry.ramPercent}%.`
+            },
+            {
+              role: 'user',
+              content: message
+            }
+          ]
+        })
+      });
+
+      if (completion.ok) {
+        const data = await completion.json();
+        const reply = data.choices?.[0]?.message?.content?.trim();
+        if (reply) {
+          echoState.voiceMessage = reply;
+          broadcastState();
+          return res.json({ ok: true, reply, source: 'openai' });
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao chamar OpenAI Chat:', err.message);
+    }
+  }
+
+  // Fallback amigável
+  const fallback = "Entendido, Mestre! Processando aqui no Estratégia Nerd.";
+  echoState.voiceMessage = fallback;
+  broadcastState();
+  return res.json({ ok: true, reply: fallback, source: 'fallback' });
+});
+
 // Obtém o IP da rede Wi-Fi local para o QR Code
 function getLocalWifiIp() {
   const interfaces = os.networkInterfaces();
