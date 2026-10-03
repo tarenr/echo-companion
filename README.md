@@ -35,7 +35,7 @@ Ele monitora em tempo real:
    - **Xícara de Café (`coffee`):** Ativado após 3 minutos sem interação.
    - **Modo Dormindo (`sleeping`):** Ativado após 6 minutos de inatividade ou por comando de voz direto ("boa noite", "vai dormir", "soneca"). Apresenta arcos serenos nos olhos `( ˘ _ ˘ )`, respiração lenta e profunda (física senoidal), partículas flutuantes lilás de `z Z z` e dimerização suave de brilho da tela (economia para telas OLED). Desperta instantaneamente com toque na tela, comando de voz ou eventos em tempo real dos agentes de IA.
 6. **Telemetria do PC**: Uso contínuo de CPU e memória RAM (com alarme automático quando a CPU ultrapassa 90%).
-7. **Voz Clonada Local do Baymax (F5-TTS + RTX 3050)**: Fala com a icônica voz brasileira do **Baymax** (*Operação Big Hero*, dublado por Márcio Araújo), sintetizada localmente na GPU dedicada **NVIDIA GeForce RTX 3050** via F5-TTS e vocoder Vocos 24kHz. Conta com sistema de cache de fala instantâneo e fallback automático resiliente para o Microsoft Edge Neural TTS (`pt-BR-AntonioNeural`).
+7. **Voz Neural Oficial em Português (Edge TTS Antonio)**: Fala com voz brasileira natural, dinâmica e de alta fidelidade (`pt-BR-AntonioNeural`), transmitida em streaming direto MP3 a 24kHz com entrega instantânea (~1s), fluidez conversacional e custo zero sem necessidade de chave de API externa.
 
 ---
 

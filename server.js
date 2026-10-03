@@ -15,39 +15,6 @@ memory.initMemory().then(() => {
   console.warn('⚠️ Falha ao inicializar memória SQLite:', err.message);
 });
 
-// Orquestrador e Watchdog do microserviço neural F5-TTS local (Baymax)
-let ttsHealthy = false;
-let ttsStartAttempts = 0;
-
-function ensureTtsServerRunning() {
-  fetch('http://127.0.0.1:4885/health', { signal: AbortSignal.timeout(2000) })
-    .then(r => r.json())
-    .then(d => {
-      if (!ttsHealthy) {
-        console.log(`🤖 [TTS Neural Local] Conectado com sucesso ao F5-TTS: ${d.voice} (GPU: ${d.gpu_name || d.device})`);
-        ttsHealthy = true;
-        ttsStartAttempts = 0;
-      }
-    })
-    .catch(() => {
-      ttsHealthy = false;
-      const vbsPath = path.join(__dirname, 'echo-tts-daemon.vbs');
-      if (fs.existsSync(vbsPath) && ttsStartAttempts < 3) {
-        ttsStartAttempts++;
-        console.warn(`🚀 [TTS Watchdog] Micro-serviço F5-TTS offline. Acionando echo-tts-daemon.vbs (tentativa ${ttsStartAttempts})...`);
-        const p = spawn('wscript.exe', [vbsPath], {
-          cwd: __dirname,
-          stdio: 'ignore',
-          detached: true
-        });
-        p.unref();
-      }
-    });
-}
-
-// Watchdog contínuo a cada 30 segundos
-setInterval(ensureTtsServerRunning, 30000);
-
 const qrcode = require('qrcode-terminal');
 
 process.on('uncaughtException', (err, origin) => {
@@ -384,38 +351,12 @@ app.post('/api/events', (req, res) => {
   res.json({ ok: true, state: echoState });
 });
 
-// Endpoint de Síntese de Voz (Motor 1: F5-TTS Baymax Local + Fallback: Edge TTS Antonio / Gemini)
+// Endpoint de Síntese de Voz (Motor Primário: Microsoft Edge Neural TTS Antonio)
 app.post('/api/speak', requirePin, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Texto não fornecido' });
 
-  // 1. Motor Primário: F5-TTS Neural Local (Voz Clonada do Baymax com RTX 3050 na porta 4885)
-  try {
-    const ttsLocalRes = await fetch('http://127.0.0.1:4885/clone-speak', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, speed: 1.0, nfe_step: 32 }),
-      signal: AbortSignal.timeout(15000)
-    });
-
-    if (ttsLocalRes.ok) {
-      const arrayBuf = await ttsLocalRes.arrayBuffer();
-      const audioBuffer = Buffer.from(arrayBuf);
-      res.set({
-        'Content-Type': 'audio/wav',
-        'Content-Length': audioBuffer.length,
-        'Cache-Control': 'no-cache',
-        'X-Voice-Engine': 'F5-TTS-Baymax-Local'
-      });
-      return res.send(audioBuffer);
-    } else {
-      console.warn(`[TTS Local] Retornou status ${ttsLocalRes.status}, acionando Edge TTS fallback...`);
-    }
-  } catch (err) {
-    console.warn('[TTS Local] Motor local F5-TTS indisponível ou ocupado, usando Edge TTS fallback:', err.message);
-  }
-
-  // 2. Fallback 1: Microsoft Edge Neural TTS (voz natural pt-BR Antonio)
+  // 1. Motor Primário: Microsoft Edge Neural TTS (voz natural pt-BR Antonio em streaming)
   try {
     const tts = new MsEdgeTTS();
     await tts.setMetadata('pt-BR-AntonioNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
@@ -824,7 +765,4 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('======================================================\n');
   console.log('Abra no navegador do celular apontando a câmera para o QR Code abaixo:');
   qrcode.generate(accessUrl, { small: true });
-
-  // Garante microserviço neural F5-TTS ativo na porta 4885
-  ensureTtsServerRunning();
 });

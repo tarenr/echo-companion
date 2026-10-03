@@ -1,65 +1,62 @@
 # Motores de Voz e Síntese Neural para o Echo Companion 🎙️
 
-Este documento documenta a arquitetura de voz do Echo Companion, integrando clonagem neural local acelerada por hardware e fallbacks de alta disponibilidade.
+Este documento cataloga a arquitetura de voz do Echo Companion, as alternativas avaliadas, motores em produção e aprendizados de experimentação.
 
 ---
 
-## 1. Motor Primário: F5-TTS Neural Local (Voz Clonada do Baymax) 🤖
+## 1. Motor Oficial em Produção: Microsoft Edge Neural TTS ⚡
 
-- **Tecnologia**: [F5-TTS](https://github.com/SWivid/F5-TTS) (Flow Matching Diffusion Transformer) + Vocoder [Vocos](https://github.com/gemelo-ai/vocos) em 24kHz.
-- **Hardware**: Aceleração via **NVIDIA GeForce RTX 3050** (CUDA `cu126`, PyTorch 2.14).
-- **Voz de Referência**: Dublagem oficial brasileira do personagem **Baymax** (*Operação Big Hero*, dublado por Márcio Araújo).
-  - Áudio de referência: `data/voices/baymax_sample.wav` (24kHz mono PCM).
-  - Transcrição de referência: `data/voices/baymax_sample.txt` (*"Olá, eu sou Baymax, seu agente pessoal de saúde."*).
-- **Desempenho**:
-  - Inferência na GPU: ~4 a 5 segundos para sintetizar frases completas de 1 a 2 sentenças.
-  - Sistema de Cache Inteligente (`data/voices/cache/`): Frases e respostas repetidas respondem em menos de **1 milissegundo** (Cache HIT instantâneo).
-- **Custo**: **100% gratuito e ilimitado** (execução local no PC, sem chamadas externas pagas).
-- **Microserviço**:
-  - Script: `tts_server.py`
-  - Porta: `4885`
-  - Gerenciamento: Inicializado e monitorado automaticamente pelo watchdog contínuo (a cada 30s) no `server.js` e integrado ao `echo-daemon.vbs` e pasta Startup do Windows.
-  - Logs dedicados: `tts.log` com descarregamento contínuo em tempo real (`PYTHONUNBUFFERED=1`).
+O Echo adota como motor oficial de voz o **Microsoft Edge Neural TTS**, priorizando fluidez, streaming instantâneo em tempo real e naturalidade nativa em português brasileiro:
 
----
-
-## 2. Motor de Fallback: Microsoft Edge Neural TTS
-
-- **Biblioteca**: `msedge-tts` (Node.js).
-- **Voz**: `pt-BR-AntonioNeural` (ou alternável para `pt-BR-FranciscaNeural` / `pt-BR-ThalitaNeural`).
-- **Comportamento**: Acionado automaticamente e sem interrupções caso o microserviço F5-TTS local esteja desligado, em manutenção ou reiniciando.
-- **Custo**: 100% gratuito, streaming MP3 rápido em 24kHz.
+- **Biblioteca**: `msedge-tts` (Node.js nativo).
+- **Voz Padrão Oficial**: `pt-BR-AntonioNeural` (voz masculina dinâmica, natural, clara e profissional).
+- **Vozes Alternativas Disponíveis**:
+  - `pt-BR-FranciscaNeural`: Voz feminina acolhedora, empática e suave.
+  - `pt-BR-ThalitaNeural`: Voz jovem, ágil e expressiva.
+  - `pt-BR-BrendaNeural`: Alternativa dinâmica.
+- **Formato**: Streaming direto MP3 em 24kHz (`AUDIO_24KHZ_48KBITRATE_MONO_MP3`).
+- **Latência de Resposta**: ~1.0s a 1.4s (entrega instantânea no smartphone).
+- **Custo e Limites**: **100% gratuito**, sem chaves de API, sem cota diária e sem custos recorrentes.
+- **Calibração de Prosódia**:
+  - `rate: '+6%'` para ritmo natural e ágil de conversa.
 
 ---
 
-## 3. Estrutura de Arquivos e Execução
+## 2. Experimento Aposentado: Clonagem Neural Local F5-TTS (RTX 3050) 🧪
 
-```text
-echo-companion/
-├── data/
-│   └── voices/
-│       ├── baymax_sample.wav     # Amostra de áudio normalizada (24kHz mono)
-│       ├── baymax_sample.txt     # Transcrição exata de referência
-│       └── cache/                # Cache em disco de áudios gerados (MD5)
-├── tts-env/                      # Virtual environment isolado com PyTorch CUDA
-├── tts_server.py                 # API FastAPI na porta 4885
-├── echo-tts-daemon.vbs           # Script silencioso de inicialização do TTS
-├── echo-daemon.vbs               # Script principal do Windows Task Scheduler (Node + TTS)
-├── start-tts.bat                 # Script de inicialização avulsa para depuração
-├── tts.log                       # Logs de execução do motor neural F5-TTS
-└── server.js                     # Orquestrador do Node.js com watchdog e fallback
-```
+Durante o ciclo de testes de clonagem de voz, foi implementada e avaliada uma solução local de síntese com o modelo [F5-TTS](https://github.com/SWivid/F5-TTS) e vocoder Vocos 24kHz rodando na placa dedicada **NVIDIA GeForce RTX 3050**:
+
+- **Objetivo do Teste**: Clonar localmente a voz da dublagem brasileira do personagem Baymax (*Operação Big Hero*, dublado por Márcio Araújo) a partir de uma amostra limpa de áudio (`baymax_sample.wav`).
+- **Status Atual**: **APOSENTADO / DESATIVADO**.
+- **Motivos Técnicos da Aposentadoria**:
+  1. **Sotaque e Dicção Sintetizada**: O modelo base do F5-TTS, embora capture o timbre acústico, introduz forte sotaque anglófono/robótico e pronúncia truncada de fonemas em português do Brasil (`pt-BR`), soando artificial e desagradável para uso diário.
+  2. **Latência Inviável para Conversação**: O tempo de inferência na GPU variou entre **4 e 6 segundos por frase**, provocando travamentos na experiência de uso interativo no celular.
+  3. **Complexidade de Infraestrutura**: Exigia microserviço Python FastAPI residente na porta 4885, consumindo memória e monitoramento contínuo.
+- **Conclusão**: O ganho de personalização não compensou a perda drástica de clareza, fluidez e velocidade. A solução foi desligada e mantida apenas como histórico de pesquisa técnica.
 
 ---
 
-## 4. Testes e Validação de Voz
+## 3. Síntese Nativa do Navegador (Fallback Zero-Network) 🌐
 
-Para testar a síntese neural diretamente pelo terminal:
+- **API**: `window.speechSynthesis` (Web Speech API).
+- **Finalidade**: Acionado no celular apenas se a conexão de rede local com o servidor Node for perdida.
+- **Comportamento**: Utiliza as vozes do sistema operacional (Google TTS no Android / Siri no iOS).
+
+---
+
+## 4. Testes e Validação da Rota de Voz
+
+Para verificar a velocidade e entrega de áudio da voz oficial:
 
 ```bash
-# Testar endpoint de saúde do TTS
-node -e "fetch('http://127.0.0.1:4885/health').then(r=>r.json()).then(console.log)"
-
-# Gerar fala na rota do Echo
-node -e "fetch('http://127.0.0.1:4884/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-echo-pin': '1984' }, body: JSON.stringify({ text: 'Olá Hiro. Eu sou o Baymax, seu companheiro de mesa.' }) }).then(r=>console.log(r.status, r.headers.get('x-voice-engine')))"
+node -e "
+const t0 = Date.now();
+fetch('http://127.0.0.1:4884/api/speak', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'x-echo-pin': '1984' },
+  body: JSON.stringify({ text: 'Olá Mestre! Voz padrão ativa e respondendo com fluidez.' })
+}).then(async r => {
+  console.log('Status:', r.status, 'Tempo:', (Date.now() - t0) + 'ms', 'Tipo:', r.headers.get('content-type'));
+});
+"
 ```
