@@ -1,5 +1,8 @@
 # Echo // Estratégia Nerd Companion 🤖
 
+[![GitHub Repository](https://img.shields.io/badge/GitHub-tarenr%2Fecho--companion-blue?logo=github)](https://github.com/tarenr/echo-companion)
+[![License: ISC](https://img.shields.io/badge/License-ISC-green.svg)](https://opensource.org/licenses/ISC)
+
 > **Painel de mesa inteligente e minimalista para smartphone (local ou remoto via Cloudflare), integrado aos agentes de IA (Claude Code, Antigravity, Codex CLI) com Kaomoji expressivo, telemetria do PC, voz neural da OpenAI e proteção por PIN.**
 
 ---
@@ -115,10 +118,11 @@ echo-companion/
 
 ---
 
-## 📊 The Forge
+## 📊 The Forge & Repositório Oficial
 
-Projeto registrado no painel central de projetos **The Forge**:
-- **ID do Projeto:** 10
+- **GitHub Oficial:** [https://github.com/tarenr/echo-companion](https://github.com/tarenr/echo-companion)
+- **Painel The Forge:** Projeto ID 10
 - **URL Local:** `http://localhost:4884`
 - **URL Cloudflare:** `https://echo.tfr-info.com.br`
 - **Categoria:** Assistente / Monitoramento
+
