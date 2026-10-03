@@ -120,7 +120,8 @@
     approval: { label: 'Aguardando', col: '#F5A524', tint: 0.78, eye: 'wide', badge: ['bang', '#F5A524'] },
     finished: { label: 'Concluído', col: '#10b981', tint: 0.35, eye: 'happy', badge: ['dot', '#10b981'] },
     error: { label: 'Erro', col: '#F4505E', tint: 0.78, eye: 'flat', badge: ['dot', '#F4505E'] },
-    listening: { label: 'Ouvindo', col: '#00d4ff', tint: 0.45, eye: 'dot', badge: ['dots', '#00d4ff'] }
+    listening: { label: 'Ouvindo', col: '#00d4ff', tint: 0.45, eye: 'dot', badge: ['dots', '#00d4ff'] },
+    sleeping: { label: 'Dormindo', col: '#8b5cf6', tint: 0.12, eye: 'sleep', badge: null }
   };
 
   const EMOTES = {
@@ -366,6 +367,19 @@
         s.hands = 0;
       }
 
+      // Física de respiração lenta no modo soneca
+      if (this.state === 'sleeping') {
+        const breath = Math.sin(t * 1.5);
+        s.sy = 1 + breath * 0.045;
+        s.sx = 1 - breath * 0.02;
+        s.mouthOpen = 0;
+        s.hands = 0;
+        if (n > (this.nextZ || 0)) {
+          this.spawnSleepZ();
+          this.nextZ = n + 1200 + Math.random() * 600;
+        }
+      }
+
       const kLook = 1 - Math.pow(0.002, dt), kGen = 1 - Math.pow(0.0008, dt);
       for (const k in tg) {
         if (this.lock[k]) continue;
@@ -374,7 +388,7 @@
 
       this.col = mix(this.col, this.colT, 1 - Math.pow(0.002, dt));
 
-      if (n > this.nextBlink) {
+      if (this.state !== 'sleeping' && n > this.nextBlink) {
         this.blink();
         this.nextBlink = n + 2200 + Math.random() * 3200;
       }
@@ -382,6 +396,22 @@
 
       for (const p of this.parts) p.age += dt;
       this.parts = this.parts.filter(p => p.age < p.life);
+    }
+
+    spawnSleepZ() {
+      const chars = ['z', 'Z', 'z'];
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+      this.parts.push({
+        type: 'zzz',
+        char: ch,
+        x: 0.38 + (Math.random() - 0.5) * 0.15,
+        y: -0.32,
+        vx: 0.12 + Math.random() * 0.08,
+        vy: -0.38 - Math.random() * 0.18,
+        sz: 0.16 + (ch === 'Z' ? 0.07 : 0),
+        life: 2.8,
+        age: 0
+      });
     }
 
     draw() {
@@ -734,6 +764,12 @@
           x.rotate(p.rot);
           star(x, sz * 0.8, sz * 0.18);
           x.fill();
+        } else if (p.type === 'zzz') {
+          x.fillStyle = 'rgba(167, 139, 250, ' + clamp(a * 0.9, 0, 0.9) + ')';
+          x.font = `bold ${sz * 1.3}px -apple-system, sans-serif`;
+          x.textAlign = 'center';
+          x.textBaseline = 'middle';
+          x.fillText(p.char || 'z', 0, 0);
         }
         x.restore();
       }
@@ -763,6 +799,13 @@
           x.lineCap = 'round';
           x.beginPath();
           x.arc(0, h * 0.16, w * 0.82, Math.PI * 1.12, Math.PI * 1.88);
+          x.stroke();
+          break;
+        case 'sleep':
+          x.lineWidth = w * 0.36;
+          x.lineCap = 'round';
+          x.beginPath();
+          x.arc(0, -h * 0.04, w * 0.65, Math.PI * 0.15, Math.PI * 0.85);
           x.stroke();
           break;
         case 'heart':
@@ -1138,6 +1181,37 @@
     };
   }
 
+  let infoCardTimeout = null;
+
+  function displayInfoCard(card, replyText) {
+    if (!card) return;
+    echoWrapper.className = 'echo-wrapper mode-info';
+    infoPanel.classList.add('visible');
+
+    panelBadge.textContent = card.badge || 'INFORMAÇÃO';
+    panelMainText.textContent = card.title || '';
+    panelSubLine1.textContent = card.detail1 || '';
+    panelSubLine2.textContent = card.detail2 || '';
+
+    panelVoice.style.display = 'block';
+    voiceText.textContent = replyText;
+
+    // Robô olha expressivamente para a direita em direção aos dados
+    mochi.look.x = 0.85;
+    mochi.look.y = 0.05;
+
+    clearTimeout(infoCardTimeout);
+    const duration = Math.max(9000, (replyText.length * 75) + 5000);
+    infoCardTimeout = setTimeout(() => {
+      if (echoWrapper.classList.contains('mode-info') && currentState?.mode !== 'info') {
+        echoWrapper.className = 'echo-wrapper mode-full';
+        infoPanel.classList.remove('visible');
+        mochi.look.x = 0;
+        mochi.look.y = 0;
+      }
+    }, duration);
+  }
+
   async function processAndRespond(text) {
     if (processingSpeech || mochi.speaking) return;
     processingSpeech = true;
@@ -1160,12 +1234,25 @@
         mochi.setAccessory(data.accessory, 5000);
       }
 
+      // Se a resposta contém dados/cartão, desliza para a esquerda e exibe o painel
+      if (data?.card) {
+        displayInfoCard(data.card, reply);
+      }
+
       transcriptionText.textContent = reply;
       panelVoice.style.display = 'block';
       voiceText.textContent = reply;
 
       // Responde falando com voz oficial neural, mexendo a boca e mãos
       await speak(reply);
+
+      // Se entrou em modo soneca/sono por comando de voz
+      if (data?.state === 'sleeping') {
+        mochi.setAccessory('none');
+        mochi.setState('sleeping');
+        document.body.classList.add('sleep-mode');
+      }
+
       resetInactivity();
     } catch (err) {
       console.warn('Erro ao conversar:', err);
@@ -1411,23 +1498,61 @@
   }
 
   // ========================================================
-  // 11. TEMPORIZADOR DE INATIVIDADE (ANIMAÇÃO DE CAFÉ)
+  // 11. TEMPORIZADOR DE INATIVIDADE (CAFÉ AOS 3 MIN & SONO AOS 6 MIN)
   // ========================================================
   let inactivityTimer = null;
+  let sleepTimer = null;
+
+  function wakeUp() {
+    if (mochi && mochi.state === 'sleeping') {
+      mochi.setState('idle');
+      document.body.classList.remove('sleep-mode');
+      Snd.play('pop');
+      if (handsFreeMode) {
+        resumeListeningIfHandsFree();
+      }
+    }
+  }
+
   function resetInactivity() {
     clearTimeout(inactivityTimer);
+    clearTimeout(sleepTimer);
+
+    if (mochi && mochi.state === 'sleeping') {
+      wakeUp();
+    }
+
     if (mochi && mochi.accessory === 'coffee') {
       mochi.setAccessory('none');
     }
+
+    // Nível 1: 3 minutos (180s) -> Caneca de café
     inactivityTimer = setTimeout(() => {
-      if (mochi && !mochi.speaking && !isListening && !processingSpeech) {
+      if (mochi && !mochi.speaking && !isListening && !processingSpeech && mochi.state !== 'sleeping') {
         mochi.setAccessory('coffee');
       }
-    }, 180000); // 3 minutos
+    }, 180000);
+
+    // Nível 2: 6 minutos (360s) -> Adormece em modo sono
+    sleepTimer = setTimeout(() => {
+      if (mochi && !mochi.speaking && !isListening && !processingSpeech) {
+        mochi.setAccessory('none');
+        mochi.setState('sleeping');
+        document.body.classList.add('sleep-mode');
+      }
+    }, 360000);
   }
 
-  window.addEventListener('pointerdown', resetInactivity, { passive: true });
-  window.addEventListener('keydown', resetInactivity, { passive: true });
+  window.addEventListener('pointerdown', () => {
+    wakeUp();
+    resetInactivity();
+  }, { passive: true });
+
+  window.addEventListener('keydown', () => {
+    wakeUp();
+    resetInactivity();
+  }, { passive: true });
+
   resetInactivity();
 
   setupSpeechRecognition();

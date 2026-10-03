@@ -88,8 +88,25 @@ O mascote vetorial em HTML5 Canvas possui 5 acessórios reativos sincronizados e
    - **Gatilho**: Disparada ao detectar metas batidas (treino do Gym OS cumprido, tarefas concluídas com sucesso, streak elevado).
    - **Visual**: O mascote salta alegremente, seus olhos mudam para estrelas douradas e 28 confetes coloridos giram e caem em cascata.
 5. **Xícara de Café (`coffee`)**:
-   - **Gatilho**: Modo ocioso prolongado — ativado após 3 minutos (180s) sem nenhuma fala, toque na tela ou evento de IA.
+   - **Gatilho**: Modo ocioso prolongado (estágio 1) — ativado após 3 minutos (180s) sem nenhuma fala, toque na tela ou evento de IA.
    - **Visual**: O mascote segura uma caneca branca e azul com café quente, liberando fios de vapor ondulantes. Interações do usuário desativam a caneca instantaneamente.
+6. **Modo Dormindo (`sleeping`)**:
+   - **Gatilho**: Inatividade profunda (estágio 2 — após 6 minutos / 360s sem interação) ou comando de voz ("boa noite", "vai dormir", "modo soneca").
+   - **Visual**: Olhos com arcos serenos fechados `( ˘ _ ˘ )`, física de respiração suave e profunda (expansão senoidal), partículas flutuantes neon lilás `z Z z` e dimerização suave de brilho da interface (`body.sleep-mode`), ideal para painéis OLED de celular.
+   - **Despertar**: Toque ou clique em qualquer ponto da tela, comando de voz ou notificação em tempo real de agente de IA (Claude, Antigravity, Codex).
+
+---
+
+## 6. Modo Informação Lateral (`mode-info`) e Painel de Cards
+
+Para evitar poluir o visual minimalista do mascote durante a navegação normal, o Echo opera com um sistema de layout dinâmico:
+
+- **Modo Padrão (`.mode-full`)**: O mascote ocupa o centro da tela com foco total em suas expressões e gestos.
+- **Modo Informação Lateral (`.mode-info`)**:
+  - **Ativação**: Disparado automaticamente sempre que o servidor retorna dados estruturados de ecossistema (`card`).
+  - **Comportamento**: O mascote desliza suavemente para a esquerda (`transform: translateX(-40%)` no canvas), ajusta o olhar fixo para a direita (`mochi.look.x = 0.85`) e o container `#info-panel` se expande com fade-in e slide.
+  - **Conteúdo do Card**: Exibe badge temático (`BACKUP ECOSSISTEMA`, `ESTRATÉGIA NERD`, `SALDOS CONSOLIDADOS`, `TELEMETRIA`), título e detalhes principais com tipografia mono neon.
+  - **Retorno Automático**: Após a conclusão da resposta por voz, o robô retorna suavemente ao centro e o painel se recolhe.
 
 ---
 

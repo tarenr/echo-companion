@@ -27,13 +27,15 @@ Ele monitora em tempo real:
    - **Comemorando vitória:** Braços comemorando `*\ ( ^ _ ^ ) /*` em esmeralda.
    - **Falha / Erro:** Braços caídos `¯\_( x _ x )_/¯` em vermelho.
    - **Regra estrita da boca:** A boca varia ESTRITAMENTE entre `_` (fechada) e `o` (aberta/falando).
-4. **Vida Própria no Modo Ocioso (Idle)**:
-   - Em repouso, alterna a cada 20 a 30s entre poses orgânicas:
-     - Dando de ombros: `¯\_( ¬ _ ¬ )_/¯`
-     - Relaxando / dançando: `~( ˘ _ ˘ ~)`
-     - Repouso suave: `( ^ _ ^ )` piscando naturalmente.
-5. **Telemetria do PC**: Uso contínuo de CPU e memória RAM (com alarme automático quando a CPU ultrapassa 90%).
-6. **Voz Oficial Nativa Google Gemini (Puck)**: Fala com a voz oficial *Puck* do modelo `gemini-3.8-flash-tts` em áudio WAV de alta fidelidade (usando a `GEMINI_API_KEY`), com fallbacks redundantes para Microsoft Edge Neural TTS (`pt-BR-AntonioNeural`) e OpenAI.
+4. **Modo Informação Lateral (`mode-info`)**:
+   - Ao responder consultas estruturadas de dados (Backups, Telemetria, Saldos bancários, Faturas de cartão, Contas a pagar, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), o mascote desliza suavemente para o canto esquerdo da tela e fixa o olhar para a direita (`mochi.look.x = 0.85`), abrindo o painel lateral com cards neon informativos.
+   - Ao finalizar a fala e apresentação dos dados, retorna suavemente para o centro da tela (`.mode-full`).
+5. **Ciclo de Ociosidade e Modo Dormindo (`sleeping`)**:
+   - **Ocioso (Idle):** Em repouso, alterna a cada 20 a 30s entre poses orgânicas (`¯\_( ¬ _ ¬ )_/¯`, `~( ˘ _ ˘ ~)`, `( ^ _ ^ )`).
+   - **Xícara de Café (`coffee`):** Ativado após 3 minutos sem interação.
+   - **Modo Dormindo (`sleeping`):** Ativado após 6 minutos de inatividade ou por comando de voz direto ("boa noite", "vai dormir", "soneca"). Apresenta arcos serenos nos olhos `( ˘ _ ˘ )`, respiração lenta e profunda (física senoidal), partículas flutuantes lilás de `z Z z` e dimerização suave de brilho da tela (economia para telas OLED). Desperta instantaneamente com toque na tela, comando de voz ou eventos em tempo real dos agentes de IA.
+6. **Telemetria do PC**: Uso contínuo de CPU e memória RAM (com alarme automático quando a CPU ultrapassa 90%).
+7. **Voz Oficial Nativa Google Gemini (Puck)**: Fala com a voz oficial *Puck* do modelo `gemini-3.8-flash-tts` em áudio WAV de alta fidelidade (usando a `GEMINI_API_KEY`), com fallbacks redundantes para Microsoft Edge Neural TTS (`pt-BR-AntonioNeural`) e OpenAI.
 
 ---
 

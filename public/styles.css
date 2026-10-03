@@ -592,3 +592,16 @@ body {
   font-size: 0.7rem;
   display: none;
 }
+
+/* Modo Sono / Soneca OLED (Atenuação suave para repouso) */
+body.sleep-mode {
+  filter: brightness(0.68) saturate(0.85);
+  transition: filter 1.6s ease-in-out;
+}
+
+body.sleep-mode .top-bar,
+body.sleep-mode .bottom-bar {
+  opacity: 0.35;
+  transition: opacity 1.6s ease-in-out;
+}
+

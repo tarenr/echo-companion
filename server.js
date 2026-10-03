@@ -471,19 +471,34 @@ app.post('/api/converse', requirePin, async (req, res) => {
 
   const textLower = message.toLowerCase().trim();
 
-  // 1. Respostas instantâneas para saudações e telemetria básica
+  // 1. Respostas instantâneas para saudações, sono e telemetria básica
   let quickReply = null;
   let quickAccessory = 'none';
+  let quickState = null;
+  let quickCard = null;
 
-  if (/^(bom dia|olá|ola|e aí|e ai|fala echo|opa)/i.test(textLower)) {
+  if (/^(boa noite|vai dormir|dormir|hora de dormir|modo soneca|soneca|descanse)/i.test(textLower)) {
+    quickReply = "Boa noite, Mestre! Entrando em modo soneca... Bons sonhos!";
+    quickState = 'sleeping';
+    quickCard = {
+      badge: 'MODO SONECA',
+      title: 'Dormindo... zZz',
+      detail1: 'Toque na tela para acordar',
+      detail2: 'Repouso da CPU e Tela'
+    };
+  } else if (/^(bom dia|olá|ola|e aí|e ai|fala echo|opa)/i.test(textLower)) {
     quickReply = "Bom dia, Mestre! Estratégia Nerd online e todos os sistemas operando!";
   } else if (/^(boa tarde)/i.test(textLower)) {
     quickReply = "Boa tarde, Mestre! Monitorando tudo por aqui.";
-  } else if (/^(boa noite)/i.test(textLower)) {
-    quickReply = "Boa noite, Mestre! Deixo os módulos em prontidão.";
   } else if (/como est[aá] o (computador|pc)|status do pc|telemetria|\b(cpu|ram)\b/i.test(textLower)) {
     quickReply = `O computador está com ${echoState.telemetry.cpuPercent}% de CPU e ${echoState.telemetry.ramPercent}% de memória RAM em uso.`;
     quickAccessory = 'lupa';
+    quickCard = {
+      badge: 'TELEMETRIA PC',
+      title: `CPU: ${echoState.telemetry.cpuPercent}%`,
+      detail1: `RAM: ${echoState.telemetry.ramPercent}% em uso`,
+      detail2: 'Hardware monitorado'
+    };
   } else if (/est[aá] me ouvindo|me ouve|teste de voz/i.test(textLower)) {
     quickReply = "Estou te ouvindo perfeitamente, Mestre!";
   } else if (/obrigado|valeu|show|perfeito/i.test(textLower)) {
@@ -499,9 +514,19 @@ app.post('/api/converse', requirePin, async (req, res) => {
 
     echoState.voiceOrigin = 'converse';
     echoState.voiceMessage = quickReply;
+    if (quickState === 'sleeping') {
+      echoState.state = 'sleeping';
+    }
     broadcastState();
-    broadcastEvent('mascot_state', { accessory: quickAccessory, text: quickReply });
-    return res.json({ ok: true, reply: quickReply, accessory: quickAccessory, source: 'fast-local' });
+    broadcastEvent('mascot_state', { accessory: quickAccessory, text: quickReply, state: quickState });
+    return res.json({
+      ok: true,
+      reply: quickReply,
+      accessory: quickAccessory,
+      card: quickCard,
+      state: quickState,
+      source: 'fast-local'
+    });
   }
 
   // Notifica o mascote para animação de digitação/pensamento
@@ -604,13 +629,71 @@ REGRAS OBRIGATÓRIAS:
 
             const toolResult = await tools.executeTool(fc.name, fc.args || {});
 
-            // Define acessório temático baseado na ferramenta
+            // Define acessório temático e cartão estruturado baseado na ferramenta
             if (['consultar_saldos_bancos', 'consultar_cartoes_credito', 'consultar_contas_a_pagar'].includes(fc.name)) {
               finalAccessory = 'printer';
             } else if (['consultar_treino_e_streak_gym_os', 'gravar_preferencia_usuario'].includes(fc.name)) {
               finalAccessory = 'celebration';
             } else {
               finalAccessory = 'lupa';
+            }
+
+            if (fc.name === 'consultar_status_backup_forge') {
+              finalCard = {
+                badge: 'BACKUP ECOSSISTEMA',
+                title: toolResult?.tarefa_agendada?.ultimo_resultado || 'Backup Verificado',
+                detail1: `Última: ${toolResult?.tarefa_agendada?.ultima_execucao ? toolResult.tarefa_agendada.ultima_execucao.replace('T', ' ') : 'Ontem'}`,
+                detail2: `Próxima: ${toolResult?.tarefa_agendada?.proxima_execucao ? toolResult.tarefa_agendada.proxima_execucao.replace('T', ' ') : 'Hoje 20h'}`
+              };
+            } else if (fc.name === 'consultar_saldos_bancos') {
+              finalCard = {
+                badge: 'FINANÇAS STRATEGY HUB',
+                title: 'Saldos Bancários',
+                detail1: toolResult?.saldo_total_formatado ? `Total: ${toolResult.saldo_total_formatado}` : 'Contas consultadas',
+                detail2: `${toolResult?.total_bancos || 'Todos'} bancos cadastrados`
+              };
+            } else if (fc.name === 'consultar_cartoes_credito') {
+              finalCard = {
+                badge: 'CARTÕES DE CRÉDITO',
+                title: 'Faturas & Limites',
+                detail1: 'Consulta de faturas do mês',
+                detail2: 'Strategy Hub'
+              };
+            } else if (fc.name === 'consultar_contas_a_pagar') {
+              finalCard = {
+                badge: 'CONTAS A PAGAR',
+                title: 'Despesas & Contas',
+                detail1: toolResult?.total_pendente ? `Total: ${toolResult.total_pendente}` : 'Contas consultadas',
+                detail2: 'Strategy Hub'
+              };
+            } else if (fc.name === 'consultar_projetos_forge' || fc.name === 'consultar_tarefas_forge') {
+              finalCard = {
+                badge: 'THE FORGE',
+                title: 'Projetos & Tarefas',
+                detail1: toolResult?.total_encontradas ? `${toolResult.total_encontradas} tarefas encontradas` : 'Painel central',
+                detail2: 'Status atualizado'
+              };
+            } else if (fc.name === 'consultar_agendamento_posts') {
+              finalCard = {
+                badge: 'POSTS AGENDADOS',
+                title: 'Estratégia Nerd',
+                detail1: `Instagram: ${toolResult?.total_instagram_agendados || 0} agendados`,
+                detail2: `Blog: ${toolResult?.total_blog_agendados || 0} agendados`
+              };
+            } else if (fc.name === 'consultar_metricas_blog' || fc.name === 'consultar_metricas_instagram') {
+              finalCard = {
+                badge: 'MÉTRICAS DO CANAL',
+                title: toolResult?.canal || 'Estratégia Nerd',
+                detail1: toolResult?.total_visualizacoes ? `${toolResult.total_visualizacoes} views` : (toolResult?.seguidores ? `${toolResult.seguidores} seguidores` : 'Métricas consolidadas'),
+                detail2: 'Canal oficial ativo'
+              };
+            } else if (fc.name === 'consultar_treino_e_streak_gym_os') {
+              finalCard = {
+                badge: 'GYM OS RPG',
+                title: toolResult?.treino_hoje ? `Treino: ${toolResult.treino_hoje}` : 'Treino do Dia',
+                detail1: toolResult?.streak_dias ? `🔥 Streak: ${toolResult.streak_dias} dias` : 'Missão diária',
+                detail2: toolResult?.nivel ? `Nível ${toolResult.nivel}` : 'Bata sua meta!'
+              };
             }
 
             // Segunda rodada: devolve o resultado da tool para o Gemini sintetizar a fala
@@ -677,8 +760,14 @@ REGRAS OBRIGATÓRIAS:
         echoState.voiceOrigin = 'converse';
         echoState.voiceMessage = finalReply;
         broadcastState();
-        broadcastEvent('mascot_state', { accessory: finalAccessory, text: finalReply });
-        return res.json({ ok: true, reply: finalReply, accessory: finalAccessory, source: 'gemini-tools' });
+        broadcastEvent('mascot_state', { accessory: finalAccessory, text: finalReply, card: finalCard });
+        return res.json({
+          ok: true,
+          reply: finalReply,
+          accessory: finalAccessory,
+          card: finalCard,
+          source: 'gemini-tools'
+        });
       }
     } catch (err) {
       console.warn('Erro ao processar conversa no Gemini:', err.message);
