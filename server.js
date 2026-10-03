@@ -140,13 +140,29 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Gerenciador de Clientes SSE (Server-Sent Events)
 let sseClients = [];
 
+// Tracking de Múltiplos Agentes Simultâneos
+const activeAgents = new Map();
+
+function getActiveAgentsList() {
+  const now = Date.now();
+  const list = [];
+  for (const [name, data] of activeAgents.entries()) {
+    if (now - data.lastSeen > 20000) {
+      activeAgents.delete(name);
+    } else {
+      list.push(name);
+    }
+  }
+  return list;
+}
+
 // Estado Global Atual do Echo
 let idleWatchdog = null;
 let echoState = {
   mode: 'full', // 'full' (centro) ou 'info' (esquerda com dados na direita)
   state: 'idle', // 'idle', 'working', 'waiting', 'success', 'error'
   actionType: 'idle', // 'idle', 'research', 'executing', 'waiting', 'success', 'error'
-  agentTheme: 'idle', // 'idle', 'claude', 'antigravity', 'codex'
+  agentTheme: 'idle', // 'idle', 'claude', 'antigravity', 'codex', 'multi-agent'
   agent: 'ECHO',
   project: 'ESTRATÉGIA NERD',
   badge: 'STANDBY',
@@ -154,6 +170,9 @@ let echoState = {
   detail: 'Nenhum agente ativo no momento',
   voiceMessage: '',
   timestamp: Date.now(),
+  isMultiAgent: false,
+  activeCount: 0,
+  activeAgents: [],
   telemetry: {
     cpuPercent: 0,
     ramPercent: 0,
@@ -246,13 +265,37 @@ app.post('/api/events', (req, res) => {
   const { agent, event, actionType, project, tool, command, error, message } = req.body;
   console.log(`[EVENTO RECEBIDO] ${agent || 'Desconhecido'} (${actionType || event}): ${command || tool || message || 'Ação'}`);
 
+  const agentKey = (agent || 'AGENTE').toUpperCase();
+  const projectKey = (project || 'ESTRATÉGIA NERD').toUpperCase();
+
+  // Atualiza ou encerra o registro do agente no Map de agentes ativos
+  if (event === 'Stop' || event === 'completed' || event === 'success') {
+    activeAgents.delete(agentKey);
+  } else {
+    activeAgents.set(agentKey, {
+      name: agentKey,
+      project: projectKey,
+      lastSeen: Date.now(),
+      actionType: actionType || 'research',
+      event: event
+    });
+  }
+
+  const currentActiveAgents = getActiveAgentsList();
+  const isMulti = currentActiveAgents.length > 1;
+
   echoState.timestamp = Date.now();
-  echoState.agent = (agent || 'AGENTE').toUpperCase();
-  echoState.project = (project || 'ESTRATÉGIA NERD').toUpperCase();
+  echoState.isMultiAgent = isMulti;
+  echoState.activeCount = currentActiveAgents.length;
+  echoState.activeAgents = currentActiveAgents;
+  echoState.agent = isMulti ? currentActiveAgents.join(' + ') : agentKey;
+  echoState.project = projectKey;
 
   // Identificação do Tema da IA
   const rawAgent = (agent || '').toLowerCase();
-  if (rawAgent.includes('claude')) {
+  if (isMulti) {
+    echoState.agentTheme = 'multi-agent';
+  } else if (rawAgent.includes('claude')) {
     echoState.agentTheme = 'claude';
   } else if (rawAgent.includes('antigravity') || rawAgent.includes('gemini')) {
     echoState.agentTheme = 'antigravity';
@@ -272,8 +315,8 @@ app.post('/api/events', (req, res) => {
     echoState.mode = 'full';
     echoState.state = 'working';
     echoState.actionType = 'research';
-    echoState.badge = 'INICIADO';
-    echoState.title = `${echoState.agent} iniciou uma sessão de trabalho`;
+    echoState.badge = isMulti ? `${currentActiveAgents.length} AGENTES` : 'INICIADO';
+    echoState.title = isMulti ? `${echoState.agent} ativos em paralelo` : `${echoState.agent} iniciou uma sessão de trabalho`;
     echoState.detail = `Projeto: ${echoState.project}`;
   } 
   else if (event === 'PreToolUse' || event === 'working' || event === 'tool_call' || event === 'UserPromptSubmit') {
@@ -283,25 +326,47 @@ app.post('/api/events', (req, res) => {
     // Diferencial: Pesquisando (leitura) vs Implementando (escrita)
     if (actionType === 'executing') {
       echoState.actionType = 'executing';
-      echoState.badge = 'IMPLEMENTANDO';
-      echoState.title = `${echoState.agent} implementando...`;
+      echoState.badge = isMulti ? 'MULTI: ESCREVENDO' : 'IMPLEMENTANDO';
+      echoState.title = isMulti ? `${echoState.agent} executando em paralelo` : `${echoState.agent} implementando...`;
     } else {
       echoState.actionType = 'research';
-      echoState.badge = 'PESQUISANDO';
-      echoState.title = `${echoState.agent} pesquisando...`;
+      echoState.badge = isMulti ? 'MULTI: PESQUISA' : 'PESQUISANDO';
+      echoState.title = isMulti ? `${echoState.agent} pesquisando em paralelo` : `${echoState.agent} pesquisando...`;
     }
     
     echoState.detail = command || tool || message || 'Lendo e analisando código...';
 
-    // Watchdog: se não receber novos eventos em 20 segundos, retorna ao modo ocioso
+    // Watchdog cooperativo: se não receber novos eventos em 20s, reavalia agentes ativos
     idleWatchdog = setTimeout(() => {
-      if (echoState.state === 'working') {
+      const remaining = getActiveAgentsList();
+      if (remaining.length === 0) {
         echoState.state = 'idle';
         echoState.actionType = 'idle';
         echoState.agentTheme = 'idle';
         echoState.badge = 'STANDBY';
         echoState.title = 'Aguardando próxima sessão...';
         echoState.detail = 'Nenhum agente ativo';
+        echoState.isMultiAgent = false;
+        echoState.activeCount = 0;
+        echoState.activeAgents = [];
+        broadcastState();
+      } else {
+        echoState.activeCount = remaining.length;
+        echoState.activeAgents = remaining;
+        echoState.isMultiAgent = remaining.length > 1;
+        if (echoState.isMultiAgent) {
+          echoState.agent = remaining.join(' + ');
+          echoState.agentTheme = 'multi-agent';
+          echoState.badge = `${remaining.length} AGENTES`;
+          echoState.title = `${echoState.agent} em execução paralela`;
+        } else {
+          const single = remaining[0];
+          echoState.agent = single;
+          const raw = single.toLowerCase();
+          echoState.agentTheme = raw.includes('claude') ? 'claude' : (raw.includes('antigravity') || raw.includes('gemini') ? 'antigravity' : (raw.includes('codex') ? 'codex' : 'idle'));
+          echoState.badge = 'EXECUTANDO';
+          echoState.title = `${echoState.agent} em execução...`;
+        }
         broadcastState();
       }
     }, 20000);
@@ -311,38 +376,62 @@ app.post('/api/events', (req, res) => {
     echoState.state = 'waiting';
     echoState.actionType = 'waiting';
     echoState.badge = 'APROVAÇÃO NECESSÁRIA';
-    echoState.title = `${echoState.agent} precisa de aprovação explícita`;
+    echoState.title = `${agentKey} precisa de aprovação explícita`;
     echoState.detail = command || message || 'Comando aguardando autorização no terminal';
     echoState.voiceMessage = 'Mestre, preciso da sua aprovação no PC!';
   } 
   else if (event === 'Stop' || event === 'completed' || event === 'success') {
-    echoState.mode = 'full';
-    echoState.state = 'success';
-    echoState.actionType = 'success';
-    echoState.badge = 'CONCLUÍDO';
-    echoState.title = 'Tarefa finalizada com sucesso!';
-    echoState.detail = message || 'Todos os passos e verificações foram concluídos';
-    echoState.voiceMessage = 'Tudo pronto e testado com sucesso!';
-
-    // Volta ao descanso após 20 segundos
-    idleWatchdog = setTimeout(() => {
-      if (echoState.state === 'success') {
-        echoState.state = 'idle';
-        echoState.actionType = 'idle';
-        echoState.agentTheme = 'idle';
-        echoState.badge = 'STANDBY';
-        echoState.title = 'Aguardando próxima sessão...';
-        echoState.detail = 'Nenhum agente ativo';
-        broadcastState();
+    const remaining = getActiveAgentsList();
+    if (remaining.length > 0) {
+      echoState.activeCount = remaining.length;
+      echoState.activeAgents = remaining;
+      echoState.isMultiAgent = remaining.length > 1;
+      if (echoState.isMultiAgent) {
+        echoState.agent = remaining.join(' + ');
+        echoState.agentTheme = 'multi-agent';
+        echoState.badge = `${remaining.length} AGENTES`;
+        echoState.title = `${agentKey} finalizou; outros agentes continuam`;
+      } else {
+        const single = remaining[0];
+        echoState.agent = single;
+        const raw = single.toLowerCase();
+        echoState.agentTheme = raw.includes('claude') ? 'claude' : (raw.includes('antigravity') || raw.includes('gemini') ? 'antigravity' : (raw.includes('codex') ? 'codex' : 'idle'));
+        echoState.badge = 'EXECUTANDO';
+        echoState.title = `${agentKey} finalizou; ${single} continua`;
       }
-    }, 20000);
+      echoState.detail = message || 'Sessão paralela ativa';
+    } else {
+      echoState.mode = 'full';
+      echoState.state = 'success';
+      echoState.actionType = 'success';
+      echoState.badge = 'CONCLUÍDO';
+      echoState.title = 'Tarefa finalizada com sucesso!';
+      echoState.detail = message || 'Todos os passos e verificações foram concluídos';
+      echoState.voiceMessage = 'Tudo pronto e testado com sucesso!';
+      echoState.isMultiAgent = false;
+      echoState.activeCount = 0;
+      echoState.activeAgents = [];
+
+      // Volta ao descanso após 20 segundos
+      idleWatchdog = setTimeout(() => {
+        if (echoState.state === 'success') {
+          echoState.state = 'idle';
+          echoState.actionType = 'idle';
+          echoState.agentTheme = 'idle';
+          echoState.badge = 'STANDBY';
+          echoState.title = 'Aguardando próxima sessão...';
+          echoState.detail = 'Nenhum agente ativo';
+          broadcastState();
+        }
+      }, 20000);
+    }
   } 
   else if (event === 'error') {
     echoState.mode = 'info';
     echoState.state = 'error';
     echoState.actionType = 'error';
     echoState.badge = 'ERRO';
-    echoState.title = `${echoState.agent} encontrou uma falha`;
+    echoState.title = `${agentKey} encontrou uma falha`;
     echoState.detail = error || message || 'Erro na execução';
     echoState.voiceMessage = 'Atenção mestre, ocorreu um erro no terminal.';
   }

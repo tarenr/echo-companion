@@ -116,6 +116,7 @@
   const STATES = {
     idle: { label: 'Ao Repouso', col: '#00d4ff', tint: 0, eye: 'pill', badge: null },
     working: { label: 'Trabalhando', col: '#00d4ff', tint: 0.65, eye: 'pill', badge: ['dots', '#00d4ff'] },
+    multi: { label: 'Multi-Agente', col: '#00e5ff', tint: 0.85, eye: 'pill', badge: ['dots', '#ff7a45'] },
     thinking: { label: 'Pensando', col: '#b829dd', tint: 0.72, eye: 'pill', badge: ['dots', '#b829dd'] },
     approval: { label: 'Aguardando', col: '#F5A524', tint: 0.78, eye: 'wide', badge: ['bang', '#F5A524'] },
     finished: { label: 'Concluído', col: '#10b981', tint: 0.35, eye: 'happy', badge: ['dot', '#10b981'] },
@@ -988,10 +989,12 @@
   }
 
   async function unlockAudioAndWakeLock() {
-    enforceLandscape();
+    if (audioToast) {
+      audioToast.classList.add('hidden');
+      audioToast.style.display = 'none';
+    }
     if (!audioUnlocked) {
       audioUnlocked = true;
-      audioToast.classList.add('hidden');
       Snd.init();
 
       try {
@@ -1016,8 +1019,22 @@
       }
     }
   }
-  screen.addEventListener('click', unlockAudioAndWakeLock);
-  screen.addEventListener('touchstart', unlockAudioAndWakeLock, { passive: true });
+  if (screen) {
+    screen.addEventListener('click', unlockAudioAndWakeLock);
+    screen.addEventListener('touchstart', unlockAudioAndWakeLock, { passive: true });
+  }
+  window.addEventListener('click', unlockAudioAndWakeLock);
+  window.addEventListener('touchstart', unlockAudioAndWakeLock, { passive: true });
+  if (audioToast) {
+    audioToast.addEventListener('click', (e) => {
+      e.stopPropagation();
+      unlockAudioAndWakeLock();
+    });
+    audioToast.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      unlockAudioAndWakeLock();
+    }, { passive: false });
+  }
 
   async function requestWakeLock() {
     try {
@@ -1364,8 +1381,19 @@
   function renderState(state) {
     currentState = state;
 
-    if (state.project) brandProject.textContent = state.project;
-    if (state.agent) agentLabel.textContent = state.agent;
+    const brandTag = document.querySelector('.brand-tag');
+    if (state.isMultiAgent) {
+      brandProject.textContent = `${state.activeCount} AGENTES ATIVOS`;
+      agentLabel.textContent = (state.activeAgents && state.activeAgents.length) ? state.activeAgents.join(' & ') : 'PARALELO';
+      if (brandTag) brandTag.classList.add('multi-agent-active');
+      echoWrapper.classList.add('theme-multi-agent');
+    } else {
+      if (brandTag) brandTag.classList.remove('multi-agent-active');
+      echoWrapper.classList.remove('theme-multi-agent');
+      if (state.project) brandProject.textContent = state.project;
+      if (state.agent) agentLabel.textContent = state.agent;
+    }
+
     if (state.badge) badgeTop.textContent = state.badge;
 
     if (state.telemetry) {
@@ -1375,12 +1403,12 @@
     // Comportamento: Chegar para o lado quando mostrar algo (mode: 'info')
     const isInfoMode = state.mode === 'info';
     if (isInfoMode) {
-      echoWrapper.className = 'echo-wrapper mode-info';
+      echoWrapper.className = `echo-wrapper mode-info ${state.isMultiAgent ? 'theme-multi-agent' : ''}`;
       infoPanel.classList.add('visible');
       // O robô olha expressivamente em direção aos dados (direita no landscape, baixo no portrait)
       setLookForInfoMode();
     } else {
-      echoWrapper.className = 'echo-wrapper mode-full';
+      echoWrapper.className = `echo-wrapper mode-full ${state.isMultiAgent ? 'theme-multi-agent' : ''}`;
       infoPanel.classList.remove('visible');
       mochi.look.x = 0;
       mochi.look.y = 0;
@@ -1411,7 +1439,7 @@
     } else if (state.state === 'success') {
       mochi.setState('finished');
     } else if (state.state === 'working') {
-      mochi.setState('working');
+      mochi.setState(state.isMultiAgent ? 'multi' : 'working');
     } else {
       mochi.setState('idle');
     }

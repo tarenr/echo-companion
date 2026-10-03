@@ -20,23 +20,29 @@ Ele monitora em tempo real:
    - **Aguardando Você / Alerta:** Âmbar Dourado (`#fbbf24`)
    - **Conclusão / Sucesso:** Esmeralda Neon (`#10b981`)
    - **Falha / Erro:** Vermelho / Rosa Neon (`#f43f5e`)
-3. **Braços, Mãos e Poses Kaomoji**:
+3. **Modo Multi-Agente (Execução Concorrente)**:
+   - **Rastreamento Simultâneo:** Quando dois ou mais agentes (ex.: Claude Code e Google Antigravity) operam ao mesmo tempo, o backend mantém um registro cooperativo (`activeAgents` Map com TTL de 20s).
+   - **Cabeçalho Composto Dinâmico:** Exibe instantaneamente no topo `X AGENTES ATIVOS // CLAUDE & ANTIGRAVITY` com borda e brilho pulsante dual neon.
+   - **Tema Visual Dual Neon:** O robô adota a classe `.theme-multi-agent` com pulsação sincronizada entre o Azul Ciano (`#00e5ff`) e o Coral Neon (`#ff7a45`), representando visualmente a união dos agentes na mesma tela.
+   - **Conclusão Independente:** Quando um agente finaliza sua tarefa e envia evento de parada (`Stop`), o Echo notifica que ele encerrou mantendo o foco no agente que continua em execução sem interromper o painel.
+4. **Braços, Mãos e Poses Kaomoji**:
    - **Pesquisando (leitura):** Mãos apoiadas `c( • _ • )כ` na cor da IA ativa.
    - **Implementando (escrita):** Braços na massa `\( ò _ ó )/` na cor da IA ativa.
    - **Chamando aprovação:** Braços erguidos acenando `\( ? o ? )/` em dourado.
    - **Comemorando vitória:** Braços comemorando `*\ ( ^ _ ^ ) /*` em esmeralda.
    - **Falha / Erro:** Braços caídos `¯\_( x _ x )_/¯` em vermelho.
    - **Regra estrita e física da boca:** A boca varia ESTRITAMENTE entre `_` (fechada/repouso) e `o` (aberta/falando). Possui projeção esférica 3D acoplada aos eixos de rotação da face (yaw, pitch e roll), mantendo-se sempre centrada entre os olhos com perspectiva e envelope de segurança rígido que impede a boca de sair do rosto sob qualquer ângulo de visualização.
-4. **Design Responsivo Híbrido (Retrato & Paisagem)**:
+5. **Design Responsivo Híbrido (Retrato & Paisagem)**:
    - **Em pé (Retrato / Celular na mesa):** O mascote ocupa a parte superior e, ao responder consultas estruturadas de dados (Backups, Telemetria, Bancos, Cartões, Contas, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), desliza suavemente para cima e direciona o olhar para baixo (`mochi.look.y = 0.85`), abrindo o painel de cards neon na metade inferior sem espremer o texto.
    - **Deitado (Paisagem):** O mascote desliza suavemente para a esquerda e fixa o olhar para a direita (`mochi.look.x = 0.85`), mantendo o painel lateral clássico.
    - **Rotação Livre e Fluida:** O PWA opera com `orientation: any`, adaptando-se instantaneamente em tempo real quando o celular é girado. Ao finalizar a apresentação dos dados, retorna suavemente para o centro da tela (`.mode-full`).
-5. **Ciclo de Ociosidade e Modo Dormindo (`sleeping`)**:
+6. **Ciclo de Ociosidade e Modo Dormindo (`sleeping`)**:
    - **Ocioso (Idle):** Em repouso, alterna a cada 20 a 30s entre poses orgânicas (`¯\_( ¬ _ ¬ )_/¯`, `~( ˘ _ ˘ ~)`, `( ^ _ ^ )`).
    - **Xícara de Café (`coffee`):** Ativado após 3 minutos sem interação.
    - **Modo Dormindo (`sleeping`):** Ativado após 6 minutos de inatividade ou por comando de voz direto ("boa noite", "vai dormir", "soneca"). Apresenta arcos serenos nos olhos `( ˘ _ ˘ )`, respiração lenta e profunda (física senoidal), partículas flutuantes lilás de `z Z z` e dimerização suave de brilho da tela (economia para telas OLED). Desperta instantaneamente com toque na tela, comando de voz ou eventos em tempo real dos agentes de IA.
-6. **Telemetria do PC**: Uso contínuo de CPU e memória RAM (com alarme automático quando a CPU ultrapassa 90%).
-7. **Voz Neural Oficial em Português (Edge TTS Antonio)**: Fala com voz brasileira natural, dinâmica e de alta fidelidade (`pt-BR-AntonioNeural`), transmitida em streaming direto MP3 a 24kHz com entrega instantânea (~1s), fluidez conversacional e custo zero sem necessidade de chave de API externa.
+7. **Telemetria do PC**: Uso contínuo de CPU e memória RAM (com alarme automático quando a CPU ultrapassa 90%).
+8. **Voz Neural Oficial em Português (Edge TTS Antonio)**: Fala com voz brasileira natural, dinâmica e de alta fidelidade (`pt-BR-AntonioNeural`), transmitida em streaming direto MP3 a 24kHz com entrega instantânea (~1s), fluidez conversacional e custo zero sem necessidade de chave de API externa.
+9. **Desbloqueio de Áudio e WakeLock em Toque Único**: O aviso inicial de ativação de som fecha imediatamente em qualquer toque na tela ou diretamente no toast, liberando o contexto de Web Audio e ativando o bloqueio de desligamento de tela (`WakeLock API`).
 
 ---
 
