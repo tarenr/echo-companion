@@ -1382,26 +1382,55 @@
   // ========================================================
   // 9. RENDERIZAÇÃO DE ESTADOS DO PC VIA SSE
   // ========================================================
+  function renderAgentChips(state) {
+    const container = document.getElementById('agents-chips-container');
+    if (!container) return;
+
+    if (state.isMultiAgent && state.activeAgents && state.activeAgents.length > 0) {
+      const chipsHtml = state.activeAgents.map(name => {
+        const lower = name.toLowerCase();
+        let chipClass = 'chip-antigravity';
+        let icon = '⚡';
+        if (lower.includes('claude')) {
+          chipClass = 'chip-claude';
+          icon = '🔥';
+        } else if (lower.includes('codex')) {
+          chipClass = 'chip-codex';
+          icon = '💻';
+        }
+        return `<span class="agent-chip ${chipClass}">${icon} ${name}</span>`;
+      }).join(' <span class="plus-sep">+</span> ');
+
+      container.innerHTML = `<span class="agents-header-tag">// CONCORRENTES:</span> ${chipsHtml}`;
+    } else if (state.agent && state.agent !== 'ECHO' && state.state !== 'idle') {
+      const lower = state.agent.toLowerCase();
+      let chipClass = 'chip-antigravity';
+      let icon = '⚡';
+      if (lower.includes('claude')) {
+        chipClass = 'chip-claude';
+        icon = '🔥';
+      } else if (lower.includes('codex')) {
+        chipClass = 'chip-codex';
+        icon = '💻';
+      }
+      container.innerHTML = `<span class="agents-header-tag">// AGENTE:</span> <span class="agent-chip ${chipClass}">${icon} ${state.agent}</span>`;
+    } else {
+      container.innerHTML = `<span class="agents-header-tag">// SESSÃO:</span> <span class="agent-chip chip-idle">💤 AGUARDANDO AGENTES</span>`;
+    }
+  }
+
   function renderState(state) {
     currentState = state;
 
-    const brandTag = document.querySelector('.brand-tag');
-    if (state.isMultiAgent) {
-      brandProject.textContent = `${state.activeCount} AGENTES ATIVOS`;
-      agentLabel.textContent = (state.activeAgents && state.activeAgents.length) ? state.activeAgents.join(' & ') : 'PARALELO';
-      if (brandTag) brandTag.classList.add('multi-agent-active');
-      echoWrapper.classList.add('theme-multi-agent');
-    } else {
-      if (brandTag) brandTag.classList.remove('multi-agent-active');
-      echoWrapper.classList.remove('theme-multi-agent');
-      if (state.project) brandProject.textContent = state.project;
-      if (state.agent) agentLabel.textContent = state.agent;
-    }
-
+    if (state.project) brandProject.textContent = state.project;
     if (state.badge) badgeTop.textContent = state.badge;
 
-    if (state.telemetry) {
-      telemetryBar.textContent = `CPU: ${state.telemetry.cpuPercent}% | RAM: ${state.telemetry.ramPercent}%`;
+    renderAgentChips(state);
+
+    if (state.isMultiAgent) {
+      echoWrapper.classList.add('theme-multi-agent');
+    } else {
+      echoWrapper.classList.remove('theme-multi-agent');
     }
 
     // Comportamento: Chegar para o lado quando mostrar algo (mode: 'info')
