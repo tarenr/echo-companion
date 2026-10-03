@@ -90,3 +90,22 @@ O mascote vetorial em HTML5 Canvas possui 5 acessórios reativos sincronizados e
 5. **Xícara de Café (`coffee`)**:
    - **Gatilho**: Modo ocioso prolongado — ativado após 3 minutos (180s) sem nenhuma fala, toque na tela ou evento de IA.
    - **Visual**: O mascote segura uma caneca branca e azul com café quente, liberando fios de vapor ondulantes. Interações do usuário desativam a caneca instantaneamente.
+
+---
+
+## 6. Infraestrutura e Inicialização em Background (Task Scheduler)
+
+O Echo foi desenhado para operar como infraestrutura nativa e silenciosa do Windows, sem requerer que qualquer assistente de código ou terminal de IDE mantenha processos em execução:
+
+1. **Definição da Tarefa (`scripts/echo-task.xml`)**:
+   - **Nome no Agendador**: `EchoCompanion`
+   - **Gatilho**: `<LogonTrigger>` (dispara assim que o usuário faz login).
+   - **Ação**: Executa `wscript.exe C:\Users\WINDOWS\Projects\echo-companion\echo-daemon.vbs`.
+   - **Modo Oculto**: `echo-daemon.vbs` utiliza `WshShell.Run` com parâmetro `0` (janela oculta) e redireciona a saída para `echo.log`.
+2. **Auto-Recuperação e Resiliência**:
+   - `<RestartOnFailure>`: Intervalo de 1 minuto (`PT1M`) e 10 contagens (`Count: 10`). Caso o processo seja encerrado por qualquer motivo imprevisto, o Windows restaura o serviço automaticamente.
+   - `<ExecutionTimeLimit>`: Configurado como `PT0S` (sem timeout de 72 horas).
+   - `<MultipleInstancesPolicy>`: `IgnoreNew` (evita duplicidade de instâncias disputando a porta 4884).
+3. **Isolamento de Sessão de IA**:
+   - O assistente não executa instâncias do servidor como tarefas em segundo plano dentro de sessões de chat. O comando de status `manage_task` permanece estritamente com 0 tarefas ativas.
+

@@ -73,13 +73,16 @@ O Echo é uma **Progressive Web App (PWA)** completa com Service Worker, cache d
 
 ---
 
-## ⚡ Inicialização Silenciosa no Windows (Auto-Start)
+## ⚡ Inicialização Nativa em Segundo Plano no Windows (Task Scheduler)
 
-O Echo foi configurado para rodar permanentemente e em segundo plano silencioso (sem janelas de terminal e sem tasks presas em IDEs):
+O Echo foi configurado como um serviço autônomo e permanente no **Agendador de Tarefas do Windows (Task Scheduler)** sob o nome `EchoCompanion`:
 
-- **Script Headless:** `echo-daemon.vbs` executa `node server.js` de forma 100% oculta através do Windows WScript Shell.
-- **Atalho no Startup:** Localizado em `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Echo Companion.lnk`, iniciando o servidor automaticamente no boot do Windows.
-- **Logs de Execução:** Redirecionados para `out.log` e `err.log` na pasta do projeto para depuração sem interferir no usuário.
+- **Gatilho de Logon (`AtLogOn`):** O servidor inicia automaticamente ao fazer login no Windows, sem necessidade de intervenção humana ou inicialização manual por agentes/IDEs.
+- **Execução Oculta (`echo-daemon.vbs`):** Disparado via `wscript.exe`, rodando o processo do Node em background sem abrir nenhuma janela de prompt de comando visível.
+- **Política de Auto-Recuperação (`RestartOnFailure`):** Caso o processo seja encerrado acidentalmente ou sofra uma exceção, o Agendador de Tarefas do Windows o reinicia automaticamente em 1 minuto (até 10 tentativas sucessivas).
+- **Sem Limites de Tempo de Execução (`PT0S`):** Configurado sem o tempo limite padrão de 72 horas do Windows, permitindo execução ininterrupta.
+- **Independência Total da IDE:** O agente de IA opera com 0 tarefas pendentes ou instâncias daemon no terminal do editor.
+- **Logs de Execução:** Redirecionados para `echo.log` na raiz do projeto para auditoria e depuração rápida.
 
 ---
 
