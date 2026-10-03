@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const qrcode = require('qrcode-terminal');
+const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
 
 process.on('uncaughtException', (err, origin) => {
   fs.appendFileSync(path.resolve(__dirname, 'crash.log'), `[${new Date().toISOString()}] UncaughtException: ${err?.stack || err} (origin: ${origin})\n`);
@@ -324,15 +325,47 @@ app.post('/api/events', (req, res) => {
   res.json({ ok: true, state: echoState });
 });
 
-// Endpoint de Síntese de Voz (OpenAI TTS) protegido por PIN
+// Endpoint de Síntese de Voz (Microsoft Edge Neural TTS com fallback OpenAI)
 app.post('/api/speak', requirePin, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Texto não fornecido' });
 
-  if (!OPENAI_API_KEY) {
-    return res.status(503).json({ error: 'OPENAI_API_KEY não configurada' });
+  // 1. Tenta gerar áudio gratuito via Microsoft Edge Neural TTS (voz natural pt-BR Antonio)
+  try {
+    const tts = new MsEdgeTTS();
+    await tts.setMetadata('pt-BR-AntonioNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    const { audioStream } = tts.toStream(text, { rate: '+6%' });
+
+    const chunks = [];
+    audioStream.on('data', chunk => chunks.push(chunk));
+    audioStream.on('end', () => {
+      try { tts.close(); } catch (e) {}
+      const audioBuffer = Buffer.concat(chunks);
+      res.set({
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': audioBuffer.length,
+        'Cache-Control': 'no-cache'
+      });
+      res.send(audioBuffer);
+    });
+    audioStream.on('error', (err) => {
+      console.warn('Erro no stream Edge TTS:', err.message);
+      try { tts.close(); } catch (e) {}
+      generateOpenAISpeech(text, res);
+    });
+    return;
+  } catch (err) {
+    console.warn('Falha ao instanciar Edge TTS, tentando OpenAI fallback:', err.message);
   }
 
+  // 2. Fallback OpenAI TTS (se houver chave e créditos)
+  generateOpenAISpeech(text, res);
+});
+
+async function generateOpenAISpeech(text, res) {
+  if (!OPENAI_API_KEY) {
+    return res.status(503).json({ error: 'Nenhum motor de TTS disponível' });
+  }
   try {
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
@@ -343,16 +376,14 @@ app.post('/api/speak', requirePin, async (req, res) => {
       body: JSON.stringify({
         model: 'tts-1',
         input: text,
-        voice: 'echo', // Voz oficial Echo da OpenAI
-        speed: 1.15   // Ligeiramente acelerada para ritmo dinâmico
+        voice: 'echo',
+        speed: 1.15
       })
     });
-
     if (!response.ok) {
       const errText = await response.text();
       return res.status(500).json({ error: 'Erro OpenAI TTS', details: errText });
     }
-
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = Buffer.from(arrayBuffer);
     res.set({
@@ -361,10 +392,9 @@ app.post('/api/speak', requirePin, async (req, res) => {
     });
     res.send(audioBuffer);
   } catch (err) {
-    console.error('Erro ao gerar voz:', err);
     res.status(500).json({ error: err.message });
   }
-});
+}
 
 // Endpoint de Conversação / Resposta Inteligente do Echo
 app.post('/api/converse', requirePin, async (req, res) => {
@@ -390,6 +420,7 @@ app.post('/api/converse', requirePin, async (req, res) => {
   }
 
   if (quickReply) {
+    echoState.voiceOrigin = 'converse';
     echoState.voiceMessage = quickReply;
     broadcastState();
     return res.json({ ok: true, reply: quickReply, source: 'fast-local' });
@@ -430,6 +461,7 @@ REGRAS MANDATÓRIAS:
         const data = await completion.json();
         const reply = data.choices?.[0]?.message?.content?.trim();
         if (reply) {
+          echoState.voiceOrigin = 'converse';
           echoState.voiceMessage = reply;
           broadcastState();
           return res.json({ ok: true, reply, source: 'openai' });
@@ -442,6 +474,7 @@ REGRAS MANDATÓRIAS:
 
   // Fallback amigável
   const fallback = "Entendido, Mestre! Processando aqui no Estratégia Nerd.";
+  echoState.voiceOrigin = 'converse';
   echoState.voiceMessage = fallback;
   broadcastState();
   return res.json({ ok: true, reply: fallback, source: 'fallback' });

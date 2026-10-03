@@ -834,7 +834,8 @@
 
   function resumeListeningIfHandsFree() {
     if (handsFreeMode && audioUnlocked) {
-      setTimeout(startListening, 650);
+      // Cooldown de 1.5s para garantir que todo o eco do alto-falante se dissipe no ambiente
+      setTimeout(startListening, 1500);
     }
   }
 
@@ -912,7 +913,7 @@
       isListening = false;
       // Se estiver no modo mãos livres e não estiver falando, reinicia o microfone
       if (handsFreeMode && !mochi.speaking && !processingSpeech && audioUnlocked) {
-        setTimeout(startListening, 300);
+        setTimeout(startListening, 450);
       } else if (!handsFreeMode) {
         stopListening();
       }
@@ -941,13 +942,12 @@
       panelVoice.style.display = 'block';
       voiceText.textContent = reply;
 
-      // Responde falando com voz (OpenAI TTS ou síntese nativa do celular)
+      // Responde falando com voz oficial neural, mexendo a boca e mãos
       await speak(reply);
     } catch (err) {
       console.warn('Erro ao conversar:', err);
-      const fallback = "Bom dia, Mestre! Estratégia Nerd pronto para o trabalho.";
-      transcriptionText.textContent = fallback;
-      await speak(fallback);
+      mochi.setState('idle');
+      resumeListeningIfHandsFree();
     } finally {
       processingSpeech = false;
     }
@@ -1060,7 +1060,10 @@
       lastVoicePlayed = state.voiceMessage;
       voiceText.textContent = state.voiceMessage;
       panelVoice.style.display = 'block';
-      speak(state.voiceMessage);
+      // Se a mensagem veio da conversa ativa, o próprio chat já disparou a fala
+      if (state.voiceOrigin !== 'converse') {
+        speak(state.voiceMessage);
+      }
     }
   }
 
