@@ -18,7 +18,8 @@ Este documento documenta a arquitetura de voz do Echo Companion, integrando clon
 - **Microserviço**:
   - Script: `tts_server.py`
   - Porta: `4885`
-  - Gerenciamento: Inicializado e monitorado automaticamente pelo `server.js` na inicialização do Echo Companion.
+  - Gerenciamento: Inicializado e monitorado automaticamente pelo watchdog contínuo (a cada 30s) no `server.js` e integrado ao `echo-daemon.vbs` e pasta Startup do Windows.
+  - Logs dedicados: `tts.log` com descarregamento contínuo em tempo real (`PYTHONUNBUFFERED=1`).
 
 ---
 
@@ -42,8 +43,11 @@ echo-companion/
 │       └── cache/                # Cache em disco de áudios gerados (MD5)
 ├── tts-env/                      # Virtual environment isolado com PyTorch CUDA
 ├── tts_server.py                 # API FastAPI na porta 4885
+├── echo-tts-daemon.vbs           # Script silencioso de inicialização do TTS
+├── echo-daemon.vbs               # Script principal do Windows Task Scheduler (Node + TTS)
 ├── start-tts.bat                 # Script de inicialização avulsa para depuração
-└── server.js                     # Orquestrador do Node.js com fallback automático
+├── tts.log                       # Logs de execução do motor neural F5-TTS
+└── server.js                     # Orquestrador do Node.js com watchdog e fallback
 ```
 
 ---

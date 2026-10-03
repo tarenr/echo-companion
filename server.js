@@ -15,28 +15,38 @@ memory.initMemory().then(() => {
   console.warn('⚠️ Falha ao inicializar memória SQLite:', err.message);
 });
 
-// Orquestrador do microserviço neural F5-TTS local (Baymax)
-let ttsProcess = null;
+// Orquestrador e Watchdog do microserviço neural F5-TTS local (Baymax)
+let ttsHealthy = false;
+let ttsStartAttempts = 0;
+
 function ensureTtsServerRunning() {
-  fetch('http://127.0.0.1:4885/health', { signal: AbortSignal.timeout(1500) })
+  fetch('http://127.0.0.1:4885/health', { signal: AbortSignal.timeout(2000) })
     .then(r => r.json())
     .then(d => {
-      console.log(`🤖 [TTS Neural Local] Conectado ao F5-TTS: ${d.voice} (GPU: ${d.gpu_name || d.device})`);
+      if (!ttsHealthy) {
+        console.log(`🤖 [TTS Neural Local] Conectado com sucesso ao F5-TTS: ${d.voice} (GPU: ${d.gpu_name || d.device})`);
+        ttsHealthy = true;
+        ttsStartAttempts = 0;
+      }
     })
     .catch(() => {
-      const pythonExe = path.join(__dirname, 'tts-env', 'Scripts', 'python.exe');
-      const scriptPath = path.join(__dirname, 'tts_server.py');
-      if (fs.existsSync(pythonExe) && fs.existsSync(scriptPath)) {
-        console.log('🚀 [TTS Neural Local] Inicializando micro-serviço F5-TTS (RTX 3050) na porta 4885...');
-        ttsProcess = spawn(pythonExe, [scriptPath], {
+      ttsHealthy = false;
+      const vbsPath = path.join(__dirname, 'echo-tts-daemon.vbs');
+      if (fs.existsSync(vbsPath) && ttsStartAttempts < 3) {
+        ttsStartAttempts++;
+        console.warn(`🚀 [TTS Watchdog] Micro-serviço F5-TTS offline. Acionando echo-tts-daemon.vbs (tentativa ${ttsStartAttempts})...`);
+        const p = spawn('wscript.exe', [vbsPath], {
           cwd: __dirname,
           stdio: 'ignore',
           detached: true
         });
-        ttsProcess.unref();
+        p.unref();
       }
     });
 }
+
+// Watchdog contínuo a cada 30 segundos
+setInterval(ensureTtsServerRunning, 30000);
 
 const qrcode = require('qrcode-terminal');
 
