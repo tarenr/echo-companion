@@ -1,47 +1,61 @@
-# Opções de Vozes e Motores de Áudio para o Echo
+# Motores de Voz e Síntese Neural para o Echo Companion 🎙️
 
-Este documento cataloga as alternativas avaliadas para a evolução acústica e expressiva do Echo Companion.
-
----
-
-## 1. Motores Gratuitos em Produção
-
-### Microsoft Edge Neural TTS (Ativo no Echo)
-- **Biblioteca**: `msedge-tts` (Node.js)
-- **Custo**: 100% gratuito, sem limite de caracteres e sem necessidade de API key.
-- **Formato**: Streaming MP3 em 24kHz diretamente do servidor local para o celular.
-- **Vozes brasileiras disponíveis**:
-  - `pt-BR-AntonioNeural`: Voz masculina dinâmica, clara e natural (atual).
-  - `pt-BR-FranciscaNeural`: Voz feminina acolhedora, empática e suave.
-  - `pt-BR-BrendaNeural`: Voz feminina jovem e rápida.
-  - `pt-BR-NicolauNeural`: Voz masculina alternativa.
-- **Ajustes de Prosódia (SSML)**:
-  - `rate: '+6%'` ou `'+10%'` (aceleração para ritmo de conversa informal).
-  - `pitch: '+2st'` ou `'-2st'` (tonalidade mais jovem ou mais grave).
+Este documento documenta a arquitetura de voz do Echo Companion, integrando clonagem neural local acelerada por hardware e fallbacks de alta disponibilidade.
 
 ---
 
-## 2. Motores Avançados de Estúdio (Roadmap / Futuro)
+## 1. Motor Primário: F5-TTS Neural Local (Voz Clonada do Baymax) 🤖
 
-### ElevenLabs
-- **Destaque**: Padrão ouro da indústria em realismo humano, respiração e entonação cinematográfica (inclusive clones idênticos do J.A.R.V.I.S. e dubladores profissionais na *Voice Library*).
-- **Integração**: API REST (`api.elevenlabs.io/v1/text-to-speech/{voice_id}`).
-- **Plano Gratuito**: 10.000 caracteres/mês (~15 a 20 minutos de áudio falado por mês).
-- **Ideal para**: Quando quisermos uma voz icônica e hiper-realista.
-
-### Kokoro-82M (Open-Source Local)
-- **Destaque**: Modelo neural ultra-leve (apenas 82M parâmetros), open-source sob licença permissiva.
-- **Execução**: Roda 100% no processador (CPU) da máquina local em tempo real, sem GPU dedicada e sem custos de nuvem.
-- **Idiomas**: Suporte inicial para inglês e expansão para múltiplos idiomas com checkpoints da comunidade.
-
-### Coqui XTTS-v2 (Clonagem Local)
-- **Destaque**: Clona qualquer voz a partir de um arquivo WAV de 10 a 30 segundos (ex.: dublador do Jarvis, voz personalizada).
-- **Execução**: Roda em Python localmente com PyTorch.
-- **Custo**: 100% gratuito e offline.
+- **Tecnologia**: [F5-TTS](https://github.com/SWivid/F5-TTS) (Flow Matching Diffusion Transformer) + Vocoder [Vocos](https://github.com/gemelo-ai/vocos) em 24kHz.
+- **Hardware**: Aceleração via **NVIDIA GeForce RTX 3050** (CUDA `cu126`, PyTorch 2.14).
+- **Voz de Referência**: Dublagem oficial brasileira do personagem **Baymax** (*Operação Big Hero*, dublado por Márcio Araújo).
+  - Áudio de referência: `data/voices/baymax_sample.wav` (24kHz mono PCM).
+  - Transcrição de referência: `data/voices/baymax_sample.txt` (*"Olá, eu sou Baymax, seu agente pessoal de saúde."*).
+- **Desempenho**:
+  - Inferência na GPU: ~4 a 5 segundos para sintetizar frases completas de 1 a 2 sentenças.
+  - Sistema de Cache Inteligente (`data/voices/cache/`): Frases e respostas repetidas respondem em menos de **1 milissegundo** (Cache HIT instantâneo).
+- **Custo**: **100% gratuito e ilimitado** (execução local no PC, sem chamadas externas pagas).
+- **Microserviço**:
+  - Script: `tts_server.py`
+  - Porta: `4885`
+  - Gerenciamento: Inicializado e monitorado automaticamente pelo `server.js` na inicialização do Echo Companion.
 
 ---
 
-## 3. Síntese Nativa do Navegador (Fallback Zero-Network)
-- **API**: `window.speechSynthesis` (Web Speech API).
-- **Vantagem**: Funciona mesmo com o servidor offline ou sem internet.
-- **Comportamento**: Utiliza as vozes do sistema operacional do celular (Google TTS no Android, Siri/AVSpeech no iOS).
+## 2. Motor de Fallback: Microsoft Edge Neural TTS
+
+- **Biblioteca**: `msedge-tts` (Node.js).
+- **Voz**: `pt-BR-AntonioNeural` (ou alternável para `pt-BR-FranciscaNeural` / `pt-BR-ThalitaNeural`).
+- **Comportamento**: Acionado automaticamente e sem interrupções caso o microserviço F5-TTS local esteja desligado, em manutenção ou reiniciando.
+- **Custo**: 100% gratuito, streaming MP3 rápido em 24kHz.
+
+---
+
+## 3. Estrutura de Arquivos e Execução
+
+```text
+echo-companion/
+├── data/
+│   └── voices/
+│       ├── baymax_sample.wav     # Amostra de áudio normalizada (24kHz mono)
+│       ├── baymax_sample.txt     # Transcrição exata de referência
+│       └── cache/                # Cache em disco de áudios gerados (MD5)
+├── tts-env/                      # Virtual environment isolado com PyTorch CUDA
+├── tts_server.py                 # API FastAPI na porta 4885
+├── start-tts.bat                 # Script de inicialização avulsa para depuração
+└── server.js                     # Orquestrador do Node.js com fallback automático
+```
+
+---
+
+## 4. Testes e Validação de Voz
+
+Para testar a síntese neural diretamente pelo terminal:
+
+```bash
+# Testar endpoint de saúde do TTS
+node -e "fetch('http://127.0.0.1:4885/health').then(r=>r.json()).then(console.log)"
+
+# Gerar fala na rota do Echo
+node -e "fetch('http://127.0.0.1:4884/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-echo-pin': '1984' }, body: JSON.stringify({ text: 'Olá Hiro. Eu sou o Baymax, seu companheiro de mesa.' }) }).then(r=>console.log(r.status, r.headers.get('x-voice-engine')))"
+```

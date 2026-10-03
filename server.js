@@ -3,6 +3,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { spawn } = require('child_process');
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
 const memory = require('./src/memory');
 const tools = require('./src/tools');
@@ -13,6 +14,29 @@ memory.initMemory().then(() => {
 }).catch(err => {
   console.warn('⚠️ Falha ao inicializar memória SQLite:', err.message);
 });
+
+// Orquestrador do microserviço neural F5-TTS local (Baymax)
+let ttsProcess = null;
+function ensureTtsServerRunning() {
+  fetch('http://127.0.0.1:4885/health', { signal: AbortSignal.timeout(1500) })
+    .then(r => r.json())
+    .then(d => {
+      console.log(`🤖 [TTS Neural Local] Conectado ao F5-TTS: ${d.voice} (GPU: ${d.gpu_name || d.device})`);
+    })
+    .catch(() => {
+      const pythonExe = path.join(__dirname, 'tts-env', 'Scripts', 'python.exe');
+      const scriptPath = path.join(__dirname, 'tts_server.py');
+      if (fs.existsSync(pythonExe) && fs.existsSync(scriptPath)) {
+        console.log('🚀 [TTS Neural Local] Inicializando micro-serviço F5-TTS (RTX 3050) na porta 4885...');
+        ttsProcess = spawn(pythonExe, [scriptPath], {
+          cwd: __dirname,
+          stdio: 'ignore',
+          detached: true
+        });
+        ttsProcess.unref();
+      }
+    });
+}
 
 const qrcode = require('qrcode-terminal');
 
@@ -350,52 +374,35 @@ app.post('/api/events', (req, res) => {
   res.json({ ok: true, state: echoState });
 });
 
-// Endpoint de Síntese de Voz (Google Gemini Puck como Primário + Edge TTS Antonio como Fallback)
+// Endpoint de Síntese de Voz (Motor 1: F5-TTS Baymax Local + Fallback: Edge TTS Antonio / Gemini)
 app.post('/api/speak', requirePin, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Texto não fornecido' });
 
-  // 1. Motor Primário: Google Gemini Native Audio (Voz Puck)
-  if (GEMINI_API_KEY) {
-    try {
-      const payload = {
-        contents: [{ parts: [{ text: `Diga em português com voz natural e expressiva exatamente: "${text}"` }] }],
-        generationConfig: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: 'Puck'
-              }
-            }
-          }
-        }
-      };
+  // 1. Motor Primário: F5-TTS Neural Local (Voz Clonada do Baymax com RTX 3050 na porta 4885)
+  try {
+    const ttsLocalRes = await fetch('http://127.0.0.1:4885/clone-speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, speed: 1.0, nfe_step: 32 }),
+      signal: AbortSignal.timeout(15000)
+    });
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+    if (ttsLocalRes.ok) {
+      const arrayBuf = await ttsLocalRes.arrayBuffer();
+      const audioBuffer = Buffer.from(arrayBuf);
+      res.set({
+        'Content-Type': 'audio/wav',
+        'Content-Length': audioBuffer.length,
+        'Cache-Control': 'no-cache',
+        'X-Voice-Engine': 'F5-TTS-Baymax-Local'
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        const inlineData = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-        if (inlineData && inlineData.data) {
-          const audioBuffer = Buffer.from(inlineData.data, 'base64');
-          res.set({
-            'Content-Type': inlineData.mimeType || 'audio/wav',
-            'Content-Length': audioBuffer.length,
-            'Cache-Control': 'no-cache'
-          });
-          return res.send(audioBuffer);
-        }
-      } else {
-        console.warn(`Gemini TTS falhou (status ${response.status}), ativando Edge TTS fallback...`);
-      }
-    } catch (geminiErr) {
-      console.warn('Erro ao chamar Gemini TTS:', geminiErr.message);
+      return res.send(audioBuffer);
+    } else {
+      console.warn(`[TTS Local] Retornou status ${ttsLocalRes.status}, acionando Edge TTS fallback...`);
     }
+  } catch (err) {
+    console.warn('[TTS Local] Motor local F5-TTS indisponível ou ocupado, usando Edge TTS fallback:', err.message);
   }
 
   // 2. Fallback 1: Microsoft Edge Neural TTS (voz natural pt-BR Antonio)
@@ -807,4 +814,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('======================================================\n');
   console.log('Abra no navegador do celular apontando a câmera para o QR Code abaixo:');
   qrcode.generate(accessUrl, { small: true });
+
+  // Garante microserviço neural F5-TTS ativo na porta 4885
+  ensureTtsServerRunning();
 });
