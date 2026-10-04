@@ -899,11 +899,14 @@
   const rotateBtn = document.getElementById('rotate-btn');
 
   function getAuthHeaders() {
-    const pin = localStorage.getItem('echo_pin') || '4884';
-    return {
-      'Content-Type': 'application/json',
-      'x-echo-pin': pin
+    const pin = localStorage.getItem('echo_pin') || '';
+    const headers = {
+      'Content-Type': 'application/json'
     };
+    if (pin) {
+      headers['x-echo-pin'] = pin;
+    }
+    return headers;
   }
 
   // Estado da Aplicação
@@ -1598,8 +1601,9 @@
     connectionStatus.textContent = 'CONECTANDO...';
     connectionStatus.style.color = 'var(--cyan-neon)';
 
-    const pin = localStorage.getItem('echo_pin') || '4884';
-    sseSource = new EventSource(`/api/stream?pin=${encodeURIComponent(pin)}`);
+    const pin = localStorage.getItem('echo_pin');
+    const streamUrl = pin ? `/api/stream?pin=${encodeURIComponent(pin)}` : '/api/stream';
+    sseSource = new EventSource(streamUrl);
 
     sseSource.onopen = () => {
       connectionStatus.textContent = 'ONLINE // CONECTADO';

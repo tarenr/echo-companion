@@ -622,14 +622,18 @@
   requestAnimationFrame(tick);
 
   function getLunaPin() {
-    return localStorage.getItem('luna_pin') || '172086';
+    return localStorage.getItem('luna_pin') || '';
   }
 
   function getAuthHeaders() {
-    return {
-      'Content-Type': 'application/json',
-      'x-luna-pin': getLunaPin()
+    const pin = getLunaPin();
+    const headers = {
+      'Content-Type': 'application/json'
     };
+    if (pin) {
+      headers['x-luna-pin'] = pin;
+    }
+    return headers;
   }
 
   function unlockAudio() {
@@ -811,7 +815,7 @@
     }
   });
 
-  // Autenticação por PIN (172086)
+  // Autenticação por PIN
   async function checkAuth() {
     try {
       const res = await fetch('/api/luna/auth/status', {

@@ -60,11 +60,34 @@ if (fs.existsSync(estrategiaEnvPath)) {
   }
 }
 
+// Carrega PINs do .env local do echo-companion (arquivo não versionado)
+const localEnvPath = path.resolve(__dirname, '.env');
+if (fs.existsSync(localEnvPath)) {
+  try {
+    const localEnv = fs.readFileSync(localEnvPath, 'utf8');
+    for (const key of ['ECHO_PIN', 'LUNA_PIN']) {
+      const m = localEnv.match(new RegExp(`^${key}=(.*)$`, 'm'));
+      if (m && m[1].trim() && !process.env[key]) {
+        process.env[key] = m[1].trim().replace(/^['"]|['"]$/g, '');
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Não foi possível ler o .env local:', err.message);
+  }
+}
+
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 4884;
-const ECHO_PIN = process.env.ECHO_PIN || '4884';
-const LUNA_PIN = process.env.LUNA_PIN || '172086';
+// Sem PIN configurado, o acesso externo fica bloqueado (não há valor padrão)
+const ECHO_PIN = (process.env.ECHO_PIN || '').trim();
+const LUNA_PIN = (process.env.LUNA_PIN || '').trim();
+if (!ECHO_PIN) console.warn('⚠️ ECHO_PIN não configurado: acesso externo ao Echo bloqueado.');
+if (!LUNA_PIN) console.warn('⚠️ LUNA_PIN não configurado: acesso externo à Luna bloqueado.');
+
+function pinMatches(candidate, expected) {
+  return Boolean(expected) && candidate !== undefined && candidate !== null && String(candidate).trim() === expected;
+}
 
 app.use((req, res, next) => {
   console.log(`[HTTP ${req.method}] ${req.url} (${req.ip})`);
@@ -106,9 +129,9 @@ function isAuthorized(req) {
   const pinCookie = cookies['echo_pin'];
 
   return (
-    String(pinHeader).trim() === ECHO_PIN ||
-    String(pinQuery).trim() === ECHO_PIN ||
-    String(pinCookie).trim() === ECHO_PIN
+    pinMatches(pinHeader, ECHO_PIN) ||
+    pinMatches(pinQuery, ECHO_PIN) ||
+    pinMatches(pinCookie, ECHO_PIN)
   );
 }
 
@@ -128,9 +151,9 @@ function isAuthorizedLuna(req) {
   const pinCookie = cookies['luna_pin'];
 
   return (
-    String(pinHeader).trim() === LUNA_PIN ||
-    String(pinQuery).trim() === LUNA_PIN ||
-    String(pinCookie).trim() === LUNA_PIN
+    pinMatches(pinHeader, LUNA_PIN) ||
+    pinMatches(pinQuery, LUNA_PIN) ||
+    pinMatches(pinCookie, LUNA_PIN)
   );
 }
 
@@ -170,7 +193,7 @@ function requireAnyPin(req, res, next) {
 // Endpoint para validar PIN vindo do celular (Echo)
 app.post('/api/auth/verify', (req, res) => {
   const { pin } = req.body || {};
-  if (String(pin).trim() === ECHO_PIN) {
+  if (pinMatches(pin, ECHO_PIN)) {
     res.setHeader('Set-Cookie', `echo_pin=${ECHO_PIN}; Path=/; Max-Age=31536000; SameSite=Lax`);
     return res.json({ ok: true, message: 'Autenticado com sucesso' });
   }
@@ -184,7 +207,7 @@ app.get('/api/auth/status', (req, res) => {
 // Endpoint para validar PIN vindo do celular (Luna)
 app.post('/api/luna/auth/verify', (req, res) => {
   const { pin } = req.body || {};
-  if (String(pin).trim() === LUNA_PIN) {
+  if (pinMatches(pin, LUNA_PIN)) {
     res.setHeader('Set-Cookie', `luna_pin=${LUNA_PIN}; Path=/; Max-Age=31536000; SameSite=Lax`);
     return res.json({ ok: true, message: 'Autenticada com sucesso!' });
   }

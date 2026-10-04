@@ -51,7 +51,7 @@ Ele monitora em tempo real:
 O Echo pode ser acessado de **dentro de casa (Wi-Fi)** ou de **qualquer lugar do mundo pelo celular (4G/5G)** com proteção total contra uso não autorizado:
 
 - **URL Pública Oficial:** `https://echo.tfr-info.com.br`
-- **PIN de Segurança:** `4884` (definido por padrão, configurável via variável de ambiente `ECHO_PIN`).
+- **PIN de Segurança:** Configurado de forma privada no arquivo `.env` local (`ECHO_PIN`). Sem PIN definido no `.env`, o acesso externo fica bloqueado.
 - **Como funciona:**
   - Requisições locais no próprio computador (`127.0.0.1`) são liberadas para que os agentes locais não sofram qualquer atraso.
   - Qualquer requisição vinda pela internet através do Cloudflare Tunnel exige o **PIN de Acesso**.
@@ -67,7 +67,7 @@ O Echo pode ser acessado de **dentro de casa (Wi-Fi)** ou de **qualquer lugar do
    ```text
    https://echo.tfr-info.com.br
    ```
-2. Digite o PIN de segurança (`4884`).
+2. Digite o seu PIN de segurança configurado no `.env` do servidor.
 3. Toque uma vez na tela para autorizar o áudio e ativar a retenção de tela acesa (WakeLock).
 
 ### 📲 Instalando como Aplicativo (PWA Mobile)
@@ -129,7 +129,7 @@ O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado dire
 Mascote companheira desenvolvida especialmente para uso pessoal com inteligência dedicada para responder perguntas do dia a dia, culinária/receitas, organização, resumos e conversação leve, operando em rota e PWA completamente isolados:
 
 - **Rota de Acesso:** `/luna` (ex.: `https://echo.tfr-info.com.br/luna` ou `http://localhost:4884/luna`)
-- **Autenticação por PIN Exclusivo:** `172086` (independente do PIN do Echo). Pode ser pré-carregado via URL (`/luna?pin=172086`).
+- **Autenticação por PIN Exclusivo:** Configurado via variável `LUNA_PIN` no `.env` (independente do PIN do Echo). Pode ser pré-carregado via URL (`/luna?pin=SEU_PIN`).
 - **Tema Visual:** Lilás / Lavanda Neon (`#b794f4`, `#c084fc`, `#805ad5`) com fundo escuro elegante OLED (`#0a0612`).
 - **Laço na Cabeça Animado:** Desenhado no topo da cabeça com física vetorial acoplada à superelipse do corpo, balançando de forma suave e orgânica ao acompanhar a respiração, fala e inclinação da mascote.
 - **Voz Neural Oficial:** Microsoft Edge Neural `pt-BR-ThalitaNeural` (voz feminina jovem, dinâmica e natural em português do Brasil).
