@@ -363,3 +363,105 @@ html, body {
   transform: scale(0.97);
   opacity: 0.92;
 }
+
+/* ========================================================
+   9. MODO PAISAGEM / DEITADO (Mascote na esquerda, Balão na direita)
+   ======================================================== */
+@media (orientation: landscape) {
+  .luna-screen {
+    padding: env(safe-area-inset-top, 6px) env(safe-area-inset-right, 24px) env(safe-area-inset-bottom, 6px) env(safe-area-inset-left, 24px);
+    justify-content: space-between;
+  }
+
+  .top-bar {
+    max-width: 100%;
+    padding: 2px 10px;
+    margin-bottom: 2px;
+  }
+
+  .stage {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(16px, 4vw, 48px);
+    max-width: 960px;
+    padding: 0 12px;
+  }
+
+  .luna-wrapper {
+    flex-shrink: 0;
+  }
+
+  #luna-canvas {
+    width: min(250px, 58vh);
+    height: min(250px, 58vh);
+  }
+
+  /* Balão de Fala fixado na lateral direita em modo horizontal */
+  .voice-transcription {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    margin: 0;
+    flex: 1;
+    max-width: min(460px, 50vw);
+    max-height: 62vh;
+    overflow-y: auto;
+    text-align: left;
+    padding: 16px 22px;
+    font-size: 0.90rem;
+    line-height: 1.46;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 25px rgba(192, 132, 252, 0.25);
+    transform: translateX(0);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Seta decorativa apontando para a Luna à esquerda */
+  .voice-transcription::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 10px solid rgba(36, 19, 68, 0.92);
+  }
+
+  .voice-transcription.hidden {
+    opacity: 0;
+    transform: translateX(30px);
+    pointer-events: none;
+    position: absolute;
+    right: 20px;
+  }
+
+  .bottom-bar {
+    max-width: 100%;
+    padding: 6px 16px;
+  }
+
+  .mic-button {
+    gap: 4px;
+  }
+
+  .mic-icon-wrapper {
+    width: 56px;
+    height: 56px;
+  }
+
+  #mic-label {
+    font-size: 0.72rem;
+  }
+
+  .unlock-audio-toast {
+    bottom: 70px;
+    font-size: 0.78rem;
+    padding: 8px 16px;
+  }
+}
+
