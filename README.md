@@ -130,6 +130,8 @@ Mascote companheira desenvolvida especialmente para uso pessoal com inteligênci
 
 - **Rota de Acesso:** `/luna` (ex.: `https://echo.tfr-info.com.br/luna` ou `http://localhost:4884/luna`)
 - **Autenticação por PIN Exclusivo:** Configurado via variável `LUNA_PIN` no `.env` (independente do PIN do Echo). Pode ser pré-carregado via URL (`/luna?pin=SEU_PIN`).
+- **Modo Mãos-Livres Contínuo:** Microfone com escuta contínua ativa por padrão (`ATIVO`), detecção inteligente de final de frase e retorno automático à escuta após a fala com cooldown anti-eco de 1.2s.
+- **Previsão do Tempo em Tempo Real:** Integrado com Open-Meteo para Serra/ES (temperatura, sensação térmica, umidade, vento, máxima, mínima e probabilidade de chuva), respondendo com afeto e precisão às dúvidas do dia a dia.
 - **Tema Visual:** Lilás / Lavanda Neon (`#b794f4`, `#c084fc`, `#805ad5`) com fundo escuro elegante OLED (`#0a0612`).
 - **Laço na Cabeça Animado:** Desenhado no topo da cabeça com física vetorial acoplada à superelipse do corpo, balançando de forma suave e orgânica ao acompanhar a respiração, fala e inclinação da mascote.
 - **Voz Neural Oficial:** Microsoft Edge Neural `pt-BR-ThalitaNeural` (voz feminina jovem, dinâmica e natural em português do Brasil).

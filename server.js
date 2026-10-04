@@ -892,6 +892,13 @@ REGRAS OBRIGATÓRIAS:
                 detail1: toolResult?.streak_dias ? `🔥 Streak: ${toolResult.streak_dias} dias` : 'Missão diária',
                 detail2: toolResult?.nivel ? `Nível ${toolResult.nivel}` : 'Bata sua meta!'
               };
+            } else if (fc.name === 'consultar_previsao_tempo') {
+              finalCard = {
+                badge: 'CLIMA & TEMPO',
+                title: `${toolResult?.cidade || 'Serra, ES'}: ${toolResult?.temperatura ?? '--'}°C`,
+                detail1: `${toolResult?.condicao || 'Tempo atual'} (Sensação ${toolResult?.sensacao ?? '--'}°C)`,
+                detail2: `Máx: ${toolResult?.maxima ?? '--'}°C | Mín: ${toolResult?.minima ?? '--'}°C | Chuva: ${toolResult?.probabilidade_chuva ?? 0}%`
+              };
             }
 
             // Segunda rodada: devolve o resultado da tool para o Gemini sintetizar a fala
@@ -1019,12 +1026,29 @@ app.post('/api/luna/converse', requireLunaPin, async (req, res) => {
     });
   }
 
-  // 2. Consulta inteligente via Google Gemini
+  // 2. Consulta de clima em tempo real se a pergunta for sobre tempo/clima/chuva/temperatura
+  const isWeatherQuestion = /clima|tempo|previs[aã]o|chuva|temperatura|vai chover|chovendo|calor|frio|guarda[- ]chuva/i.test(textLower);
+  let weatherData = null;
+  let weatherContext = '';
+
+  if (isWeatherQuestion) {
+    try {
+      const weather = require('./src/connectors/weather');
+      weatherData = await weather.getWeather();
+      if (weatherData && weatherData.ok) {
+        weatherContext = `\n[INFORMAÇÃO EM TEMPO REAL SOBRE O CLIMA]: Em ${weatherData.cidade}, a temperatura agora é de ${weatherData.temperatura}°C (sensação térmica de ${weatherData.sensacao}°C), umidade de ${weatherData.umidade}%, vento ${weatherData.vento} e o tempo está ${weatherData.condicao.toLowerCase()}. Hoje a máxima chega a ${weatherData.maxima}°C e a mínima a ${weatherData.minima}°C, com probabilidade de chuva de ${weatherData.probabilidade_chuva}%. Responda à pergunta dela de forma super carinhosa, clara e direta usando esses dados exatos.`;
+      }
+    } catch (e) {
+      console.warn('[LUNA] Erro ao obter dados do clima:', e.message);
+    }
+  }
+
+  // 3. Consulta inteligente via Google Gemini
   if (GEMINI_API_KEY) {
     try {
       const systemPrompt = `Você é a Luna, uma mascote e assistente pessoal amigável, inteligente, carinhosa, gentil e muito prestativa.
 Você foi criada com muito carinho para ser a companheira e ajudante do dia a dia dela.
-Seu papel é responder dúvidas práticas, curiosidades, dicas de culinária e receitas, organização de rotina, resumos, bem-estar ou simplesmente bater um papo leve e acolhedor.
+Seu papel é responder dúvidas práticas, curiosidades, clima e previsão do tempo, dicas de culinária e receitas, organização de rotina, resumos, bem-estar ou simplesmente bater um papo leve e acolhedor.
 REGRAS OBRIGATÓRIAS:
 - Responda SEMPRE em português do Brasil com simpatia, doçura e clareza.
 - Seja concisa e direta (no máximo 2 a 3 frases curtas e completas), pois sua resposta será sintetizada diretamente por voz neural.
@@ -1032,10 +1056,11 @@ REGRAS OBRIGATÓRIAS:
 - Não use emojis, asteriscos, markdown (#, *, _), listas com hifens ou tabelas, pois o texto será falado em voz alta.
 - Mantenha sempre um tom alegre, educado, empático e prestativo.`;
 
+      const userMessage = weatherContext ? `${message}\n${weatherContext}` : message;
       const contents = [
         {
           role: 'user',
-          parts: [{ text: `${systemPrompt}\n\nPergunta dela: "${message}"` }]
+          parts: [{ text: `${systemPrompt}\n\nPergunta dela: "${userMessage}"` }]
         }
       ];
 
@@ -1086,7 +1111,16 @@ REGRAS OBRIGATÓRIAS:
     }
   }
 
-  // Fallback amigável
+  // Fallback amigável (se for clima e a API de clima respondeu, usa o resumo dela)
+  if (isWeatherQuestion && weatherData && weatherData.ok) {
+    return res.json({
+      ok: true,
+      reply: weatherData.resumo_fala,
+      voice: 'pt-BR-ThalitaNeural',
+      source: 'weather-direct'
+    });
+  }
+
   const fallback = "Não consegui processar a resposta agora, mas estou aqui com você! Pode perguntar de novo?";
   return res.json({
     ok: true,

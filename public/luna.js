@@ -643,6 +643,9 @@
     Snd.init();
     const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
     silent.play().catch(() => {});
+    if (handsFreeMode) {
+      setTimeout(startListening, 600);
+    }
   }
 
   window.addEventListener('pointerdown', unlockAudio, { passive: true });
@@ -705,22 +708,54 @@
         stopSpeakingAnim();
         currentAudio = null;
         URL.revokeObjectURL(audioUrl);
+        resumeListeningIfHandsFree();
       };
 
       currentAudio.onerror = () => {
         stopSpeakingAnim();
         currentAudio = null;
+        resumeListeningIfHandsFree();
       };
 
       await currentAudio.play();
     } catch (e) {
       console.warn('Erro ao reproduzir voz:', e);
       stopSpeakingAnim();
+      resumeListeningIfHandsFree();
     }
+  }
+
+  // ========================================================
+  // 7. ESCUTA ATIVA CONTÍNUA POR VOZ (MÃOS LIVRES)
+  // ========================================================
+  let handsFreeMode = true; // Mãos livres ativo por padrão
+  let processingSpeech = false;
+  let speechDebounceTimer = null;
+  let resumeTimer = null;
+
+  function resumeListeningIfHandsFree() {
+    if (!handsFreeMode || !audioUnlocked || mochi.speaking || processingSpeech) return;
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => {
+      if (handsFreeMode && audioUnlocked && !mochi.speaking && !processingSpeech) {
+        startListening();
+      }
+    }, 1200);
+  }
+
+  function pauseRecognition() {
+    if (recognition && isListening) {
+      try { recognition.stop(); } catch(e) {}
+    }
+    isListening = false;
   }
 
   // Conversação Inteligente com a Luna
   async function askLuna(message) {
+    if (processingSpeech) return;
+    processingSpeech = true;
+    pauseRecognition();
+
     mochi.setState('thinking');
     badgeTop.textContent = 'PENSANDO';
     transcriptionText.textContent = `"${message}"`;
@@ -749,57 +784,102 @@
       console.warn('Erro ao falar com a Luna:', err);
       mochi.setState('idle');
       badgeTop.textContent = 'PRONTA';
+      resumeListeningIfHandsFree();
+    } finally {
+      processingSpeech = false;
     }
   }
 
   // Reconhecimento de Voz (Microfone)
   function setupSpeech() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      micBtn.style.display = 'none';
+      return;
+    }
 
     recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = false; // Sentença única para zerar buffers e impedir duplicações no Android
+    recognition.interimResults = true;
 
     recognition.onstart = () => {
       isListening = true;
       micBtn.classList.add('listening');
-      micLabel.textContent = 'OUVINDO...';
+      micLabel.textContent = handsFreeMode ? 'ATIVO' : 'OUVIR';
       badgeTop.textContent = 'OUVINDO';
       mochi.setState('listening');
-      transcriptionText.textContent = 'Pode falar, estou ouvindo...';
+      transcriptionText.textContent = 'Ouvindo você...';
       voiceTranscription.classList.remove('hidden');
     };
 
     recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript;
-      if (text && text.trim()) {
-        askLuna(text.trim());
+      if (processingSpeech || mochi.speaking) return;
+
+      const current = event.results[event.results.length - 1];
+      if (!current || !current[0]) return;
+      const text = current[0].transcript.trim();
+
+      if (text) {
+        voiceTranscription.classList.remove('hidden');
+        transcriptionText.textContent = text;
+      }
+
+      if (current.isFinal && text.length >= 2) {
+        clearTimeout(speechDebounceTimer);
+        speechDebounceTimer = setTimeout(() => {
+          if (!processingSpeech && !mochi.speaking) {
+            pauseRecognition();
+            askLuna(text);
+          }
+        }, 500);
+      } else if (text.length >= 2) {
+        clearTimeout(speechDebounceTimer);
+        speechDebounceTimer = setTimeout(() => {
+          if (!processingSpeech && !mochi.speaking) {
+            pauseRecognition();
+            askLuna(text);
+          }
+        }, 900);
       }
     };
 
-    recognition.onerror = () => {
-      stopListening();
+    recognition.onerror = (e) => {
+      console.warn('[LUNA] Status SpeechRecognition:', e.error);
+      if (e.error === 'not-allowed') {
+        handsFreeMode = false;
+        stopListening();
+      }
     };
 
     recognition.onend = () => {
-      stopListening();
+      isListening = false;
+      micBtn.classList.remove('listening');
+      micLabel.textContent = handsFreeMode ? 'ATIVO' : 'OUVIR';
+      if (!mochi.speaking && !processingSpeech) {
+        badgeTop.textContent = 'PRONTA';
+        if (mochi.state === 'listening') mochi.setState('idle');
+      }
+      if (handsFreeMode && !mochi.speaking && !processingSpeech && audioUnlocked) {
+        setTimeout(startListening, 400);
+      } else if (!handsFreeMode) {
+        stopListening();
+      }
     };
   }
 
   function startListening() {
-    if (!recognition || isListening || mochi.speaking) return;
+    if (!recognition || isListening || mochi.speaking || processingSpeech) return;
     try {
       recognition.start();
     } catch (e) {}
   }
 
   function stopListening() {
-    isListening = false;
+    pauseRecognition();
     micBtn.classList.remove('listening');
-    micLabel.textContent = 'OUVIR';
-    if (!mochi.speaking) {
+    micLabel.textContent = handsFreeMode ? 'ATIVO' : 'OUVIR';
+    if (!mochi.speaking && !processingSpeech) {
       badgeTop.textContent = 'PRONTA';
       mochi.setState('idle');
     }
@@ -808,10 +888,18 @@
   micBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     unlockAudio();
-    if (isListening) {
-      try { recognition.stop(); } catch (e) {}
-    } else {
+    handsFreeMode = !handsFreeMode;
+    if (handsFreeMode) {
+      micBtn.classList.add('listening');
+      micLabel.textContent = 'ATIVO';
+      micBtn.title = 'Mãos livres ativo (toque para pausar)';
       startListening();
+    } else {
+      handsFreeMode = false;
+      micBtn.classList.remove('listening');
+      micLabel.textContent = 'OUVIR';
+      micBtn.title = 'Ativar microfone para falar com a Luna';
+      pauseRecognition();
     }
   });
 

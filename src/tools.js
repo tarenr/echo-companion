@@ -4,6 +4,7 @@ const estrategiaNerd = require('./connectors/estrategiaNerd');
 const gymOs = require('./connectors/gymOs');
 const servicesMonitor = require('./connectors/servicesMonitor');
 const briefing = require('./connectors/briefing');
+const weather = require('./connectors/weather');
 const memory = require('./memory');
 
 const functionDeclarations = [
@@ -163,6 +164,19 @@ const functionDeclarations = [
       type: 'OBJECT',
       properties: {}
     }
+  },
+  {
+    name: 'consultar_previsao_tempo',
+    description: 'Consulta a previsão do tempo e clima em tempo real (temperatura atual, sensação térmica, umidade, probabilidade de chuva, máxima e mínima). A cidade padrão é Serra/ES, mas aceita outra cidade caso perguntado.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        cidade: {
+          type: 'STRING',
+          description: 'Nome da cidade desejada (ex: Serra, Vitoria, Vila Velha, Sao Paulo). Deixe vazio para a cidade padrão (Serra, ES).'
+        }
+      }
+    }
   }
 ];
 
@@ -257,6 +271,10 @@ async function executeTool(name, args = {}) {
           ok: true,
           preferencias: prefs
         };
+        break;
+
+      case 'consultar_previsao_tempo':
+        result = await weather.getWeather(args.cidade || 'Serra, ES');
         break;
 
       default:
