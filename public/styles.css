@@ -500,6 +500,25 @@ body {
   color: var(--text-muted);
 }
 
+.panel-extra-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+  width: 100%;
+}
+
+.panel-extra-item {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  word-break: break-word;
+}
+
 .voice-subtitle {
   margin-top: 0.2rem;
   font-size: 0.75rem;

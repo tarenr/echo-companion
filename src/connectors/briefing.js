@@ -68,10 +68,36 @@ async function getDailyBriefing() {
     fala += ` E você tem ${emailInfo.total_nao_lidos} novo(s) e-mail(s) na caixa de entrada.`;
   }
 
-  // Título e detalhes do Card Visual Neon
+  // Monta dados ricos e informativos para o Card Visual Neon (sem duplicar o texto falado)
   const title = (todosServicosOk && agendadasOk) ? 'Tudo 100% Operacional' : 'Relatório do Sistema';
-  const detail1 = `${servicosOnline}/${totalServicos} Serviços Online • ${totalPendentesForge} Tarefas no Forge`;
-  const detail2 = agendadas.resumo || 'Backups e agendamentos verificados';
+  
+  const tarefasLista = agendadas.tarefas || [];
+  const backupProj = tarefasLista.find(t => t.nome === 'Projects-Backup-Daily');
+  const backupNerd = tarefasLista.find(t => t.nome === 'EstrategiaNerd-BackupDiario');
+  const cronInsta = tarefasLista.find(t => t.nome === 'EstrategiaNerd-InstagramPublicarAgendados');
+
+  const strBackupProj = backupProj ? `Projetos (${backupProj.ultima_execucao || 'OK'})` : 'Projetos (OK)';
+  const strBackupNerd = backupNerd ? `Estratégia Nerd (${backupNerd.ultima_execucao || 'OK'})` : 'Estratégia Nerd (OK)';
+  const strInsta = cronInsta ? `Instagram (${cronInsta.ultima_execucao || 'OK'})` : '';
+
+  const detail1 = `🟢 ${servicosOnline}/${totalServicos} Serviços Online (NerdOPS)`;
+  const detail2 = `💾 Backups: ${strBackupProj} • ${strBackupNerd}${strInsta ? ' • ' + strInsta : ''}`;
+
+  const items = [];
+  if (totalPendentesForge > 0) {
+    const previewTasks = amostraTarefasForge.length > 0 
+      ? amostraTarefasForge.map(t => `${t}`).join(' • ')
+      : `${totalPendentesForge} tarefas aguardando`;
+    items.push(`📋 Forge (${totalPendentesForge} pendentes): ${previewTasks}`);
+  } else {
+    items.push(`📋 Forge: Todas as tarefas em dia!`);
+  }
+
+  if (emailInfo.configurado) {
+    items.push(emailInfo.total_nao_lidos > 0 
+      ? `📧 E-mails: ${emailInfo.total_nao_lidos} mensagem(ns) não lida(s) na Caixa de Entrada`
+      : `📧 E-mails: Caixa de Entrada em dia (0 não lidos)`);
+  }
 
   return {
     ok: true,
@@ -81,7 +107,8 @@ async function getDailyBriefing() {
       badge: 'BRIEFING DO SISTEMA',
       title,
       detail1,
-      detail2
+      detail2,
+      items
     },
     dados: {
       servicos: {

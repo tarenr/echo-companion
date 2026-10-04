@@ -880,6 +880,7 @@
   const panelSubLine2 = document.getElementById('panel-sub-line2');
   const panelVoice = document.getElementById('panel-voice');
   const voiceText = document.getElementById('voice-text');
+  const panelExtraItems = document.getElementById('panel-extra-items');
 
   const connectionStatus = document.getElementById('connection-status');
   const telemetryBar = document.getElementById('telemetry-bar');
@@ -1269,23 +1270,42 @@
     echoWrapper.className = 'echo-wrapper mode-info';
     infoPanel.classList.add('visible');
 
+    // Esconde o balão flutuante superior para manter o mascote livre e sem texto na frente
+    voiceTranscription.classList.add('hidden');
+
     panelBadge.textContent = card.badge || 'INFORMAÇÃO';
     panelMainText.textContent = card.title || '';
     panelSubLine1.textContent = card.detail1 || '';
     panelSubLine2.textContent = card.detail2 || '';
 
-    panelVoice.style.display = 'block';
-    voiceText.textContent = replyText;
+    // Renderiza itens extras detalhados (backups específicos, tarefas do forge, etc.)
+    if (panelExtraItems) {
+      if (Array.isArray(card.items) && card.items.length > 0) {
+        panelExtraItems.innerHTML = card.items.map(item => `<div class="panel-extra-item">${item}</div>`).join('');
+        panelExtraItems.style.display = 'flex';
+      } else {
+        panelExtraItems.innerHTML = '';
+        panelExtraItems.style.display = 'none';
+      }
+    }
+
+    // Não duplica a fala no rodapé com aspas azuis quando houver card de dados
+    panelVoice.style.display = 'none';
+    voiceText.textContent = '';
 
     // Robô olha expressivamente em direção aos dados (direita no landscape, baixo no portrait)
     setLookForInfoMode();
 
     clearTimeout(infoCardTimeout);
-    const duration = Math.max(18000, (replyText.length * 100) + 12000);
+    const duration = Math.max(20000, ((replyText || '').length * 100) + 12000);
     infoCardTimeout = setTimeout(() => {
       if (echoWrapper.classList.contains('mode-info') && currentState?.mode !== 'info') {
         echoWrapper.className = 'echo-wrapper mode-full';
         infoPanel.classList.remove('visible');
+        if (panelExtraItems) {
+          panelExtraItems.innerHTML = '';
+          panelExtraItems.style.display = 'none';
+        }
         mochi.look.x = 0;
         mochi.look.y = 0;
       }
@@ -1317,11 +1337,15 @@
       // Se a resposta contém dados/cartão, desliza para a esquerda e exibe o painel
       if (data?.card) {
         displayInfoCard(data.card, reply);
+      } else {
+        // Sem card: se for mensagem curta (<= 45 caracteres), mostra no balão flutuante
+        if (reply && reply.length <= 45) {
+          transcriptionText.textContent = reply;
+          voiceTranscription.classList.remove('hidden');
+        } else {
+          voiceTranscription.classList.add('hidden');
+        }
       }
-
-      transcriptionText.textContent = reply;
-      panelVoice.style.display = 'block';
-      voiceText.textContent = reply;
 
       // Responde falando com voz oficial neural, mexendo a boca e mãos
       await speak(reply);
@@ -1423,11 +1447,14 @@
 
       if (data?.card) {
         displayInfoCard(data.card, reply);
+      } else {
+        if (reply && reply.length <= 45) {
+          transcriptionText.textContent = reply;
+          voiceTranscription.classList.remove('hidden');
+        } else {
+          voiceTranscription.classList.add('hidden');
+        }
       }
-
-      transcriptionText.textContent = reply;
-      panelVoice.style.display = 'block';
-      voiceText.textContent = reply;
 
       // Fala neural brasileira de alta fidelidade
       await speak(reply);
