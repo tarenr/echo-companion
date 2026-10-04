@@ -64,6 +64,7 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 4884;
 const ECHO_PIN = process.env.ECHO_PIN || '4884';
+const LUNA_PIN = process.env.LUNA_PIN || '172086';
 
 app.use((req, res, next) => {
   console.log(`[HTTP ${req.method}] ${req.url} (${req.ip})`);
@@ -111,6 +112,28 @@ function isAuthorized(req) {
   );
 }
 
+function isAuthorizedLuna(req) {
+  const cfIp = req.headers['cf-connecting-ip'];
+  const isFromCloudflare = Boolean(cfIp);
+  const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || '';
+  const isLocalDirect = !isFromCloudflare && (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1');
+
+  if (isLocalDirect) {
+    return true;
+  }
+
+  const pinHeader = req.headers['x-luna-pin'];
+  const pinQuery = req.query?.pin;
+  const cookies = parseCookies(req.headers.cookie);
+  const pinCookie = cookies['luna_pin'];
+
+  return (
+    String(pinHeader).trim() === LUNA_PIN ||
+    String(pinQuery).trim() === LUNA_PIN ||
+    String(pinCookie).trim() === LUNA_PIN
+  );
+}
+
 function requirePin(req, res, next) {
   if (isAuthorized(req)) {
     return next();
@@ -122,7 +145,29 @@ function requirePin(req, res, next) {
   });
 }
 
-// Endpoint para validar PIN vindo do celular
+function requireLunaPin(req, res, next) {
+  if (isAuthorizedLuna(req)) {
+    return next();
+  }
+  return res.status(401).json({
+    ok: false,
+    error: 'Acesso bloqueado: PIN da Luna inválido ou ausente.',
+    authRequired: true
+  });
+}
+
+function requireAnyPin(req, res, next) {
+  if (isAuthorized(req) || isAuthorizedLuna(req)) {
+    return next();
+  }
+  return res.status(401).json({
+    ok: false,
+    error: 'Acesso bloqueado: PIN inválido ou ausente.',
+    authRequired: true
+  });
+}
+
+// Endpoint para validar PIN vindo do celular (Echo)
 app.post('/api/auth/verify', (req, res) => {
   const { pin } = req.body || {};
   if (String(pin).trim() === ECHO_PIN) {
@@ -134,6 +179,25 @@ app.post('/api/auth/verify', (req, res) => {
 
 app.get('/api/auth/status', (req, res) => {
   res.json({ ok: true, authorized: isAuthorized(req) });
+});
+
+// Endpoint para validar PIN vindo do celular (Luna)
+app.post('/api/luna/auth/verify', (req, res) => {
+  const { pin } = req.body || {};
+  if (String(pin).trim() === LUNA_PIN) {
+    res.setHeader('Set-Cookie', `luna_pin=${LUNA_PIN}; Path=/; Max-Age=31536000; SameSite=Lax`);
+    return res.json({ ok: true, message: 'Autenticada com sucesso!' });
+  }
+  return res.status(401).json({ ok: false, error: 'PIN incorreto.' });
+});
+
+app.get('/api/luna/auth/status', (req, res) => {
+  res.json({ ok: true, authorized: isAuthorizedLuna(req) });
+});
+
+// Rota dedicada da Luna
+app.get('/luna', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'luna.html'));
 });
 
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -449,15 +513,17 @@ app.post('/api/events', (req, res) => {
   res.json({ ok: true, state: echoState });
 });
 
-// Endpoint de Síntese de Voz (Motor Primário: Microsoft Edge Neural TTS Antonio)
-app.post('/api/speak', requirePin, async (req, res) => {
-  const { text } = req.body;
+// Endpoint de Síntese de Voz (Motor Primário: Microsoft Edge Neural TTS com suporte a vozes)
+app.post('/api/speak', requireAnyPin, async (req, res) => {
+  const { text, voice } = req.body || {};
   if (!text) return res.status(400).json({ error: 'Texto não fornecido' });
 
-  // 1. Motor Primário: Microsoft Edge Neural TTS (voz natural pt-BR Antonio em streaming)
+  const voiceName = voice || 'pt-BR-AntonioNeural';
+
+  // 1. Motor Primário: Microsoft Edge Neural TTS em streaming
   try {
     const tts = new MsEdgeTTS();
-    await tts.setMetadata('pt-BR-AntonioNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
     const { audioStream } = tts.toStream(text, { rate: '+6%' });
 
     const chunks = [];
@@ -890,6 +956,121 @@ REGRAS OBRIGATÓRIAS:
   broadcastState();
   broadcastEvent('mascot_state', { accessory: 'none', text: fallback });
   return res.json({ ok: true, reply: fallback, accessory: 'none', source: 'fallback' });
+});
+
+// Endpoint exclusivo de Conversação da Luna (Assistente pessoal inteligente, carinhosa e dedicada)
+app.post('/api/luna/converse', requireLunaPin, async (req, res) => {
+  const { message } = req.body || {};
+  if (!message) return res.status(400).json({ error: 'Mensagem vazia' });
+
+  const textLower = message.toLowerCase().trim();
+
+  // 1. Respostas rápidas para saudações e descanso
+  let quickReply = null;
+  let quickState = null;
+
+  if (/^(boa noite|vai dormir|dormir|hora de dormir|modo soneca|soneca|descanse)/i.test(textLower)) {
+    quickReply = "Boa noite! Vou descansar um pouquinho. Bons sonhos e até amanhã!";
+    quickState = 'sleeping';
+  } else if (/^(bom dia)/i.test(textLower)) {
+    quickReply = "Bom dia! Que seu dia seja maravilhoso e muito produtivo!";
+  } else if (/^(boa tarde)/i.test(textLower)) {
+    quickReply = "Boa tarde! Como está sendo o seu dia até agora?";
+  } else if (/^(ol[aá]|oi|e a[ií]|opa)/i.test(textLower)) {
+    quickReply = "Oi! Como posso te ajudar hoje?";
+  } else if (/obrigad[ao]|valeu|show|perfeito/i.test(textLower)) {
+    quickReply = "De nada! É sempre um prazer enorme poder ajudar!";
+  } else if (/est[aá] me ouvindo|me ouve|teste de voz/i.test(textLower)) {
+    quickReply = "Estou te ouvindo perfeitamente! Pode falar.";
+  } else if (/quem [eé] voc[eê]|seu nome/i.test(textLower)) {
+    quickReply = "Eu sou a Luna, sua assistente pessoal! Estou aqui para te ajudar com dúvidas, ideias e o que você precisar.";
+  }
+
+  if (quickReply) {
+    return res.json({
+      ok: true,
+      reply: quickReply,
+      state: quickState,
+      voice: 'pt-BR-ThalitaNeural',
+      source: 'fast-local'
+    });
+  }
+
+  // 2. Consulta inteligente via Google Gemini
+  if (GEMINI_API_KEY) {
+    try {
+      const systemPrompt = `Você é a Luna, uma mascote e assistente pessoal amigável, inteligente, carinhosa, gentil e muito prestativa.
+Você foi criada com muito carinho para ser a companheira e ajudante do dia a dia dela.
+Seu papel é responder dúvidas práticas, curiosidades, dicas de culinária e receitas, organização de rotina, resumos, bem-estar ou simplesmente bater um papo leve e acolhedor.
+REGRAS OBRIGATÓRIAS:
+- Responda SEMPRE em português do Brasil com simpatia, doçura e clareza.
+- Seja concisa e direta (no máximo 2 a 3 frases curtas e completas), pois sua resposta será sintetizada diretamente por voz neural.
+- Não use jargões técnicos de computador, programação, códigos ou coisas do mundo hacker/nerd.
+- Não use emojis, asteriscos, markdown (#, *, _), listas com hifens ou tabelas, pois o texto será falado em voz alta.
+- Mantenha sempre um tom alegre, educado, empático e prestativo.`;
+
+      const contents = [
+        {
+          role: 'user',
+          parts: [{ text: `${systemPrompt}\n\nPergunta dela: "${message}"` }]
+        }
+      ];
+
+      const models = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash'];
+      let finalReply = null;
+
+      for (const model of models) {
+        try {
+          const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+          const response = await fetch(geminiEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': GEMINI_API_KEY
+            },
+            body: JSON.stringify({
+              contents,
+              generationConfig: {
+                maxOutputTokens: 140,
+                temperature: 0.7
+              }
+            })
+          });
+
+          if (!response.ok) continue;
+
+          const data = await response.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+          if (text) {
+            finalReply = text.replace(/[*#_`]/g, '');
+            break;
+          }
+        } catch (e) {
+          console.warn(`[LUNA] Erro no modelo ${model}:`, e.message);
+        }
+      }
+
+      if (finalReply) {
+        return res.json({
+          ok: true,
+          reply: finalReply,
+          voice: 'pt-BR-ThalitaNeural',
+          source: 'gemini'
+        });
+      }
+    } catch (err) {
+      console.warn('[LUNA] Erro ao processar conversa no Gemini:', err.message);
+    }
+  }
+
+  // Fallback amigável
+  const fallback = "Não consegui processar a resposta agora, mas estou aqui com você! Pode perguntar de novo?";
+  return res.json({
+    ok: true,
+    reply: fallback,
+    voice: 'pt-BR-ThalitaNeural',
+    source: 'fallback'
+  });
 });
 
 // Obtém o IP da rede Wi-Fi local para o QR Code

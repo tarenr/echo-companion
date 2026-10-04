@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Luna // Assistente Pessoal</title>
+  <meta name="theme-color" content="#0a0612">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Luna">
+  <link rel="icon" type="image/svg+xml" href="icon-luna.svg">
+  <link rel="apple-touch-icon" href="icon-luna.svg">
+  <link rel="manifest" href="manifest-luna.json">
+  <link rel="stylesheet" href="luna.css?v=1.0">
+</head>
+<body>
+
+  <!-- Tela Fullscreen OLED Limpa -->
+  <main class="luna-screen" id="screen">
+    
+    <!-- Barra Superior Delicada -->
+    <header class="top-bar">
+      <div class="brand-tag">
+        <span class="brand-dot"></span>
+        <span class="brand-name">LUNA</span>
+      </div>
+      <div class="status-badge">
+        <span id="badge-top">PRONTA</span>
+        <div class="dot-indicator" id="status-dot"></div>
+      </div>
+    </header>
+
+    <!-- Palco Central -->
+    <section class="stage">
+      
+      <!-- Balão de Fala Suave -->
+      <div class="voice-transcription hidden" id="voice-transcription">
+        <span class="pulse-mic">💜</span> <span id="transcription-text">Ouvindo você...</span>
+      </div>
+
+      <!-- Wrapper da Mascote Luna 2D -->
+      <div class="luna-wrapper" id="luna-wrapper">
+        <canvas id="luna-canvas" width="280" height="280"></canvas>
+      </div>
+
+    </section>
+
+    <!-- Rodapé Minimalista com Botão de Microfone -->
+    <footer class="bottom-bar">
+      <button id="mic-btn" class="mic-button" title="Falar com a Luna" aria-label="Microfone">
+        <div class="mic-icon-wrapper">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+          </svg>
+        </div>
+        <span id="mic-label">OUVIR</span>
+      </button>
+    </footer>
+
+    <!-- Dica de desbloqueio de áudio no primeiro toque -->
+    <div class="unlock-audio-toast" id="audio-toast">
+      💜 TOQUE NA TELA PARA ATIVAR O SOM DA LUNA
+    </div>
+
+  </main>
+
+  <!-- Modal de Autenticação por PIN -->
+  <div class="pin-modal-overlay hidden" id="pin-modal">
+    <div class="pin-modal-card">
+      <div class="pin-avatar-badge">🌸</div>
+      <div class="pin-modal-title">Olá! Eu sou a Luna</div>
+      <div class="pin-modal-subtitle">Digite o PIN para começar a conversar</div>
+      <input type="password" id="pin-input" class="pin-input-field" maxlength="8" placeholder="••••••" inputmode="numeric" autocomplete="off">
+      <div class="pin-error-msg" id="pin-error">PIN incorreto. Tente novamente.</div>
+      <button class="pin-submit-btn" id="pin-btn">ENTRAR</button>
+    </div>
+  </div>
+
+  <script src="luna.js?v=1.0"></script>
+</body>
+</html>

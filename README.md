@@ -124,6 +124,20 @@ O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado dire
 
 ---
 
+## 🌸 Luna // Assistente Pessoal Dedicada
+
+Mascote companheira desenvolvida especialmente para uso pessoal com inteligência dedicada para responder perguntas do dia a dia, culinária/receitas, organização, resumos e conversação leve, operando em rota e PWA completamente isolados:
+
+- **Rota de Acesso:** `/luna` (ex.: `https://echo.tfr-info.com.br/luna` ou `http://localhost:4884/luna`)
+- **Autenticação por PIN Exclusivo:** `172086` (independente do PIN do Echo). Pode ser pré-carregado via URL (`/luna?pin=172086`).
+- **Tema Visual:** Lilás / Lavanda Neon (`#b794f4`, `#c084fc`, `#805ad5`) com fundo escuro elegante OLED (`#0a0612`).
+- **Laço na Cabeça Animado:** Desenhado no topo da cabeça com física vetorial acoplada à superelipse do corpo, balançando de forma suave e orgânica ao acompanhar a respiração, fala e inclinação da mascote.
+- **Voz Neural Oficial:** Microsoft Edge Neural `pt-BR-ThalitaNeural` (voz feminina jovem, dinâmica e natural em português do Brasil).
+- **PWA Dedicado:** Possui manifesto próprio (`manifest-luna.json`) e ícone SVG exclusivo (`icon-luna.svg`) para instalação na tela de início do celular como aplicativo independente.
+- **Backend Exclusivo:** Endpoint `/api/luna/converse` alimentado por Gemini com System Prompt acolhedor, conciso e livre de jargões técnicos ou telemetrias de PC.
+
+---
+
 ## 🏗️ Estrutura do Projeto
 
 ```text
@@ -132,10 +146,16 @@ echo-companion/
 │   ├── codex-notify.cmd    # Wrapper para hook do Codex CLI
 │   └── dispatcher.js       # Bridge HTTP ultrarrápido com classificação de leitura vs escrita
 ├── public/
-│   ├── app.js              # Cliente SSE, física do mascote, botão CHECK, áudio neural e PIN auth
-│   ├── index.html          # Interface OLED limpa com botões de ação e modal de PIN
-│   ├── manifest.json       # Configuração PWA para tela cheia
-│   └── styles.css          # Estilização Neon, dimensões fixas de botões e temas por IA
+│   ├── app.js              # Cliente SSE, física do mascote Echo, áudio neural e PIN auth
+│   ├── index.html          # Interface OLED do Echo com botões de ação e telemetria
+│   ├── manifest.json       # Configuração PWA do Echo
+│   ├── styles.css          # Estilização Cyberpunk Neon do Echo
+│   ├── luna.html           # Interface dedicada da Luna (minimalista, sem telemetrias)
+│   ├── luna.js             # Motor 2D da Luna com laço animado e voz Thalita
+│   ├── luna.css            # Estilos em Lavanda/Lilás Neon da Luna
+│   ├── manifest-luna.json  # Manifesto PWA da Luna
+│   ├── icon-luna.svg       # Ícone vetorial da Luna com laço
+│   └── sw.js               # Service Worker unificado com auto-update v4.0
 ├── src/
 │   ├── connectors/         # Conectores com os projetos locais
 │   │   ├── briefing.js     # Orquestrador de briefing e saudação diária

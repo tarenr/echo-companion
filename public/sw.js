@@ -1,4 +1,4 @@
-const CACHE_NAME = 'echo-companion-v3.7';
+const CACHE_NAME = 'echo-companion-v4.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -7,7 +7,13 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
-  '/icon.svg'
+  '/icon.svg',
+  '/luna',
+  '/luna.html',
+  '/luna.css',
+  '/luna.js',
+  '/manifest-luna.json',
+  '/icon-luna.svg'
 ];
 
 self.addEventListener('install', (event) => {
