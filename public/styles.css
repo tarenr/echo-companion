@@ -520,6 +520,7 @@ body {
 }
 
 .waze-link {
+  pointer-events: auto;
   display: inline-block;
   margin-top: 0.75rem;
   padding: 0.8rem 1rem;

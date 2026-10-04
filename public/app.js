@@ -918,7 +918,7 @@
 
   function openNavigationOnAndroid(url) {
     if (url && /Android/i.test(navigator.userAgent) && document.visibilityState === 'visible') {
-      try { window.open(url, '_blank', 'noopener,noreferrer'); } catch (_) {}
+      try { window.location.assign(url); } catch (_) {}
     }
   }
 

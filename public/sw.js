@@ -1,4 +1,4 @@
-const CACHE_NAME = 'echo-companion-v4.7';
+const CACHE_NAME = 'echo-companion-v4.8';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

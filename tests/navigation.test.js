@@ -169,7 +169,7 @@ test('Android tenta abrir pela voz e mantém botão quando abertura é bloqueada
   const wazeLink = { hidden: true };
   const context = vm.createContext({ URL, wazeLink,
     navigator: { userAgent: 'Android' }, document: { visibilityState: 'visible' },
-    window: { open: (...args) => { calls.push(args); return null; } }
+    window: { location: { assign: (...args) => { calls.push(args); } } }
   });
   vm.runInContext(source.slice(start, end), context);
   const url = context.showNavigationAction({ type: 'open_waze', url: 'https://waze.com/ul?q=Serra&navigate=yes' });
@@ -185,7 +185,7 @@ test('Android tenta abrir pela voz e mantém botão quando abertura é bloqueada
   context.openNavigationOnAndroid(url);
   assert.equal(calls.length, 1);
   context.navigator.userAgent = 'Android';
-  context.window.open = () => { throw new Error('blocked'); };
+  context.window.location.assign = () => { throw new Error('blocked'); };
   assert.doesNotThrow(() => context.openNavigationOnAndroid(url));
   assert.equal(wazeLink.hidden, false);
 });

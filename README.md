@@ -129,6 +129,8 @@ Limites: o navegador pode bloquear a abertura automática; o Waze pode exigir es
 
 O cartão com **Abrir Waze** permanece visível durante atualizações de telemetria e após o tempo normal dos cartões; um novo cartão substitui a ação anterior. Isso permite usar o botão mesmo se a tentativa automática for bloqueada.
 
+O botão recebe toques mesmo dentro do painel de informações, que é não interativo por padrão. Tanto o botão quanto a tentativa automática no Android usam a mesma aba, sem abrir popup. Se o sistema abrir a página web do Waze em vez do aplicativo, use voltar para retornar ao Echo. A abertura automática de outro aplicativo ainda depende das políticas do Android/navegador.
+
 Validação automatizada: `node --test tests/navigation.test.js`. Os testes usam memória e cliente simulados, sem alterar SQLite real ou chamar Gemini/Waze. A validação final em Android real permanece necessária, incluindo PWA, bloqueio de abertura, destino correto e confirmação da viagem. Após atualização do backend, reinicie a tarefa `EchoCompanion` (parada/início, dentro do escopo autorizado) para carregar a nova versão. O HTML atualizado sozinho não significa que o backend foi recarregado. Reabra o Echo no celular para carregar os arquivos novos.
 
 O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado diretamente aos sistemas e bancos de dados locais do ecossistema Estratégia Nerd via Function Calling:
