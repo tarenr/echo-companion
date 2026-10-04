@@ -110,6 +110,14 @@ O Echo inclui um despachante universal ultrarrápido (`bin/dispatcher.js`) que e
 
 ## 🧠 Conectores e Inteligência do Ecossistema (Function Calling)
 
+### Google Agenda — CRUD por voz
+
+O botão **AGENDA** conecta sua conta Google e consulta compromissos da agenda principal. O Echo também prepara criação, edição e exclusão por voz, sempre com confirmação posterior no mesmo dispositivo. Suporta eventos de dia inteiro e recorrentes, com escolha entre ocorrência e série inteira. Os destinos do Waze continuam independentes.
+
+É necessário configurar o cliente OAuth no Google Cloud e no `.env` antes de conectar a conta. Tokens e cópias de recuperação são criptografados e ficam fora do Git, das preferências, dos prompts e dos logs. A leitura e o CRUD reais permanecem pendentes até essa autorização. Convites e administração de calendários ficam fora do escopo.
+
+Exemplos: **“Quais compromissos tenho amanhã?”**, **“Marque dentista dia 10 de outubro, das 14h às 15h”**, **“confirmar agenda”** e **“cancelar agenda”**. Confira o [guia de configuração, uso e recuperação](docs/google-agenda.md) antes de ativar.
+
 ### Navegação por voz no Waze (Android)
 
 Com o Echo aberto no Android e o microfone autorizado:

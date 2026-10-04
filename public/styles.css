@@ -533,6 +533,30 @@ body {
 
 .waze-link[hidden] { display: none; }
 
+.calendar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  pointer-events: auto;
+}
+.calendar-actions[hidden], .calendar-actions button[hidden] { display: none; }
+.calendar-actions button {
+  padding: 0.7rem 0.9rem;
+  min-height: 44px;
+  border: 1px solid var(--cyan-neon);
+  border-radius: 10px;
+  background: #0f172a;
+  color: var(--cyan-neon);
+  cursor: pointer;
+}
+.calendar-actions button:disabled { opacity: 0.5; cursor: wait; }
+.info-panel:has(.calendar-actions:not([hidden])) {
+  max-height: 75vh;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
 .voice-subtitle {
   margin-top: 0.2rem;
   font-size: 0.75rem;

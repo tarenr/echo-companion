@@ -199,7 +199,8 @@ test('estado SSE idle preserva cartão Waze e novo cartão permite retornar ao m
     currentState: null, brandProject: {}, badgeTop: {}, renderAgentChips: () => {},
     echoWrapper: { className: '', classList: { add: () => {}, remove: () => {} } },
     infoPanel: { classList: { add: value => classes.add(value), remove: value => classes.delete(value) } },
-    wazeLink: { hidden: false }, setLookForInfoMode: () => {}, mochi: { look: { x: 0, y: 0 } }
+    wazeLink: { hidden: false }, setLookForInfoMode: () => {}, mochi: { look: { x: 0, y: 0 } },
+    calendarActions: { hidden: true }
   });
   vm.runInContext(source.slice(start, end) + '\n  }', context);
   context.renderState({ mode: 'full', state: 'idle' });

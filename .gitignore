@@ -2,6 +2,7 @@ node_modules/
 .env
 *.log
 data/*.sqlite
+data/calendar/
 
 # Midias e estudos temporarios de animacao
 public/*.webm

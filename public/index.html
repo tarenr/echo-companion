@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="styles.css?v=3.9">
+  <link rel="stylesheet" href="styles.css?v=4.0">
 </head>
 <body>
 
@@ -70,6 +70,13 @@
 
         <div class="panel-extra-items" id="panel-extra-items"></div>
         <a id="waze-link" class="waze-link" hidden rel="noopener noreferrer">Abrir Waze</a>
+        <div id="calendar-actions" class="calendar-actions" hidden>
+          <button id="calendar-connect" type="button">Conectar Google Agenda</button>
+          <button id="calendar-list" type="button">Ver próximos compromissos</button>
+          <button id="calendar-disconnect" type="button">Desconectar</button>
+          <button id="calendar-confirm" type="button">Confirmar</button>
+          <button id="calendar-cancel" type="button">Cancelar</button>
+        </div>
 
         <div class="voice-subtitle" id="panel-voice" style="display: none;">
           🗣️ "<span id="voice-text"></span>"
@@ -82,6 +89,7 @@
     <footer class="bottom-bar">
       <span id="connection-status">CONECTANDO...</span>
       <div class="bottom-actions">
+        <button id="calendar-btn" class="footer-btn" type="button" aria-label="Google Agenda">AGENDA</button>
         <button id="briefing-btn" class="footer-btn briefing-btn" title="Executar Briefing e Verificações" aria-label="Briefing">
           <span class="btn-icon">⚡</span>
           <span id="briefing-label">CHECK</span>
@@ -111,6 +119,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=3.12"></script>
+  <script src="app.js?v=4.0"></script>
 </body>
 </html>

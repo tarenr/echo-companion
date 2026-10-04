@@ -66,7 +66,7 @@ const localEnvPath = path.resolve(__dirname, '.env');
 if (fs.existsSync(localEnvPath)) {
   try {
     const localEnv = fs.readFileSync(localEnvPath, 'utf8');
-    for (const key of ['ECHO_PIN', 'LUNA_PIN']) {
+    for (const key of ['ECHO_PIN', 'LUNA_PIN', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET', 'GOOGLE_CALENDAR_REDIRECT_URI', 'GOOGLE_CALENDAR_ENCRYPTION_KEY']) {
       const m = localEnv.match(new RegExp(`^${key}=(.*)$`, 'm'));
       if (m && m[1].trim() && !process.env[key]) {
         process.env[key] = m[1].trim().replace(/^['"]|['"]$/g, '');
@@ -91,7 +91,9 @@ function pinMatches(candidate, expected) {
 }
 
 app.use((req, res, next) => {
-  console.log(`[HTTP ${req.method}] ${req.url} (${req.ip})`);
+  // Códigos e state OAuth não devem aparecer em logs de requisição.
+  const loggedUrl = req.path.startsWith('/api/calendar/') ? req.path : req.url;
+  console.log(`[HTTP ${req.method}] ${loggedUrl} (${req.ip})`);
   next();
 });
 
@@ -168,6 +170,15 @@ function requirePin(req, res, next) {
     authRequired: true
   });
 }
+
+const { CalendarAuth } = require('./src/calendarAuth');
+const { GoogleCalendar } = require('./src/connectors/googleCalendar');
+const { CalendarService } = require('./src/calendarService');
+const { createCalendarRoutes } = require('./src/calendarRoutes');
+const calendarAuth = new CalendarAuth();
+const calendarService = new CalendarService({ auth: calendarAuth, api: new GoogleCalendar(calendarAuth) });
+const calendarRoutes = createCalendarRoutes({ auth: calendarAuth, service: calendarService, requirePin });
+app.use('/api/calendar', calendarRoutes.router);
 
 function requireLunaPin(req, res, next) {
   if (isAuthorizedLuna(req)) {
@@ -642,11 +653,12 @@ app.post('/api/briefing', requirePin, async (req, res) => {
 });
 
 // Endpoint de Conversação / Resposta Inteligente do Echo com Gemini Function Calling & Memória
-app.post('/api/converse', requirePin, navigation.createNavigationMiddleware(memory), async (req, res) => {
+app.post('/api/converse', requirePin, calendarRoutes.converse, navigation.createNavigationMiddleware(memory), async (req, res) => {
   const { message } = req.body || {};
   if (!message) return res.status(400).json({ error: 'Mensagem vazia' });
 
   const textLower = message.toLowerCase().trim();
+  const calendarIntent = /\b(agenda|compromisso|reuni[aã]o|evento|dentista)\b|^(?:echo[, ]+)?(?:marque|agende|remarque)\b/i.test(message);
 
   // 1. Respostas instantâneas para saudações, sono e telemetria básica
   let quickReply = null;
@@ -736,6 +748,8 @@ INFORMAÇÕES EM TEMPO REAL:
 - Projeto ativo na tela: ${echoState.project}.
 - ${prefsStr}
 SUAS FERRAMENTAS DISPONÍVEIS (Function Calling):
+- consultar_agenda_google: consultar eventos da agenda principal. Hoje é ${new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())}; use datas absolutas e horário de Brasília.
+- preparar_evento_google: preparar criação, edição ou exclusão, SEM salvar ainda. Peça título, datas e horários que faltarem, não invente duração ou data. Para edição/exclusão, busque por título e período. Para recorrência, pergunte ocorrência ou série. Nunca confirme operações por ferramenta; a confirmação vem de um novo comando do usuário ou botão.
 - executar_briefing_sistema: para executar um relatório geral com saudação, status de todos os 24 serviços e bancos, backups/tarefas que rodaram e tarefas pendentes no The Forge.
 - consultar_saldos_bancos: para saldos de todos os bancos do Strategy Hub (Mercado Pago, Itaú, XP, PicPay, etc.) e total consolidado.
 - consultar_cartoes_credito: para faturas abertas, limites e vencimentos de cartões.
@@ -791,7 +805,8 @@ REGRAS OBRIGATÓRIAS:
               contents,
               tools: geminiTools,
               generationConfig: {
-                maxOutputTokens: 150,
+                // Propostas da agenda incluem datas e campos estruturados.
+                maxOutputTokens: 1024,
                 temperature: 0.6
               }
             })
@@ -807,6 +822,10 @@ REGRAS OBRIGATÓRIAS:
 
           if (functionCallPart) {
             const fc = functionCallPart.functionCall;
+            if (['consultar_agenda_google', 'preparar_evento_google'].includes(fc.name)) {
+              // Resultados da agenda não vão para SSE, histórico ou uma segunda chamada ao modelo.
+              return calendarRoutes.handleTool(req, res, fc.name, fc.args || {});
+            }
             console.log(`[ECHO TOOLS] Executando tool: ${fc.name}`, fc.args);
 
             // Animação de Lupa/Inspeção no Mascote enquanto a ferramenta é consultada
@@ -951,6 +970,10 @@ REGRAS OBRIGATÓRIAS:
             // Resposta conversacional direta sem ferramentas
             const text = candidateParts[0]?.text?.trim();
             if (text) {
+              if (calendarIntent) {
+                const clarification = text.includes('?') && !/\b(?:agendad|marcad|criad|alterad|exclu[ií]d|cancelad|salv|atualizad)/i.test(text);
+                return res.json({ ok: true, source: 'google-calendar', reply: clarification ? text.replace(/[*#_`]/g, '') : 'Sua agenda ainda não foi alterada ou consultada. Informe o compromisso, a data e o horário para preparar o pedido.' });
+              }
               finalReply = text.replace(/[*#_`]/g, '');
               break;
             }
@@ -984,6 +1007,7 @@ REGRAS OBRIGATÓRIAS:
     }
   }
 
+  if (calendarIntent) return res.json({ ok: true, source: 'google-calendar', reply: 'Não consegui interpretar o pedido da agenda. Diga o compromisso e as datas ou use o botão Agenda para consultar.' });
   // Fallback amigável
   const fallback = "Entendido, Mestre! Processando aqui no Estratégia Nerd.";
   echoState.voiceOrigin = 'converse';

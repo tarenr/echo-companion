@@ -898,6 +898,17 @@
   const pinError = document.getElementById('pin-error');
   const rotateBtn = document.getElementById('rotate-btn');
   const wazeLink = document.getElementById('waze-link');
+  const calendarActions = document.getElementById('calendar-actions');
+  const calendarBtn = document.getElementById('calendar-btn');
+  const calendarConnect = document.getElementById('calendar-connect');
+  const calendarList = document.getElementById('calendar-list');
+  const calendarDisconnect = document.getElementById('calendar-disconnect');
+  const calendarConfirm = document.getElementById('calendar-confirm');
+  const calendarCancel = document.getElementById('calendar-cancel');
+  let calendarCsrf = '';
+  let calendarConfirmation = null;
+  let calendarStatus = null;
+  let calendarBusy = false;
 
   function showNavigationAction(action) {
     if (!wazeLink || action?.type !== 'open_waze') return null;
@@ -930,8 +941,85 @@
     if (pin) {
       headers['x-echo-pin'] = pin;
     }
+    if (calendarCsrf) headers['x-agenda-csrf'] = calendarCsrf;
     return headers;
   }
+
+  async function initializeCalendar() {
+    const res = await fetch('/api/calendar/status', { headers: getAuthHeaders(), credentials: 'same-origin' });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.reply || 'Desbloqueie o Echo antes de abrir sua agenda.');
+    calendarCsrf = data.csrf;
+    calendarStatus = data;
+    return data;
+  }
+
+  function showCalendarActions(data) {
+    if (!calendarActions) return;
+    if (data.source !== 'google-calendar') return;
+    calendarActions.hidden = false;
+    calendarConfirmation = data.confirmation?.id || null;
+    calendarConfirm.hidden = !calendarConfirmation;
+    calendarCancel.hidden = !calendarConfirmation;
+    calendarConfirm.textContent = data.confirmation?.action === 'delete' ? 'Confirmar exclusão' : 'Confirmar';
+    calendarConnect.hidden = !!calendarConfirmation;
+    calendarConnect.textContent = calendarStatus?.connected ? 'Reconectar Google Agenda' : 'Conectar Google Agenda';
+    calendarConnect.disabled = !calendarStatus?.configured;
+    calendarList.hidden = !!calendarConfirmation || !calendarStatus?.connected;
+    calendarDisconnect.hidden = !!calendarConfirmation || !calendarStatus?.connected;
+  }
+
+  async function calendarRequest(path, body) {
+    if (calendarBusy) return;
+    calendarBusy = true;
+    let failureData = null;
+    for (const button of calendarActions.querySelectorAll('button')) button.disabled = true;
+    try {
+      if (!calendarCsrf) await initializeCalendar();
+      const res = await fetch('/api/calendar/' + path, { method: 'POST', headers: getAuthHeaders(), credentials: 'same-origin', body: JSON.stringify(body || {}) });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        failureData = data;
+        throw new Error(data.reply || 'Não foi possível concluir o pedido.');
+      }
+      if (path === 'oauth/start') {
+        const url = new URL(data.url);
+        if (url.origin !== 'https://accounts.google.com') throw new Error('Endereço de autorização inválido.');
+        window.location.assign(url.href);
+        return;
+      }
+      if (path === 'disconnect') await initializeCalendar();
+      displayInfoCard(data.card || { badge: 'GOOGLE AGENDA', title: data.reply, detail1: '', detail2: '' }, data.reply);
+      showCalendarActions({ ...data, source: 'google-calendar' });
+      await speak(data.reply);
+    } catch (error) {
+      await initializeCalendar().catch(() => {});
+      displayInfoCard({ badge: 'GOOGLE AGENDA', title: error.message, detail1: '', detail2: 'Abra Agenda para verificar a conexão.' });
+      showCalendarActions({ source: 'google-calendar', confirmation: failureData?.confirmation });
+      await speak(error.message);
+    } finally {
+      calendarBusy = false;
+      for (const button of calendarActions.querySelectorAll('button')) button.disabled = false;
+      if (calendarConnect) calendarConnect.disabled = !calendarStatus?.configured;
+    }
+  }
+
+  calendarBtn?.addEventListener('click', async event => {
+    event.stopPropagation();
+    try {
+      const status = await initializeCalendar();
+      const reply = status.connected ? 'Sua agenda está conectada.' : status.configured ? 'Conecte sua conta Google para usar a agenda.' : 'A configuração do Google Agenda no servidor ainda está pendente.';
+      displayInfoCard({ badge: 'GOOGLE AGENDA', title: reply, detail1: 'Consultar, criar, editar e excluir compromissos', detail2: status.configured ? 'Alterações exigem sua confirmação.' : 'Siga o guia docs/google-agenda.md no projeto.' }, reply);
+      showCalendarActions({ source: 'google-calendar' });
+    } catch (error) { displayInfoCard({ badge: 'GOOGLE AGENDA', title: error.message }); }
+  });
+  calendarConnect?.addEventListener('click', () => calendarRequest('oauth/start'));
+  calendarList?.addEventListener('click', () => calendarRequest('list'));
+  calendarConfirm?.addEventListener('click', () => calendarRequest('confirm', { id: calendarConfirmation }));
+  calendarCancel?.addEventListener('click', () => calendarRequest('cancel', { id: calendarConfirmation }));
+  calendarDisconnect?.addEventListener('click', () => {
+    if (window.confirm('Desconectar o Google Agenda do Echo? Seus eventos serão preservados.')) calendarRequest('disconnect', { confirm: 'disconnect' });
+  });
 
   // Estado da Aplicação
   let audioUnlocked = false;
@@ -1295,6 +1383,8 @@
   function displayInfoCard(card, replyText) {
     if (!card) return;
     if (wazeLink) { wazeLink.hidden = true; wazeLink.removeAttribute('href'); }
+    if (calendarActions) calendarActions.hidden = true;
+    calendarConfirmation = null;
     echoWrapper.className = 'echo-wrapper mode-info';
     infoPanel.classList.add('visible');
 
@@ -1309,7 +1399,12 @@
     // Renderiza itens extras detalhados (backups específicos, tarefas do forge, etc.)
     if (panelExtraItems) {
       if (Array.isArray(card.items) && card.items.length > 0) {
-        panelExtraItems.innerHTML = card.items.map(item => `<div class="panel-extra-item">${item}</div>`).join('');
+        panelExtraItems.replaceChildren(...card.items.map(item => {
+          const element = document.createElement('div');
+          element.className = 'panel-extra-item';
+          element.textContent = String(item);
+          return element;
+        }));
         panelExtraItems.style.display = 'flex';
       } else {
         panelExtraItems.innerHTML = '';
@@ -1327,7 +1422,7 @@
     clearTimeout(infoCardTimeout);
     const duration = Math.max(20000, ((replyText || '').length * 100) + 12000);
     infoCardTimeout = setTimeout(() => {
-      if (echoWrapper.classList.contains('mode-info') && currentState?.mode !== 'info' && (!wazeLink || wazeLink.hidden)) {
+      if (echoWrapper.classList.contains('mode-info') && currentState?.mode !== 'info' && (!wazeLink || wazeLink.hidden) && (typeof calendarActions === 'undefined' || !calendarActions || calendarActions.hidden)) {
         echoWrapper.className = 'echo-wrapper mode-full';
         infoPanel.classList.remove('visible');
         if (panelExtraItems) {
@@ -1349,14 +1444,20 @@
     transcriptionText.textContent = `"${text}"`;
 
     try {
+      if (!calendarCsrf) await initializeCalendar().catch(() => {});
       const res = await fetch('/api/converse', {
         method: 'POST',
         headers: getAuthHeaders(),
         credentials: 'same-origin',
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({ message: text, calendarConfirmation })
       });
       const data = await res.json();
       if (!res.ok || data?.ok === false) {
+        if (data?.source === 'google-calendar') {
+          await initializeCalendar().catch(() => {});
+          displayInfoCard({ badge: 'GOOGLE AGENDA', title: data.reply || 'Não foi possível concluir o pedido.' });
+          showCalendarActions({ source: 'google-calendar' });
+        }
         await speak(data?.reply || 'Não consegui preparar seu pedido. Tente novamente.');
         return;
       }
@@ -1380,6 +1481,7 @@
       }
 
       const navigationUrl = showNavigationAction(data?.action);
+      showCalendarActions(data);
       // Responde falando com voz oficial neural, mexendo a boca e mãos
       await speak(reply);
       // O botão continua disponível se Android bloquear a abertura sem gesto.
@@ -1570,7 +1672,7 @@
 
     // Comportamento: Chegar para o lado quando mostrar algo (mode: 'info')
     // Uma ação local continua visível mesmo quando SSE envia telemetria/idle.
-    const isInfoMode = state.mode === 'info' || (wazeLink && !wazeLink.hidden);
+    const isInfoMode = state.mode === 'info' || (wazeLink && !wazeLink.hidden) || (calendarActions && !calendarActions.hidden);
     if (isInfoMode) {
       echoWrapper.className = `echo-wrapper mode-info ${state.isMultiAgent ? 'theme-multi-agent' : ''}`;
       infoPanel.classList.add('visible');
@@ -1819,4 +1921,5 @@
 
   setupSpeechRecognition();
   connectSSE();
+  initializeCalendar().catch(() => {});
 })();
