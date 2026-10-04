@@ -10,7 +10,7 @@ function memoryMock(address) {
   return {
     values,
     getPreference: async key => values.get(key),
-    setPreference: async (key, value) => values.set(key, value)
+    setPreference: async (key, value) => values.set(key, typeof value === 'object' ? JSON.stringify(value) : value)
   };
 }
 
@@ -19,7 +19,7 @@ test('cadastro persiste e viagem usa o endereço exato, com parâmetros codifica
   const address = 'Rua São João, 123, Centro, Serra, ES';
   const saved = await navigation.handleNavigationMessage(`Echo, meu endereço de trabalho é ${address}`, memory);
   assert.equal(saved.action, undefined);
-  assert.equal(memory.values.get(navigation.WORK_KEY), address);
+  assert.equal((await navigation.readDestinations(memory)).trabalho1.address, address);
   for (const command of ['Echo, iniciar uma viagem até o meu trabalho', 'ir para o trabalho', 'abra o Waze para meu trabalho', 'quero ir pro trabalho']) {
     const result = await navigation.handleNavigationMessage(command, memory);
     const url = new URL(result.action.url);
@@ -40,9 +40,60 @@ test('destino ausente ou inválido nunca produz ação nem sobrescreve preferên
 });
 
 test('perguntas e destinos diferentes seguem o fluxo conversacional sem abrir Waze', async () => {
-  for (const message of ['Qual o endereço do meu trabalho?', 'Como iniciar viagem até meu trabalho?', 'não iniciar viagem até meu trabalho', 'ir para casa', 'bom dia', null]) {
+  for (const message of ['Qual o endereço do meu trabalho?', 'Como iniciar viagem até meu trabalho?', 'não iniciar viagem até meu trabalho', 'buscar tarefas', 'bom dia', null]) {
     assert.equal(await navigation.handleNavigationMessage(message, memoryMock()), null);
   }
+});
+
+test('três links salvos abrem os destinos corretos e trabalho ambíguo pede especificação', async () => {
+  const memory = memoryMock('Rua antiga, 123, Serra, ES');
+  const links = { 'trabalho 1': 'https://waze.com/ul/h123456789', casa: 'https://waze.com/ul/h234567890', 'trabalho 2': 'https://waze.com/ul/h345678901' };
+  for (const [name, link] of Object.entries(links)) {
+    await navigation.saveDestination(memory, name, link);
+    for (const command of [`ir para ${name}`, `Echo, iniciar uma viagem até ${name}`]) {
+      const result = await navigation.handleNavigationMessage(command, memory);
+      assert.equal(new URL(result.action.url).pathname, new URL(link).pathname);
+      assert.equal(new URL(result.action.url).searchParams.get('navigate'), 'yes');
+    }
+  }
+  assert.equal(memory.values.get(navigation.WORK_KEY), 'Rua antiga, 123, Serra, ES');
+  const ambiguous = await navigation.handleNavigationMessage('ir para meu trabalho', memory);
+  assert.equal(ambiguous.action, undefined);
+  assert.match(ambiguous.reply, /Qual trabalho/);
+  const dhl = await navigation.handleNavigationMessage('ir para DHL', memory);
+  assert.equal(new URL(dhl.action.url).pathname, '/ul/h123456789');
+});
+
+test('busca livre e viagem textual mantêm nome/endereço e não alteram favoritos', async () => {
+  const memory = memoryMock();
+  const search = await navigation.handleNavigationMessage('Echo, buscar Shopping Vitória no Waze', memory);
+  const searchUrl = new URL(search.action.url);
+  assert.equal(searchUrl.searchParams.get('q'), 'Shopping Vitória');
+  assert.equal(searchUrl.searchParams.has('navigate'), false);
+  const trip = await navigation.handleNavigationMessage('inicie uma viagem até Rua X, 100, Serra, ES', memory);
+  assert.equal(new URL(trip.action.url).searchParams.get('q'), 'Rua X, 100, Serra, ES');
+  assert.equal(new URL(trip.action.url).searchParams.get('navigate'), 'yes');
+  assert.equal(memory.values.size, 0);
+});
+
+test('cadastro por frase preserva outros destinos e rejeita link externo', async () => {
+  const memory = memoryMock();
+  await navigation.handleNavigationMessage('minha casa é Rua Central, 123, Serra, ES', memory);
+  await navigation.handleNavigationMessage('meu endereço de trabalho dois é Rua Secundária, 456, Serra, ES', memory);
+  const before = memory.values.get(navigation.DESTINATIONS_KEY);
+  await navigation.handleNavigationMessage('minha casa é https://evil.test/ul/h234567890', memory);
+  assert.equal(memory.values.get(navigation.DESTINATIONS_KEY), before);
+  assert.equal((await navigation.readDestinations(memory)).trabalho2.address, 'Rua Secundária, 456, Serra, ES');
+  for (const command of ['buscar javascript:alert(1) no Waze', 'ir para https://evil.test', 'buscar xx no Waze']) {
+    assert.equal((await navigation.handleNavigationMessage(command, memory)).action, undefined);
+  }
+});
+
+test('cadastro corrompido não é sobrescrito', async () => {
+  const memory = memoryMock();
+  memory.values.set(navigation.DESTINATIONS_KEY, '{broken');
+  await assert.rejects(navigation.saveDestination(memory, 'casa', 'Rua Central, 123, Serra, ES'));
+  assert.equal(memory.values.get(navigation.DESTINATIONS_KEY), '{broken');
 });
 
 test('middleware responde somente ao requisitante e propaga conversa não relacionada', async () => {
@@ -84,6 +135,9 @@ test('cliente rejeita URLs externas e mostra alternativa para ação válida', (
   assert.equal(context.showNavigationAction({ type: 'open_waze', url }), url);
   assert.equal(wazeLink.href, url);
   assert.equal(wazeLink.hidden, false);
+  for (const valid of ['https://waze.com/ul/h123456789?navigate=yes&utm_source=echo_companion', 'https://waze.com/ul?q=Shopping+Vit%C3%B3ria&utm_source=echo_companion']) {
+    assert.equal(context.showNavigationAction({ type: 'open_waze', url: valid }), valid);
+  }
 });
 
 test('Android tenta abrir pela voz e mantém botão quando abertura é bloqueada', () => {

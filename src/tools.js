@@ -10,6 +10,11 @@ const navigation = require('./navigation');
 
 const functionDeclarations = [
   {
+    name: 'abrir_waze',
+    description: 'Abre Waze apenas após pedido explícito de busca ou viagem. Aceita casa, trabalho 1 (DHL), trabalho 2, endereço ou estabelecimento; não invente destinos. Trabalho sem número pede esclarecimento quando há dois.',
+    parameters: { type: 'OBJECT', properties: { destino: { type: 'STRING', description: 'Destino solicitado pelo usuário' }, somente_busca: { type: 'BOOLEAN', description: 'True para pesquisar, false para solicitar navegação' } }, required: ['destino'] }
+  },
+  {
     name: 'iniciar_viagem_trabalho',
     description: 'Solicita abertura do Waze no celular para navegar ao endereço de trabalho salvo. Use somente quando o usuário pedir explicitamente uma viagem para o trabalho. Não confirma que o Waze abriu ou iniciou navegação.',
     parameters: { type: 'OBJECT', properties: {} }
@@ -191,6 +196,9 @@ async function executeTool(name, args = {}) {
 
   try {
     switch (name) {
+      case 'abrir_waze':
+        result = await navigation.prepareNavigation(memory, args.destino, args.somente_busca === true);
+        break;
       case 'iniciar_viagem_trabalho':
         result = await navigation.prepareWorkNavigation(memory);
         break;

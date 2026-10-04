@@ -814,7 +814,7 @@ REGRAS OBRIGATÓRIAS:
 
             const toolResult = await tools.executeTool(fc.name, fc.args || {});
             // Ações pertencem somente à resposta HTTP deste pedido, nunca ao SSE.
-            if (fc.name === 'iniciar_viagem_trabalho') {
+            if (['iniciar_viagem_trabalho', 'abrir_waze'].includes(fc.name)) {
               return res.json(toolResult);
             }
 

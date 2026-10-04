@@ -903,9 +903,13 @@
     if (!wazeLink || action?.type !== 'open_waze') return null;
     try {
       const url = new URL(action.url);
-      if (url.origin !== 'https://waze.com' || url.pathname !== '/ul' ||
-          url.username || url.password || url.searchParams.get('navigate') !== 'yes' ||
-          !url.searchParams.get('q')) return null;
+      const sharedDestination = /^\/ul\/[a-z0-9]{6,20}$/.test(url.pathname);
+      const queryDestination = url.pathname === '/ul' && !!url.searchParams.get('q');
+      const allowedParams = ['q', 'navigate', 'utm_source'];
+      if (url.origin !== 'https://waze.com' || url.username || url.password || url.hash ||
+          (!sharedDestination && !queryDestination) ||
+          (url.searchParams.has('navigate') && url.searchParams.get('navigate') !== 'yes') ||
+          [...url.searchParams.keys()].some(key => !allowedParams.includes(key))) return null;
       wazeLink.href = url.href;
       wazeLink.hidden = false;
       return url.href;
