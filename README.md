@@ -125,7 +125,9 @@ Os comandos principais são tratados localmente sem depender do Gemini. A ferram
 
 Limites: o navegador pode bloquear a abertura automática; o Waze pode exigir escolha do resultado ou confirmação. Sem Waze instalado, o link pode abrir a página web. Não existe confirmação automática de que a navegação começou. O Echo precisa estar ativo e conectado ao servidor; não escuta comandos com garantia em segundo plano ou tela bloqueada. Não há integração com conta Waze.
 
-Validação automatizada: `node --test tests/navigation.test.js`. Os testes usam memória e cliente simulados, sem alterar SQLite real ou chamar Gemini/Waze. A validação final em Android real permanece necessária, incluindo PWA, bloqueio de abertura, destino correto e confirmação da viagem. Após atualização do código, o serviço Node existente precisa carregar a nova versão; reinício não faz parte desta implementação.
+O cartão com **Abrir Waze** permanece visível durante atualizações de telemetria e após o tempo normal dos cartões; um novo cartão substitui a ação anterior. Isso permite usar o botão mesmo se a tentativa automática for bloqueada.
+
+Validação automatizada: `node --test tests/navigation.test.js`. Os testes usam memória e cliente simulados, sem alterar SQLite real ou chamar Gemini/Waze. A validação final em Android real permanece necessária, incluindo PWA, bloqueio de abertura, destino correto e confirmação da viagem. Após atualização do backend, reinicie a tarefa `EchoCompanion` (parada/início, dentro do escopo autorizado) para carregar a nova versão. O HTML atualizado sozinho não significa que o backend foi recarregado. Reabra o Echo no celular para carregar os arquivos novos.
 
 O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado diretamente aos sistemas e bancos de dados locais do ecossistema Estratégia Nerd via Function Calling:
 

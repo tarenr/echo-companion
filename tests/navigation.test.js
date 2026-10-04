@@ -114,3 +114,46 @@ test('Android tenta abrir pela voz e mantém botão quando abertura é bloqueada
   assert.doesNotThrow(() => context.openNavigationOnAndroid(url));
   assert.equal(wazeLink.hidden, false);
 });
+
+test('estado SSE idle preserva cartão Waze e novo cartão permite retornar ao modo normal', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8');
+  const start = source.indexOf('  function renderState(state)');
+  const end = source.indexOf('    // Se estiver no meio do reconhecimento', start);
+  const classes = new Set();
+  const context = vm.createContext({
+    currentState: null, brandProject: {}, badgeTop: {}, renderAgentChips: () => {},
+    echoWrapper: { className: '', classList: { add: () => {}, remove: () => {} } },
+    infoPanel: { classList: { add: value => classes.add(value), remove: value => classes.delete(value) } },
+    wazeLink: { hidden: false }, setLookForInfoMode: () => {}, mochi: { look: { x: 0, y: 0 } }
+  });
+  vm.runInContext(source.slice(start, end) + '\n  }', context);
+  context.renderState({ mode: 'full', state: 'idle' });
+  assert.equal(classes.has('visible'), true);
+  assert.match(context.echoWrapper.className, /mode-info/);
+  context.wazeLink.hidden = true;
+  context.renderState({ mode: 'full', state: 'idle' });
+  assert.equal(classes.has('visible'), false);
+  assert.match(context.echoWrapper.className, /mode-full/);
+});
+
+test('timer normal não esconde ação Waze pendente', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8');
+  const start = source.indexOf('    infoCardTimeout = setTimeout(');
+  const end = source.indexOf('\n  async function processAndRespond', start);
+  let callback;
+  let removed = false;
+  const context = vm.createContext({
+    infoCardTimeout: null, duration: 20000, currentState: { mode: 'full' },
+    wazeLink: { hidden: false },
+    echoWrapper: { className: 'echo-wrapper mode-info', classList: { contains: () => true } },
+    infoPanel: { classList: { remove: () => { removed = true; } } },
+    panelExtraItems: null, mochi: { look: {} }, setTimeout: fn => { callback = fn; }
+  });
+  // Retira apenas o fechamento externo de displayInfoCard.
+  vm.runInContext(source.slice(start, end).trim().replace(/\}\s*$/, ''), context);
+  callback();
+  assert.equal(removed, false);
+  context.wazeLink.hidden = true;
+  callback();
+  assert.equal(removed, true);
+});

@@ -1323,7 +1323,7 @@
     clearTimeout(infoCardTimeout);
     const duration = Math.max(20000, ((replyText || '').length * 100) + 12000);
     infoCardTimeout = setTimeout(() => {
-      if (echoWrapper.classList.contains('mode-info') && currentState?.mode !== 'info') {
+      if (echoWrapper.classList.contains('mode-info') && currentState?.mode !== 'info' && (!wazeLink || wazeLink.hidden)) {
         echoWrapper.className = 'echo-wrapper mode-full';
         infoPanel.classList.remove('visible');
         if (panelExtraItems) {
@@ -1565,7 +1565,8 @@
     }
 
     // Comportamento: Chegar para o lado quando mostrar algo (mode: 'info')
-    const isInfoMode = state.mode === 'info';
+    // Uma ação local continua visível mesmo quando SSE envia telemetria/idle.
+    const isInfoMode = state.mode === 'info' || (wazeLink && !wazeLink.hidden);
     if (isInfoMode) {
       echoWrapper.className = `echo-wrapper mode-info ${state.isMultiAgent ? 'theme-multi-agent' : ''}`;
       infoPanel.classList.add('visible');
