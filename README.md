@@ -110,6 +110,23 @@ O Echo inclui um despachante universal ultrarrápido (`bin/dispatcher.js`) que e
 
 ## 🧠 Conectores e Inteligência do Ecossistema (Function Calling)
 
+### Navegação por voz no Waze (Android)
+
+Com o Echo aberto no Android e o microfone autorizado:
+
+1. Cadastre o destino dizendo: **“Echo, meu endereço de trabalho é Rua das Flores, 123, Centro, Serra, ES.”** Use seu endereço real, incluindo cidade e estado, e confira o cartão. Para corrigir, repita o cadastro completo.
+2. Diga: **“Echo, iniciar uma viagem até o meu trabalho.”** Também aceita “ir para o trabalho” e “abra o Waze para meu trabalho”.
+3. O Echo fala a resposta e tenta abrir o Waze. Se o Android exigir um toque, use **Abrir Waze** no cartão.
+4. Confira o resultado da busca e confirme a viagem dentro do Waze quando solicitado. Um endereço textual pode retornar mais de um resultado.
+
+Sem destino salvo, o Echo pede o endereço e não abre uma rota. O cadastro exige local e cidade separados por vírgula (essa validação de formato não verifica a existência do endereço). O destino fica na chave `navigation_work_address` da tabela existente `user_preferences`; não há migration. O endereço é dado pessoal e, como as demais preferências atuais, pode integrar o contexto enviado ao Gemini em conversas posteriores.
+
+Os comandos principais são tratados localmente sem depender do Gemini. A ferramenta `iniciar_viagem_trabalho` atende outras formulações reconhecidas pelo modelo. A ação é retornada apenas na resposta HTTP do pedido, nunca pelo SSE compartilhado com outros dispositivos. O link é construído e validado para `https://waze.com/ul`, com endereço codificado e `navigate=yes`, conforme a [documentação oficial do Waze](https://developers.google.com/waze/deeplinks).
+
+Limites: o navegador pode bloquear a abertura automática; o Waze pode exigir escolha do resultado ou confirmação. Sem Waze instalado, o link pode abrir a página web. Não existe confirmação automática de que a navegação começou. O Echo precisa estar ativo e conectado ao servidor; não escuta comandos com garantia em segundo plano ou tela bloqueada. Não há integração com conta Waze.
+
+Validação automatizada: `node --test tests/navigation.test.js`. Os testes usam memória e cliente simulados, sem alterar SQLite real ou chamar Gemini/Waze. A validação final em Android real permanece necessária, incluindo PWA, bloqueio de abertura, destino correto e confirmação da viagem. Após atualização do código, o serviço Node existente precisa carregar a nova versão; reinício não faz parte desta implementação.
+
 O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado diretamente aos sistemas e bancos de dados locais do ecossistema Estratégia Nerd via Function Calling:
 
 - ⚡ **Briefing do Sistema & Verificações (`executar_briefing_sistema` / Botão `CHECK` / `POST /api/briefing`):** Dispara uma checagem integrada do ecossistema com saudação contextual pelo horário de Brasília, verificando os 24 serviços e bancos, conferindo a execução dos backups diários e agendamentos do Windows, listando as tarefas pendentes no The Forge e lendo e-mails não lidos. O Echo responde em áudio neural fluente e apresenta o card consolidado com layout espaçoso sem sobreposições.

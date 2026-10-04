@@ -1,0 +1,116 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const navigation = require('../src/navigation');
+
+function memoryMock(address) {
+  const values = new Map(address ? [[navigation.WORK_KEY, address]] : []);
+  return {
+    values,
+    getPreference: async key => values.get(key),
+    setPreference: async (key, value) => values.set(key, value)
+  };
+}
+
+test('cadastro persiste e viagem usa o endereço exato, com parâmetros codificados', async () => {
+  const memory = memoryMock();
+  const address = 'Rua São João, 123, Centro, Serra, ES';
+  const saved = await navigation.handleNavigationMessage(`Echo, meu endereço de trabalho é ${address}`, memory);
+  assert.equal(saved.action, undefined);
+  assert.equal(memory.values.get(navigation.WORK_KEY), address);
+  for (const command of ['Echo, iniciar uma viagem até o meu trabalho', 'ir para o trabalho', 'abra o Waze para meu trabalho', 'quero ir pro trabalho']) {
+    const result = await navigation.handleNavigationMessage(command, memory);
+    const url = new URL(result.action.url);
+    assert.equal(url.origin, 'https://waze.com');
+    assert.equal(url.searchParams.get('q'), address);
+    assert.equal(url.searchParams.get('navigate'), 'yes');
+  }
+});
+
+test('destino ausente ou inválido nunca produz ação nem sobrescreve preferência', async () => {
+  assert.equal((await navigation.handleNavigationMessage('ir para o trabalho', memoryMock())).action, undefined);
+  const memory = memoryMock('Rua Central, 123, Serra, ES');
+  for (const address of ['Centro', '', '<script>, Serra', 'https://evil.test, Serra']) {
+    const result = await navigation.handleNavigationMessage(`meu endereço de trabalho é ${address}`, memory);
+    assert.equal(result.action, undefined);
+    assert.equal(memory.values.get(navigation.WORK_KEY), 'Rua Central, 123, Serra, ES');
+  }
+});
+
+test('perguntas e destinos diferentes seguem o fluxo conversacional sem abrir Waze', async () => {
+  for (const message of ['Qual o endereço do meu trabalho?', 'Como iniciar viagem até meu trabalho?', 'não iniciar viagem até meu trabalho', 'ir para casa', 'bom dia', null]) {
+    assert.equal(await navigation.handleNavigationMessage(message, memoryMock()), null);
+  }
+});
+
+test('middleware responde somente ao requisitante e propaga conversa não relacionada', async () => {
+  const handler = navigation.createNavigationMiddleware(memoryMock('Rua Central, 123, Serra, ES'));
+  let response;
+  let nextCount = 0;
+  const res = { json: body => { response = body; } };
+  await handler({ body: { message: 'ir para o trabalho' } }, res, () => nextCount++);
+  assert.equal(response.action.type, 'open_waze');
+  assert.equal(nextCount, 0);
+  response = undefined;
+  await handler({ body: { message: 'bom dia' } }, res, () => nextCount++);
+  assert.equal(response, undefined);
+  assert.equal(nextCount, 1);
+});
+
+test('erro de memória retorna falha explícita sem ação', async () => {
+  const handler = navigation.createNavigationMiddleware({ getPreference: async () => { throw new Error('offline'); } });
+  let status, response;
+  const res = { status: value => { status = value; return res; }, json: body => { response = body; } };
+  await handler({ body: { message: 'ir para o trabalho' } }, res, () => assert.fail());
+  assert.equal(status, 503);
+  assert.equal(response.ok, false);
+  assert.equal(response.action, undefined);
+});
+
+test('cliente rejeita URLs externas e mostra alternativa para ação válida', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8');
+  const start = source.indexOf('  function showNavigationAction(');
+  const end = source.indexOf('\n  function getAuthHeaders()', start);
+  const wazeLink = { hidden: true };
+  const context = vm.createContext({ URL, wazeLink });
+  vm.runInContext(source.slice(start, end), context);
+  for (const url of ['javascript:alert(1)', 'https://evil.test/ul?q=x&navigate=yes', 'https://waze.com.evil.test/ul?q=x&navigate=yes', 'https://waze.com/other?q=x&navigate=yes', 'https://user@waze.com/ul?q=x&navigate=yes']) {
+    assert.equal(context.showNavigationAction({ type: 'open_waze', url }), null);
+    assert.equal(wazeLink.hidden, true);
+  }
+  const url = 'https://waze.com/ul?q=Serra&navigate=yes';
+  assert.equal(context.showNavigationAction({ type: 'open_waze', url }), url);
+  assert.equal(wazeLink.href, url);
+  assert.equal(wazeLink.hidden, false);
+});
+
+test('Android tenta abrir pela voz e mantém botão quando abertura é bloqueada', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8');
+  const start = source.indexOf('  function showNavigationAction(');
+  const end = source.indexOf('\n  function getAuthHeaders()', start);
+  const calls = [];
+  const wazeLink = { hidden: true };
+  const context = vm.createContext({ URL, wazeLink,
+    navigator: { userAgent: 'Android' }, document: { visibilityState: 'visible' },
+    window: { open: (...args) => { calls.push(args); return null; } }
+  });
+  vm.runInContext(source.slice(start, end), context);
+  const url = context.showNavigationAction({ type: 'open_waze', url: 'https://waze.com/ul?q=Serra&navigate=yes' });
+  context.openNavigationOnAndroid(url);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], url);
+  assert.equal(wazeLink.hidden, false);
+  context.document.visibilityState = 'hidden';
+  context.openNavigationOnAndroid(url);
+  assert.equal(calls.length, 1);
+  context.document.visibilityState = 'visible';
+  context.navigator.userAgent = 'Windows';
+  context.openNavigationOnAndroid(url);
+  assert.equal(calls.length, 1);
+  context.navigator.userAgent = 'Android';
+  context.window.open = () => { throw new Error('blocked'); };
+  assert.doesNotThrow(() => context.openNavigationOnAndroid(url));
+  assert.equal(wazeLink.hidden, false);
+});

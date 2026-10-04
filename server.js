@@ -7,6 +7,7 @@ const { spawn } = require('child_process');
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
 const memory = require('./src/memory');
 const tools = require('./src/tools');
+const navigation = require('./src/navigation');
 const briefing = require('./src/connectors/briefing');
 
 // Inicializa banco de memória persistente SQLite
@@ -641,7 +642,7 @@ app.post('/api/briefing', requirePin, async (req, res) => {
 });
 
 // Endpoint de Conversação / Resposta Inteligente do Echo com Gemini Function Calling & Memória
-app.post('/api/converse', requirePin, async (req, res) => {
+app.post('/api/converse', requirePin, navigation.createNavigationMiddleware(memory), async (req, res) => {
   const { message } = req.body || {};
   if (!message) return res.status(400).json({ error: 'Mensagem vazia' });
 
@@ -812,6 +813,10 @@ REGRAS OBRIGATÓRIAS:
             broadcastEvent('mascot_state', { accessory: 'lupa', text: `Consultando ${fc.name}...` });
 
             const toolResult = await tools.executeTool(fc.name, fc.args || {});
+            // Ações pertencem somente à resposta HTTP deste pedido, nunca ao SSE.
+            if (fc.name === 'iniciar_viagem_trabalho') {
+              return res.json(toolResult);
+            }
 
             // Define acessório temático e cartão estruturado baseado na ferramenta
             if (['consultar_saldos_bancos', 'consultar_cartoes_credito', 'consultar_contas_a_pagar'].includes(fc.name)) {

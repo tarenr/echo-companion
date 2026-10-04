@@ -519,6 +519,19 @@ body {
   word-break: break-word;
 }
 
+.waze-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--cyan-neon);
+  border-radius: 10px;
+  color: var(--cyan-neon);
+  text-align: center;
+  text-decoration: none;
+}
+
+.waze-link[hidden] { display: none; }
+
 .voice-subtitle {
   margin-top: 0.2rem;
   font-size: 0.75rem;

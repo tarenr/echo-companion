@@ -897,6 +897,26 @@
   const pinBtn = document.getElementById('pin-btn');
   const pinError = document.getElementById('pin-error');
   const rotateBtn = document.getElementById('rotate-btn');
+  const wazeLink = document.getElementById('waze-link');
+
+  function showNavigationAction(action) {
+    if (!wazeLink || action?.type !== 'open_waze') return null;
+    try {
+      const url = new URL(action.url);
+      if (url.origin !== 'https://waze.com' || url.pathname !== '/ul' ||
+          url.username || url.password || url.searchParams.get('navigate') !== 'yes' ||
+          !url.searchParams.get('q')) return null;
+      wazeLink.href = url.href;
+      wazeLink.hidden = false;
+      return url.href;
+    } catch (_) { return null; }
+  }
+
+  function openNavigationOnAndroid(url) {
+    if (url && /Android/i.test(navigator.userAgent) && document.visibilityState === 'visible') {
+      try { window.open(url, '_blank', 'noopener,noreferrer'); } catch (_) {}
+    }
+  }
 
   function getAuthHeaders() {
     const pin = localStorage.getItem('echo_pin') || '';
@@ -1270,6 +1290,7 @@
 
   function displayInfoCard(card, replyText) {
     if (!card) return;
+    if (wazeLink) { wazeLink.hidden = true; wazeLink.removeAttribute('href'); }
     echoWrapper.className = 'echo-wrapper mode-info';
     infoPanel.classList.add('visible');
 
@@ -1331,6 +1352,10 @@
         body: JSON.stringify({ message: text })
       });
       const data = await res.json();
+      if (!res.ok || data?.ok === false) {
+        await speak(data?.reply || 'Não consegui preparar seu pedido. Tente novamente.');
+        return;
+      }
       const reply = data?.reply || "Olá, Mestre! Estratégia Nerd online.";
 
       if (data?.accessory && data.accessory !== 'none') {
@@ -1350,8 +1375,11 @@
         }
       }
 
+      const navigationUrl = showNavigationAction(data?.action);
       // Responde falando com voz oficial neural, mexendo a boca e mãos
       await speak(reply);
+      // O botão continua disponível se Android bloquear a abertura sem gesto.
+      openNavigationOnAndroid(navigationUrl);
 
       // Se entrou em modo soneca/sono por comando de voz
       if (data?.state === 'sleeping') {

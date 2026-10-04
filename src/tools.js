@@ -6,8 +6,14 @@ const servicesMonitor = require('./connectors/servicesMonitor');
 const briefing = require('./connectors/briefing');
 const weather = require('./connectors/weather');
 const memory = require('./memory');
+const navigation = require('./navigation');
 
 const functionDeclarations = [
+  {
+    name: 'iniciar_viagem_trabalho',
+    description: 'Solicita abertura do Waze no celular para navegar ao endereço de trabalho salvo. Use somente quando o usuário pedir explicitamente uma viagem para o trabalho. Não confirma que o Waze abriu ou iniciou navegação.',
+    parameters: { type: 'OBJECT', properties: {} }
+  },
   {
     name: 'executar_briefing_sistema',
     description: 'Executa um briefing e relatório geral consolidado do sistema: status dos 24 serviços e bancos (NerdOPS/Forge), tarefas agendadas e backups que rodaram recentemente no Windows, tarefas pendentes no The Forge e contagem de e-mails.',
@@ -185,6 +191,9 @@ async function executeTool(name, args = {}) {
 
   try {
     switch (name) {
+      case 'iniciar_viagem_trabalho':
+        result = await navigation.prepareWorkNavigation(memory);
+        break;
       case 'consultar_saldos_bancos': {
         const data = await strategyHub.getBankBalances();
         if (data.ok && args.banco) {
