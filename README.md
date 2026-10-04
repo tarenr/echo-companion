@@ -114,8 +114,8 @@ O Echo inclui um despachante universal ultrarrápido (`bin/dispatcher.js`) que e
 
 Com o Echo aberto no Android e o microfone autorizado:
 
-1. Cadastre os destinos dizendo **“meu endereço de trabalho 1 é…”**, **“meu endereço de trabalho 2 é…”** ou **“minha casa é…”**, seguido do endereço completo com cidade/estado. Também aceita **“salve casa como https://waze.com/ul/…”** com um link compartilhado do Waze. Para corrigir, repita o cadastro desse destino.
-2. Diga **“Echo, ir para casa”**, **“ir para o trabalho 1”** ou **“iniciar uma viagem até o trabalho 2”**. “DHL” também identifica trabalho 1. Se houver dois trabalhos e você disser apenas “trabalho”, o Echo pede que repita o comando especificando 1 ou 2.
+1. Cadastre os destinos dizendo **“meu endereço de DHL é…”**, **“meu endereço de Jayme é…”** ou **“minha casa é…”**, seguido do endereço completo com cidade/estado. Também aceita **“salve Jayme como https://waze.com/ul/…”** com um link compartilhado do Waze. Para corrigir, repita o cadastro desse destino.
+2. Diga **“Echo, ir para casa”**, **“ir para DHL”** ou **“iniciar uma viagem até Jayme”**. Os cartões e respostas usam DHL e Jayme; “trabalho 1” e “trabalho 2” continuam funcionando como alternativas, inclusive no cadastro. Os links existentes são preservados. Se houver dois trabalhos e você disser apenas “trabalho”, o Echo pede que repita o comando especificando DHL ou Jayme.
 3. O Echo fala a resposta e tenta abrir o Waze. Se o Android exigir um toque, use **Abrir Waze** no cartão.
 4. Confira o resultado da busca e confirme a viagem dentro do Waze quando solicitado. Um endereço textual pode retornar mais de um resultado.
 

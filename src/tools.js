@@ -11,7 +11,7 @@ const navigation = require('./navigation');
 const functionDeclarations = [
   {
     name: 'abrir_waze',
-    description: 'Abre Waze apenas após pedido explícito de busca ou viagem. Aceita casa, trabalho 1 (DHL), trabalho 2, endereço ou estabelecimento; não invente destinos. Trabalho sem número pede esclarecimento quando há dois.',
+    description: 'Abre Waze apenas após pedido explícito de busca ou viagem. Aceita casa, DHL (trabalho 1), Jayme (trabalho 2), endereço ou estabelecimento; não invente destinos. Trabalho sem nome ou número pede esclarecimento quando há dois.',
     parameters: { type: 'OBJECT', properties: { destino: { type: 'STRING', description: 'Destino solicitado pelo usuário' }, somente_busca: { type: 'BOOLEAN', description: 'True para pesquisar, false para solicitar navegação' } }, required: ['destino'] }
   },
   {

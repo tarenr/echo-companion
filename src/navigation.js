@@ -1,6 +1,6 @@
 const WORK_KEY = 'navigation_work_address';
 const DESTINATIONS_KEY = 'navigation_saved_destinations';
-const labels = { casa: 'Casa', trabalho1: 'Trabalho 1', trabalho2: 'Trabalho 2' };
+const labels = { casa: 'Casa', trabalho1: 'DHL', trabalho2: 'Jayme' };
 function normalize(text) { return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
 function validateQuery(value) {
   if (typeof value !== 'string') return null;
@@ -22,7 +22,7 @@ function destinationId(value) {
   const name = normalize(String(value || '')).replace(/^(?:o|a|meu|minha)\s+/, '').replace(/\s+/g, ' ');
   if (['casa', 'lar'].includes(name)) return 'casa';
   if (['trabalho 1', 'trabalho um', 'primeiro trabalho', 'dhl'].includes(name)) return 'trabalho1';
-  if (['trabalho 2', 'trabalho dois', 'segundo trabalho'].includes(name)) return 'trabalho2';
+  if (['trabalho 2', 'trabalho dois', 'segundo trabalho', 'jayme'].includes(name)) return 'trabalho2';
   if (name === 'trabalho') return 'trabalho';
   return null;
 }
@@ -50,7 +50,7 @@ async function saveDestination(memory, name, value) {
   if (id === 'trabalho') id = 'trabalho1';
   const link = validateWazeLink(value);
   const address = validateAddress(value);
-  if (!id || (!link && !address)) return { ok: true, source: 'navigation', reply: 'Informe casa, trabalho 1 ou trabalho 2, seguido de um link compartilhado do Waze ou endereço completo com cidade, separado por vírgula.' };
+  if (!id || (!link && !address)) return { ok: true, source: 'navigation', reply: 'Informe casa, DHL ou Jayme, seguido de um link compartilhado do Waze ou endereço completo com cidade, separado por vírgula.' };
   const saved = await readDestinations(memory);
   saved[id] = link ? { link } : { address };
   await memory.setPreference(DESTINATIONS_KEY, saved);
@@ -71,7 +71,7 @@ async function prepareNavigation(memory, destination, searchOnly = false) {
   const id = destinationId(destination);
   if (id) {
     const saved = await readDestinations(memory);
-    if (id === 'trabalho' && saved.trabalho1 && saved.trabalho2) return { ok: true, source: 'navigation', reply: 'Qual trabalho: trabalho 1, DHL, ou trabalho 2? Diga: ir para o trabalho 1 ou ir para o trabalho 2.' };
+    if (id === 'trabalho' && saved.trabalho1 && saved.trabalho2) return { ok: true, source: 'navigation', reply: 'Qual trabalho: DHL ou Jayme? Diga: ir para DHL ou ir para Jayme.' };
     const resolved = id === 'trabalho' ? (saved.trabalho1 ? 'trabalho1' : 'trabalho2') : id;
     if (!saved[resolved]) return { ok: true, source: 'navigation', reply: `Qual é o endereço completo de ${labels[resolved] || 'seu trabalho'}? Diga: meu endereço de ${labels[resolved] || 'trabalho'} é, seguido do local e da cidade.` };
     return navigationResponse(saved[resolved], labels[resolved], searchOnly);
@@ -84,8 +84,8 @@ async function prepareWorkNavigation(memory) { return prepareNavigation(memory, 
 async function handleNavigationMessage(message, memory) {
   if (typeof message !== 'string') return null;
   const original = message.trim().replace(/^echo[,!:.]?\s+/i, '').replace(/^por favor[, ]+/i, '');
-  const registration = original.match(/^(?:meu|minha) (?:endere[cç]o de )?(casa|trabalho(?:\s+(?:1|2|um|dois))?) [eé]\s*[:,]?\s*(.*)$/i)
-    || original.match(/^(?:salve|salvar|cadastre|cadastrar)\s+(casa|trabalho\s+(?:1|2|um|dois))\s*(?:como|[eé]|:)\s*(.*)$/i);
+  const registration = original.match(/^(?:meu|minha) (?:endere[cç]o de )?(casa|dhl|jayme|trabalho(?:\s+(?:1|2|um|dois))?) [eé]\s*[:,]?\s*(.*)$/i)
+    || original.match(/^(?:salve|salvar|cadastre|cadastrar)\s+(casa|dhl|jayme|trabalho\s+(?:1|2|um|dois))\s*(?:como|[eé]|:)\s*(.*)$/i);
   if (registration) return saveDestination(memory, registration[1], registration[2]);
   const command = original.match(/^(?:(?:quero|pode|poderia)\s+)?(ir|iniciar|inicie|come[cç]ar|comece|abrir|abra|navegar|navegue|me levar|leve-me|tra[cç]ar|trace|buscar|busque|pesquisar|pesquise|procurar|procure)\b\s*(.*)$/i);
   if (!command) return null;

@@ -62,6 +62,14 @@ test('três links salvos abrem os destinos corretos e trabalho ambíguo pede esp
   assert.match(ambiguous.reply, /Qual trabalho/);
   const dhl = await navigation.handleNavigationMessage('ir para DHL', memory);
   assert.equal(new URL(dhl.action.url).pathname, '/ul/h123456789');
+  assert.equal(dhl.card.title, 'Viagem: DHL');
+  for (const command of ['ir para Jayme', 'Echo, iniciar uma viagem até Jayme', 'ir para trabalho 2']) {
+    const jayme = await navigation.handleNavigationMessage(command, memory);
+    assert.equal(new URL(jayme.action.url).pathname, '/ul/h345678901');
+    assert.equal(jayme.card.title, 'Viagem: Jayme');
+    assert.match(jayme.reply, /Jayme/);
+  }
+  assert.match(ambiguous.reply, /DHL ou Jayme/);
 });
 
 test('busca livre e viagem textual mantêm nome/endereço e não alteram favoritos', async () => {
@@ -94,6 +102,19 @@ test('cadastro corrompido não é sobrescrito', async () => {
   memory.values.set(navigation.DESTINATIONS_KEY, '{broken');
   await assert.rejects(navigation.saveDestination(memory, 'casa', 'Rua Central, 123, Serra, ES'));
   assert.equal(memory.values.get(navigation.DESTINATIONS_KEY), '{broken');
+});
+
+test('cadastro por DHL e Jayme grava nos mesmos destinos sem perder casa', async () => {
+  const memory = memoryMock();
+  await navigation.saveDestination(memory, 'casa', 'Rua Casa, 10, Serra, ES');
+  const dhl = await navigation.handleNavigationMessage('meu endereço de DHL é Rua DHL, 20, Serra, ES', memory);
+  const jayme = await navigation.handleNavigationMessage('salve Jayme como https://waze.com/ul/h345678901', memory);
+  assert.equal(dhl.card.title, 'DHL');
+  assert.equal(jayme.card.title, 'Jayme');
+  const saved = await navigation.readDestinations(memory);
+  assert.equal(saved.casa.address, 'Rua Casa, 10, Serra, ES');
+  assert.equal(saved.trabalho1.address, 'Rua DHL, 20, Serra, ES');
+  assert.equal(saved.trabalho2.link, 'https://waze.com/ul/h345678901');
 });
 
 test('middleware responde somente ao requisitante e propaga conversa não relacionada', async () => {
