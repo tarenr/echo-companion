@@ -1598,7 +1598,8 @@
     connectionStatus.textContent = 'CONECTANDO...';
     connectionStatus.style.color = 'var(--cyan-neon)';
 
-    sseSource = new EventSource('/api/stream');
+    const pin = localStorage.getItem('echo_pin') || '4884';
+    sseSource = new EventSource(`/api/stream?pin=${encodeURIComponent(pin)}`);
 
     sseSource.onopen = () => {
       connectionStatus.textContent = 'ONLINE // CONECTADO';
