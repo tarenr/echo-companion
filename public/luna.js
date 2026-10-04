@@ -1,142 +1,298 @@
 /**
- * Luna // Assistente Pessoal Dedicada
- * Mascote 2D com tema Lavanda Neon, laço animado e voz Thalita Neural
+ * Luna // Assistente Pessoal Inteligente
+ * Motor 2D oficial (clone do Echo/MochiBot) com física fluida, laço animado e voz Thalita Neural
  */
 (() => {
   'use strict';
 
-  // Configuração Visual da Luna
-  const LUNA_SPEC = {
-    base: ['#181028', '#0f0a1c'],
-    accent: '#c084fc',
-    outline: 'rgba(183, 148, 244, 0.45)',
-    blush: '#f687b3',
-    eyeColor: '#1a102f',
-    bowPrimary: '#c084fc',
-    bowSecondary: '#805ad5',
-    bowKnot: '#e9d8fd'
-  };
-
+  // ========================================================
+  // 1. UTILITÁRIOS MATEMÁTICOS & EASING (CLONE MOCHIBOT)
+  // ========================================================
   const NOW = () => performance.now();
+  const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
   const lerp = (a, b, t) => a + (b - a) * t;
 
-  function hexRgb(hex) {
-    const c = hex.replace('#', '');
-    const n = parseInt(c.length === 3 ? c.split('').map(x => x + x).join('') : c, 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const E = {
+    out: t => 1 - Math.pow(1 - t, 3),
+    inOut: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+    back: t => { const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+    lin: t => t
+  };
+
+  const hexRgb = h => {
+    h = h.replace('#', '');
+    if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  };
+  const rgba = (c, a) => `rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
+  const mix = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+
+  function rr(x, X, Y, W, H, R) {
+    R = Math.max(0, Math.min(R, W / 2, H / 2));
+    x.beginPath();
+    x.moveTo(X + R, Y);
+    x.arcTo(X + W, Y, X + W, Y + H, R);
+    x.arcTo(X + W, Y + H, X, Y + H, R);
+    x.arcTo(X, Y + H, X, Y, R);
+    x.arcTo(X, Y, X + W, Y, R);
+    x.closePath();
   }
-  const rgba = ([r, g, b], a) => `rgba(${r},${g},${b},${a})`;
+
+  function heart(x, s) {
+    x.beginPath();
+    x.moveTo(0, s * 0.38);
+    x.bezierCurveTo(-s * 1.05, -s * 0.15, -s * 0.5, -s * 0.95, 0, -s * 0.38);
+    x.bezierCurveTo(s * 0.5, -s * 0.95, s * 1.05, -s * 0.15, 0, -s * 0.38);
+    x.closePath();
+  }
 
   // ========================================================
-  // CLASSE DA MASCOTE LUNA (CANVAS 2D VETORIAL)
+  // 2. SINTETIZADOR DE ÁUDIO WEB AUDIO (SONS RETRÔ DA LUNA)
+  // ========================================================
+  const Snd = {
+    ctx: null, on: true, vol: 0.45,
+    init() {
+      if (this.ctx) return;
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return;
+      const c = this.ctx = new C();
+      this.master = c.createGain();
+      this.master.gain.value = this.vol;
+      this.master.connect(c.destination);
+    },
+    tone({ f = 440, to = 0, d = 0.2, type = 'sine', g = 0.1, a = 0.006 }) {
+      this.init();
+      if (!this.ctx) return;
+      const c = this.ctx, t = c.currentTime;
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, t + d * 0.9);
+      const gn = c.createGain();
+      gn.gain.setValueAtTime(0.0001, t);
+      gn.gain.exponentialRampToValueAtTime(g, t + a);
+      gn.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(gn);
+      gn.connect(this.master);
+      o.start(t);
+      o.stop(t + d + 0.05);
+    },
+    play(name) {
+      if (!this.on) return;
+      if (name === 'pop') {
+        this.tone({ f: 520, to: 880, d: 0.09, type: 'sine', g: 0.12 });
+      } else if (name === 'love') {
+        this.tone({ f: 587, to: 784, d: 0.25, type: 'sine', g: 0.1 });
+      } else if (name === 'listen') {
+        this.tone({ f: 493, to: 740, d: 0.15, type: 'sine', g: 0.1 });
+      } else if (name === 'finish') {
+        this.tone({ f: 587, to: 1174, d: 0.32, type: 'triangle', g: 0.14 });
+      } else if (name === 'slap') {
+        this.tone({ f: 320, to: 140, d: 0.12, type: 'triangle', g: 0.14 });
+      }
+    }
+  };
+
+  // ========================================================
+  // 3. IDENTIDADE VISUAL LUMINOSA DA LUNA
+  // ========================================================
+  const LUNA_SPEC = {
+    shape: 'mochi',
+    eye: { w: 0.25, h: 0.27, sp: 0.37, p: -0.12 },
+    base: ['#faf5ff', '#ebd8fd'], // Corpo Lavanda Claro LUMINOSO e Limpo
+    ink: '#2e1065',                // Traço Roxo Real Escuro para olhos e boca super nítidos
+    accent: '#c084fc',             // Lavanda Neon Vibrante
+    outline: 'rgba(192, 132, 252, 0.75)',
+    blush: '#f472b6',              // Bochechas Rosadas Vivas
+    bow1: '#c084fc',               // Laço Lavanda
+    bow2: '#9333ea',               // Sombra Ametista do Laço
+    knot: '#ffffff'                // Nó Central Brilhante
+  };
+
+  const STATES = {
+    idle: { label: 'Pronta', col: '#c084fc', tint: 0, eye: 'pill' },
+    talking: { label: 'Falando', col: '#c084fc', tint: 0.35, eye: 'pill' },
+    thinking: { label: 'Pensando', col: '#e879f9', tint: 0.55, eye: 'pill' },
+    listening: { label: 'Ouvindo', col: '#a855f7', tint: 0.40, eye: 'dot' },
+    happy: { label: 'Feliz', col: '#f472b6', tint: 0.35, eye: 'happy' },
+    sleeping: { label: 'Dormindo', col: '#818cf8', tint: 0.15, eye: 'sleep' }
+  };
+
+  // ========================================================
+  // 4. CLASSE BOT 2D DA LUNA (CLONE DO MOTOR MOCHIBOT)
   // ========================================================
   class LunaBot {
     constructor(canvas) {
       this.c = canvas;
       this.x = canvas.getContext('2d');
-      this.state = 'idle';
-      this.speaking = false;
-      this.mouthOpen = 0;
-      this.look = { x: 0, y: 0 };
-      this.blinkTimer = 0;
-      this.blinkProgress = 0;
-      this.lastTime = NOW();
-      
-      // Estado de interpolação física
       this.s = {
-        sx: 1, sy: 1,
-        ox: 0, oy: 0,
-        tilt: 0,
-        yaw: 0,
-        blush: 0.4,
-        hands: 0,
-        bowWobble: 0
+        yaw: 0, pitch: 0, roll: 0, tilt: 0,
+        open: 1, sx: 1, sy: 1, oy: 0, ox: 0,
+        tint: 0, morph: 0, hands: 0, blush: 0.4,
+        es: 1, badgeS: 0,
+        mouthOpen: 0
       };
+      this.tg = { ...this.s };
+      this.tw = [];
+      this.lock = {};
+      this.col = [192, 132, 252];
+      this.colT = [192, 132, 252];
+      this.state = 'idle';
+      this.cfg = STATES.idle;
+      this.eyeOv = null;
+      this.ovUntil = 0;
+      this.parts = [];
+      this.nextBlink = NOW() + 2000 + Math.random() * 2000;
+      this.nextSaccade = NOW() + 1500;
+      this.look = { x: 0, y: 0 };
+      this.t0 = NOW();
+      this.last = NOW();
+      this.speaking = false;
 
-      this.target = {
-        sx: 1, sy: 1,
-        ox: 0, oy: 0,
-        tilt: 0,
-        yaw: 0,
-        blush: 0.4,
-        hands: 0
-      };
-
-      this.run = this.run.bind(this);
-      requestAnimationFrame(this.run);
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = 280 * dpr;
+      canvas.height = 280 * dpr;
+      canvas.style.width = '280px';
+      canvas.style.height = '280px';
+      this.x.scale(dpr, dpr);
     }
 
-    setState(newState) {
-      this.state = newState;
-      if (newState === 'sleeping') {
-        this.target.sy = 0.85;
-        this.target.sx = 1.08;
-        this.target.oy = 0.12;
-        this.target.blush = 0.2;
-      } else if (newState === 'thinking') {
-        this.target.tilt = -0.12;
-        this.target.oy = -0.05;
-        this.target.blush = 0.5;
-      } else if (newState === 'talking') {
-        this.target.blush = 0.6;
-        this.target.hands = 1;
+    anim(p, keys, after) {
+      this.tw = this.tw.filter(t => t.p !== p);
+      this.tw.push({ p, keys, i: 0, from: this.s[p], t0: NOW(), after });
+      this.lock[p] = 1;
+    }
+
+    setState(n) {
+      if (!STATES[n]) return;
+      this.state = n;
+      const c = this.cfg = STATES[n];
+      this.colT = hexRgb(c.col);
+      this.tg.tint = c.tint;
+
+      if (n === 'thinking') {
+        this.anim('tilt', [[-0.14, 220, E.out]]);
+        Snd.play('love');
+      } else if (n === 'listening') {
+        this.anim('tilt', [[0.16, 220, E.out]]);
+        this.anim('es', [[1.20, 180, E.out]]);
+        Snd.play('listen');
+      } else if (n === 'happy') {
+        this.anim('oy', [[-0.15, 140, E.out], [0, 260, E.back]]);
+        Snd.play('pop');
       } else {
-        // idle
-        this.target.sx = 1;
-        this.target.sy = 1;
-        this.target.ox = 0;
-        this.target.oy = 0;
-        this.target.tilt = 0;
-        this.target.blush = 0.4;
-        this.target.hands = 0;
+        this.blink();
       }
     }
 
-    update(dt) {
-      const t = NOW() / 1000;
-      
-      // Respiração suave natural
-      if (this.state !== 'sleeping') {
-        const breathe = Math.sin(t * 2.2) * 0.025;
-        this.target.sy = 1 + breathe;
-        this.target.sx = 1 - breathe * 0.6;
+    blink() {
+      if (this.lock.open) return;
+      this.anim('open', [[0.05, 60, E.inOut], [1, 120, E.out]]);
+    }
+
+    squash() {
+      Snd.play('slap');
+      this.anim('sy', [[0.78, 70, E.out], [1.12, 130, E.out], [1, 160, E.inOut]]);
+      this.anim('sx', [[1.18, 70, E.out], [0.94, 130, E.out], [1, 160, E.inOut]]);
+    }
+
+    spawnSleepZ() {
+      this.parts.push({
+        type: 'zzz',
+        char: Math.random() > 0.4 ? 'z' : 'Z',
+        x: 0.42 + Math.random() * 0.15,
+        y: -0.45 - Math.random() * 0.1,
+        vx: 0.12 + Math.random() * 0.08,
+        vy: -0.38 - Math.random() * 0.18,
+        sz: 0.16,
+        life: 2.8,
+        age: 0
+      });
+    }
+
+    update() {
+      const n = NOW(), dt = Math.min(0.05, (n - this.last) / 1000);
+      this.last = n;
+      const s = this.s, tg = this.tg, t = (n - this.t0) / 1000;
+
+      // Execução dos tweens
+      for (const tw of [...this.tw]) {
+        const k = tw.keys[tw.i];
+        const p = clamp((n - tw.t0) / k[1], 0, 1);
+        s[tw.p] = tw.from + (k[0] - tw.from) * k[2](p);
+        if (p >= 1) {
+          tw.from = k[0];
+          tw.i++;
+          tw.t0 = n;
+          if (tw.i >= tw.keys.length) {
+            this.tw.splice(this.tw.indexOf(tw), 1);
+            delete this.lock[tw.p];
+            this.tg[tw.p] = tw.keys[tw.keys.length - 1][0];
+            if (tw.after) tw.after();
+          }
+        }
       }
 
-      // Interpolação suave em direção aos alvos
-      const ease = 0.08;
-      this.s.sx = lerp(this.s.sx, this.target.sx, ease);
-      this.s.sy = lerp(this.s.sy, this.target.sy, ease);
-      this.s.ox = lerp(this.s.ox, this.target.ox, ease);
-      this.s.oy = lerp(this.s.oy, this.target.oy, ease);
-      this.s.tilt = lerp(this.s.tilt, this.target.tilt, ease);
-      this.s.blush = lerp(this.s.blush, this.target.blush, ease);
-      this.s.hands = lerp(this.s.hands, this.target.hands, ease);
-
-      // Balanço sutil do laço com física de mola
-      const bowTarget = Math.sin(t * 3.5) * 0.06 + (this.s.tilt * 0.35);
-      this.s.bowWobble = lerp(this.s.bowWobble, bowTarget, 0.12);
-
-      // Piscar de olhos natural
-      this.blinkTimer += dt;
-      if (this.blinkTimer > 3.8 + Math.random() * 2) {
-        this.blinkProgress = 1;
-        this.blinkTimer = 0;
-      }
-      if (this.blinkProgress > 0) {
-        this.blinkProgress -= dt * 6;
-        if (this.blinkProgress < 0) this.blinkProgress = 0;
+      // Micro-sacadas orgânicas do olhar quando ociosa
+      if (this.state !== 'sleeping' && n > this.nextSaccade) {
+        if (Math.random() < 0.6) {
+          this.look.x = (Math.random() - 0.5) * 0.65;
+          this.look.y = (Math.random() - 0.5) * 0.35;
+        } else {
+          this.look.x = 0;
+          this.look.y = 0;
+        }
+        this.nextSaccade = n + 2200 + Math.random() * 3000;
       }
 
-      // Sincronização labial ao falar
+      // Clamp suave de rotação de cabeça
+      tg.yaw = clamp(this.look.x * 0.45, -0.42, 0.42);
+      tg.pitch = clamp(this.look.y * 0.28, -0.24, 0.16);
+      tg.sy = 1 + Math.sin(t * 1.8) * 0.025;
+      tg.sx = 1 - Math.sin(t * 1.8) * 0.015;
+
+      // SINCRONISMO DE BOCA E MÃOS (IDÊNTICO AO ECHO)
       if (this.speaking) {
-        this.mouthOpen = Math.abs(Math.sin(t * 14)) * 0.85;
+        s.mouthOpen = (Math.sin(t * 16) + 1) / 2;
+        tg.tilt = Math.sin(t * 6) * 0.06;
+        s.hands = 1;
       } else {
-        this.mouthOpen = lerp(this.mouthOpen, 0, 0.2);
+        s.mouthOpen = 0;
+        s.hands = 0;
       }
+
+      // Modo Dormindo
+      if (this.state === 'sleeping') {
+        const breath = Math.sin(t * 1.5);
+        s.sy = 1 + breath * 0.045;
+        s.sx = 1 - breath * 0.02;
+        s.mouthOpen = 0;
+        s.hands = 0;
+        if (n > (this.nextZ || 0)) {
+          this.spawnSleepZ();
+          this.nextZ = n + 1200 + Math.random() * 600;
+        }
+      }
+
+      const kLook = 1 - Math.pow(0.002, dt), kGen = 1 - Math.pow(0.0008, dt);
+      for (const k in tg) {
+        if (this.lock[k]) continue;
+        s[k] += (tg[k] - s[k]) * ((k === 'yaw' || k === 'pitch') ? kLook : kGen);
+      }
+
+      this.col = mix(this.col, this.colT, 1 - Math.pow(0.002, dt));
+
+      if (this.state !== 'sleeping' && n > this.nextBlink) {
+        this.blink();
+        this.nextBlink = n + 2200 + Math.random() * 3200;
+      }
+
+      for (const p of this.parts) p.age += dt;
+      this.parts = this.parts.filter(p => p.age < p.life);
     }
 
     draw() {
-      const x = this.x, W = 280, H = 280, s = this.s;
+      const x = this.x, W = 280, H = 280, s = this.s, P = LUNA_SPEC;
       x.clearRect(0, 0, W, H);
 
       const R = W * 0.3;
@@ -148,7 +304,7 @@
       x.rotate(s.tilt);
       x.scale(s.sx, s.sy);
 
-      // 1. Corpo Superelipse Suave
+      // 1. Corpo Superelipse LUMINOSO
       const path = new Path2D();
       for (let i = 0; i <= 72; i++) {
         const a = i / 72 * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
@@ -158,147 +314,154 @@
       }
       path.closePath();
 
-      // Gradiente Base Lilás Noturno
-      const c0 = hexRgb(LUNA_SPEC.base[0]), c1 = hexRgb(LUNA_SPEC.base[1]);
+      // Gradiente Base Claro Lavanda
+      const c0 = hexRgb(P.base[0]), c1 = hexRgb(P.base[1]);
       const g = x.createLinearGradient(0, -ry, 0, ry);
       g.addColorStop(0, rgba(c0, 1));
       g.addColorStop(1, rgba(c1, 1));
       x.fillStyle = g;
       x.fill(path);
 
-      // Contorno Lavanda Neon Suave
-      x.strokeStyle = LUNA_SPEC.outline;
-      x.lineWidth = 2.0;
+      // Tintura de Estado
+      if (s.tint > 0.01) {
+        const tg2 = x.createLinearGradient(0, ry, 0, -ry * 0.3);
+        tg2.addColorStop(0, rgba(this.col, 0.75 * s.tint));
+        tg2.addColorStop(1, rgba(this.col, 0));
+        x.fillStyle = tg2;
+        x.fill(path);
+      }
+
+      // Borda Lavanda Neon Iluminada
+      x.strokeStyle = P.outline;
+      x.lineWidth = 2.4;
       x.stroke(path);
 
-      // 2. Bochechas Rosadas Fofas
-      const bl = Math.max(s.blush, 0.35);
+      // 2. Bochechas Rosadas Vivas
+      const bl = Math.max(s.blush, 0.38);
+      if (bl > 0.01) {
+        x.save();
+        x.clip(path);
+        const yo = Math.sin(s.yaw) * rx * 0.7;
+        x.fillStyle = `rgba(244, 114, 182, ${0.55 * bl})`;
+        for (const sd of [-1, 1]) {
+          x.beginPath();
+          x.ellipse(sd * rx * 0.52 + yo, ry * 0.18, R * 0.16, R * 0.09, 0, 0, Math.PI * 2);
+          x.fill();
+        }
+        x.restore();
+      }
+
+      // 3. Mãos Gesticulando
+      if (s.hands > 0.05) {
+        const hr = R * 0.18 * s.hands;
+        const t = NOW() / 1000;
+        x.fillStyle = '#fdf4ff';
+        x.strokeStyle = '#c084fc';
+        x.lineWidth = 2.2;
+
+        for (const sd of [-1, 1]) {
+          const hx = sd * rx * 1.25 * s.sx;
+          const hy = ry * 0.35 + Math.sin(t * 8 + sd) * 6;
+          x.beginPath();
+          x.arc(hx, hy, hr, 0, Math.PI * 2);
+          x.fill();
+          x.stroke();
+        }
+      }
+
+      // 4. Boca (Sincronizada perfeitamente com a fala e centralizada na face)
+      const mouthYaw = s.yaw;
+      let mouthPitch = P.eye.p - 0.20 + s.pitch + s.roll;
+      mouthPitch = ((mouthPitch + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+
+      const cpMouth = Math.cos(mouthPitch);
+      if (Math.cos(mouthYaw) * cpMouth >= 0.04) {
+        let mx = Math.sin(mouthYaw) * cpMouth * rx;
+        let my = -Math.sin(mouthPitch) * ry;
+
+        mx = clamp(mx, -rx * 0.45, rx * 0.45);
+        my = clamp(my, ry * 0.12, ry * 0.55);
+
+        const mfx = Math.max(0.20, Math.cos(mouthYaw));
+        const mfy = Math.max(0.20, cpMouth);
+
+        x.save();
+        x.clip(path);
+        x.translate(mx, my);
+        x.scale(mfx, mfy);
+
+        if (s.mouthOpen > 0.05) {
+          // Boca aberta falando 'o' (perfeitamente sincronizada com o áudio)
+          x.fillStyle = P.ink;
+          x.beginPath();
+          x.ellipse(0, 0, 5.5, 2.5 + s.mouthOpen * 6.5, 0, 0, Math.PI * 2);
+          x.fill();
+        } else if (this.state !== 'sleeping') {
+          // Sorriso suave fechado
+          x.strokeStyle = P.ink;
+          x.lineWidth = 2.4;
+          x.lineCap = 'round';
+          x.beginPath();
+          x.moveTo(-3.5, 0);
+          x.lineTo(3.5, 0);
+          x.stroke();
+        }
+        x.restore();
+      }
+
+      // 5. Olhos 2D com Projeção 3D da Face
       x.save();
       x.clip(path);
-      x.fillStyle = `rgba(246, 135, 179, ${0.45 * bl})`;
+      x.fillStyle = P.ink;
+      x.strokeStyle = P.ink;
+
+      const shape = this.cfg.eye;
       for (const sd of [-1, 1]) {
-        x.beginPath();
-        x.ellipse(sd * rx * 0.52, ry * 0.18, R * 0.17, R * 0.10, 0, 0, Math.PI * 2);
-        x.fill();
+        const yaw = sd * P.eye.sp + s.yaw;
+        let pitch = P.eye.p + s.pitch + s.roll;
+        pitch = ((pitch + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+
+        const cp = Math.cos(pitch);
+        if (Math.cos(yaw) * cp < 0.04) continue;
+
+        let px = Math.sin(yaw) * cp * rx, py = -Math.sin(pitch) * ry;
+        const fx = Math.max(0.18, Math.cos(yaw));
+        const fy = Math.max(0.18, cp);
+
+        x.save();
+        x.translate(px, py);
+        x.scale(fx, fy);
+        this.eye(shape, R * P.eye.w * s.es, R * P.eye.h * s.es, s.open, sd, P);
+        x.restore();
       }
       x.restore();
 
-      // 3. Olhos Brilhantes e Expressivos
-      const eyeY = ry * 0.02;
-      const eyeDist = rx * 0.42;
-      const eyeR = R * 0.15;
-
-      if (this.state === 'sleeping') {
-        // Olhos fechados dormindo (curva serena ^ ^)
-        x.strokeStyle = LUNA_SPEC.accent;
-        x.lineWidth = 3.5;
-        x.lineCap = 'round';
-        for (const sd of [-1, 1]) {
-          x.beginPath();
-          x.arc(sd * eyeDist, eyeY + 4, eyeR * 0.8, Math.PI * 0.15, Math.PI * 0.85);
-          x.stroke();
-        }
-      } else {
-        const blinkScale = Math.cos(this.blinkProgress * Math.PI * 0.5);
-        for (const sd of [-1, 1]) {
-          x.save();
-          x.translate(sd * eyeDist, eyeY);
-          x.scale(1, Math.max(0.08, blinkScale));
-
-          // Globo ocular escuro
-          x.fillStyle = LUNA_SPEC.eyeColor;
-          x.beginPath();
-          x.arc(0, 0, eyeR, 0, Math.PI * 2);
-          x.fill();
-
-          // Contorno neon
-          x.strokeStyle = LUNA_SPEC.accent;
-          x.lineWidth = 1.8;
-          x.stroke();
-
-          // Brilhos nos olhos (Highlight doce estilo anime)
-          x.fillStyle = '#ffffff';
-          x.beginPath();
-          x.arc(sd > 0 ? 3 : -2, -3, eyeR * 0.38, 0, Math.PI * 2);
-          x.fill();
-
-          x.fillStyle = 'rgba(255, 255, 255, 0.8)';
-          x.beginPath();
-          x.arc(sd > 0 ? -3 : 2, 3, eyeR * 0.20, 0, Math.PI * 2);
-          x.fill();
-
-          x.restore();
-        }
-      }
-
-      // 4. Boca Delicada
-      x.save();
-      x.translate(0, ry * 0.26);
-      if (this.mouthOpen > 0.05) {
-        // Boca aberta falando
-        x.fillStyle = '#f687b3';
-        x.beginPath();
-        x.ellipse(0, 0, R * 0.12, R * (0.05 + this.mouthOpen * 0.12), 0, 0, Math.PI * 2);
-        x.fill();
-        x.strokeStyle = LUNA_SPEC.accent;
-        x.lineWidth = 1.5;
-        x.stroke();
-      } else {
-        // Sorriso sutil
-        x.strokeStyle = LUNA_SPEC.accent;
-        x.lineWidth = 2.4;
-        x.lineCap = 'round';
-        x.beginPath();
-        x.arc(0, -2, R * 0.11, Math.PI * 0.2, Math.PI * 0.8);
-        x.stroke();
-      }
-      x.restore();
-
-      // 5. Mãozinhas Expressivas
-      if (s.hands > 0.05) {
-        const hr = R * 0.16 * s.hands;
-        const ht = NOW() / 1000 * 4.5;
-        for (const sd of [-1, 1]) {
-          x.save();
-          x.translate(sd * (rx * 0.88), ry * 0.42 + Math.sin(ht + sd * 1.5) * 4);
-          x.fillStyle = LUNA_SPEC.base[0];
-          x.strokeStyle = LUNA_SPEC.outline;
-          x.lineWidth = 2;
-          x.beginPath();
-          x.arc(0, 0, hr, 0, Math.PI * 2);
-          x.fill();
-          x.stroke();
-          x.restore();
-        }
-      }
-
       // ========================================================
-      // 6. O LAÇO NA CABEÇA (ANIMADO E ORGÂNICO)
+      // 6. O LAÇO NA CABEÇA (ORGANICAMENTE ACOPLADO AO CORPO)
       // ========================================================
-      // Posicionado no topo-direito da cabeça
       const bowX = rx * 0.42;
       const bowY = -ry * 0.94;
-      const bowScale = R * 0.32;
+      const bowScale = R * 0.34;
+      const tRibbon = NOW() / 1000 * 3.5;
+      const bowWobble = Math.sin(tRibbon) * 0.06 + s.tilt * 0.45;
 
       x.save();
       x.translate(bowX, bowY);
-      // Inclinação do laço segue a cabeça + balanço dinâmico suave
-      x.rotate(0.25 + s.bowWobble);
+      x.rotate(0.26 + bowWobble);
 
-      // Fitas caídas do laço (Ribbons balançando)
-      const tRibbon = NOW() / 1000 * 3.0;
+      // Fitas caídas do laço balançando
       for (const dir of [-1, 1]) {
-        const wave = Math.sin(tRibbon + dir * 1.2) * 4;
+        const wave = Math.sin(tRibbon + dir * 1.3) * 4;
         x.save();
         x.translate(dir * 5, 6);
-        x.fillStyle = LUNA_SPEC.bowSecondary;
-        x.strokeStyle = LUNA_SPEC.bowPrimary;
-        x.lineWidth = 1.2;
+        x.fillStyle = P.bow2;
+        x.strokeStyle = P.bow1;
+        x.lineWidth = 1.4;
 
         x.beginPath();
         x.moveTo(0, 0);
-        x.quadraticCurveTo(dir * 8 + wave, bowScale * 0.6, dir * 12 + wave, bowScale * 1.0);
-        x.lineTo(dir * 4 + wave, bowScale * 0.92);
+        x.quadraticCurveTo(dir * 8 + wave, bowScale * 0.6, dir * 12 + wave, bowScale * 1.05);
+        x.lineTo(dir * 4 + wave, bowScale * 0.94);
         x.quadraticCurveTo(dir * 2, bowScale * 0.5, 0, 0);
         x.closePath();
         x.fill();
@@ -306,32 +469,31 @@
         x.restore();
       }
 
-      // Asas do Laço (Loops esquerdo e direito)
+      // Asas do Laço com gradiente brilhante
       for (const dir of [-1, 1]) {
         x.save();
         x.scale(dir, 1);
 
-        const loopGrad = x.createLinearGradient(0, 0, bowScale * 0.9, -bowScale * 0.3);
-        loopGrad.addColorStop(0, LUNA_SPEC.bowPrimary);
-        loopGrad.addColorStop(1, LUNA_SPEC.bowSecondary);
+        const loopGrad = x.createLinearGradient(0, 0, bowScale * 0.95, -bowScale * 0.3);
+        loopGrad.addColorStop(0, P.bow1);
+        loopGrad.addColorStop(1, P.bow2);
 
         x.fillStyle = loopGrad;
         x.strokeStyle = '#ffffff';
-        x.lineWidth = 1.5;
+        x.lineWidth = 1.6;
 
         x.beginPath();
         x.moveTo(3, 0);
-        x.bezierCurveTo(bowScale * 0.5, -bowScale * 0.65, bowScale * 1.1, -bowScale * 0.25, bowScale * 0.95, 0);
-        x.bezierCurveTo(bowScale * 1.1, bowScale * 0.25, bowScale * 0.5, bowScale * 0.65, 3, 0);
+        x.bezierCurveTo(bowScale * 0.5, -bowScale * 0.68, bowScale * 1.15, -bowScale * 0.25, bowScale * 0.98, 0);
+        x.bezierCurveTo(bowScale * 1.15, bowScale * 0.25, bowScale * 0.5, bowScale * 0.68, 3, 0);
         x.closePath();
         x.fill();
 
-        // Contorno brilhante
-        x.strokeStyle = 'rgba(233, 216, 253, 0.7)';
+        x.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         x.stroke();
 
-        // Vinco interno do laço
-        x.strokeStyle = 'rgba(107, 70, 193, 0.6)';
+        // Vinco interno
+        x.strokeStyle = 'rgba(76, 29, 149, 0.5)';
         x.lineWidth = 1.5;
         x.beginPath();
         x.moveTo(8, -1);
@@ -342,39 +504,80 @@
       }
 
       // Nó Central do Laço
-      const knotGrad = x.createRadialGradient(0, 0, 1, 0, 0, bowScale * 0.26);
+      const knotGrad = x.createRadialGradient(0, 0, 1, 0, 0, bowScale * 0.28);
       knotGrad.addColorStop(0, '#ffffff');
-      knotGrad.addColorStop(0.4, LUNA_SPEC.bowKnot);
-      knotGrad.addColorStop(1, LUNA_SPEC.bowPrimary);
+      knotGrad.addColorStop(0.45, P.knot);
+      knotGrad.addColorStop(1, P.bow1);
 
       x.fillStyle = knotGrad;
-      x.strokeStyle = LUNA_SPEC.bowSecondary;
-      x.lineWidth = 1.8;
+      x.strokeStyle = P.bow2;
+      x.lineWidth = 2.0;
       x.beginPath();
-      x.ellipse(0, 0, bowScale * 0.24, bowScale * 0.20, 0, 0, Math.PI * 2);
+      x.ellipse(0, 0, bowScale * 0.25, bowScale * 0.21, 0, 0, Math.PI * 2);
       x.fill();
       x.stroke();
 
       x.restore(); // Fim do Laço
 
       x.restore(); // Fim da Cabeça
+
+      // Partículas ZZZ dormindo
+      for (const p of this.parts) {
+        const a = 1 - p.age / p.life;
+        const px = cx + p.x * R, py = cy + p.y * R;
+        const sz = p.sz * R * (0.8 + 0.4 * (1 - a));
+
+        x.save();
+        x.translate(px, py);
+        x.fillStyle = 'rgba(216, 180, 254, ' + clamp(a * 0.9, 0, 0.9) + ')';
+        x.font = `bold ${sz * 1.3}px -apple-system, sans-serif`;
+        x.textAlign = 'center';
+        x.textBaseline = 'middle';
+        x.fillText(p.char || 'z', 0, 0);
+        x.restore();
+      }
     }
 
-    run() {
-      const now = NOW();
-      const dt = Math.min((now - this.lastTime) / 1000, 0.1);
-      this.lastTime = now;
-      this.update(dt);
-      this.draw();
-      requestAnimationFrame(this.run);
+    eye(shape, w, h, open, sd, P) {
+      const x = this.x;
+      switch (shape) {
+        case 'pill': {
+          const hh = Math.max(h * open, w * 0.3);
+          rr(x, -w / 2, -hh / 2, w, hh, Math.min(w / 2, hh / 2));
+          x.fill();
+          break;
+        }
+        case 'dot':
+          x.beginPath();
+          x.arc(0, 0, w * 0.48, 0, Math.PI * 2);
+          x.fill();
+          break;
+        case 'happy':
+          x.lineWidth = w * 0.46;
+          x.lineCap = 'round';
+          x.beginPath();
+          x.arc(0, h * 0.16, w * 0.82, Math.PI * 1.12, Math.PI * 1.88);
+          x.stroke();
+          break;
+        case 'sleep':
+          x.lineWidth = w * 0.36;
+          x.lineCap = 'round';
+          x.beginPath();
+          x.arc(0, -h * 0.04, w * 0.65, Math.PI * 0.15, Math.PI * 0.85);
+          x.stroke();
+          break;
+        default:
+          rr(x, -w / 2, -h / 2, w, h, w / 2);
+          x.fill();
+      }
     }
   }
 
   // ========================================================
-  // INICIALIZAÇÃO DA INTERFACE & RECONHECIMENTO DE VOZ
+  // 5. INICIALIZAÇÃO DA INTERFACE & CONTROLE
   // ========================================================
   const canvas = document.getElementById('luna-canvas');
-  const luna = new LunaBot(canvas);
+  const mochi = new LunaBot(canvas);
 
   const micBtn = document.getElementById('mic-btn');
   const micLabel = document.getElementById('mic-label');
@@ -391,8 +594,32 @@
   let isListening = false;
   let recognition = null;
   let audioUnlocked = false;
-  let isSpeaking = false;
   let currentAudio = null;
+
+  // Rastreamento Ocular Tangencial idêntico ao Echo
+  function trackMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - (rect.left + rect.width / 2);
+    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - (rect.top + rect.height / 2);
+    mochi.look.x = Math.tanh(x / 120);
+    mochi.look.y = Math.tanh(y / 100);
+  }
+
+  window.addEventListener('pointermove', trackMove);
+  window.addEventListener('touchmove', trackMove, { passive: true });
+
+  // Toque / Slap na Luna
+  canvas.addEventListener('pointerdown', () => {
+    mochi.squash();
+  });
+
+  // Loop de renderização 60 FPS
+  function tick() {
+    mochi.update();
+    mochi.draw();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 
   function getLunaPin() {
     return localStorage.getItem('luna_pin') || '172086';
@@ -409,26 +636,45 @@
     if (audioUnlocked) return;
     audioUnlocked = true;
     audioToast.classList.add('hidden');
+    Snd.init();
     const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
     silent.play().catch(() => {});
   }
 
-  window.addEventListener('pointerdown', unlockAudio, { once: true });
+  window.addEventListener('pointerdown', unlockAudio, { passive: true });
+  window.addEventListener('touchstart', unlockAudio, { passive: true });
+  if (audioToast) {
+    audioToast.addEventListener('click', unlockAudio);
+  }
 
-  // Síntese de Voz com Microsoft Edge Neural (Voz Thalita)
+  // ========================================================
+  // 6. SÍNTESE DE VOZ COM SINCRONISMO EXATO DE BOCA
+  // ========================================================
+  function startSpeakingAnim() {
+    mochi.speaking = true;
+    mochi.setState('talking');
+    badgeTop.textContent = 'FALANDO';
+  }
+
+  function stopSpeakingAnim() {
+    mochi.speaking = false;
+    mochi.setState('idle');
+    badgeTop.textContent = 'PRONTA';
+  }
+
   async function speak(text) {
     if (!text) return;
     unlockAudio();
 
+    if (recognition && isListening) {
+      try { recognition.stop(); } catch(e){}
+    }
+
     if (currentAudio) {
       currentAudio.pause();
       currentAudio = null;
+      stopSpeakingAnim();
     }
-
-    luna.setState('talking');
-    luna.speaking = true;
-    isSpeaking = true;
-    badgeTop.textContent = 'FALANDO';
 
     try {
       const res = await fetch('/api/speak', {
@@ -446,34 +692,32 @@
       const audioUrl = URL.createObjectURL(blob);
       currentAudio = new Audio(audioUrl);
 
+      // Inicia a boca no exato instante em que o áudio começa a tocar
+      currentAudio.onplay = () => {
+        startSpeakingAnim();
+      };
+
       currentAudio.onended = () => {
-        luna.speaking = false;
-        isSpeaking = false;
-        luna.setState('idle');
-        badgeTop.textContent = 'PRONTA';
+        stopSpeakingAnim();
+        currentAudio = null;
         URL.revokeObjectURL(audioUrl);
       };
 
       currentAudio.onerror = () => {
-        luna.speaking = false;
-        isSpeaking = false;
-        luna.setState('idle');
-        badgeTop.textContent = 'PRONTA';
+        stopSpeakingAnim();
+        currentAudio = null;
       };
 
       await currentAudio.play();
     } catch (e) {
       console.warn('Erro ao reproduzir voz:', e);
-      luna.speaking = false;
-      isSpeaking = false;
-      luna.setState('idle');
-      badgeTop.textContent = 'PRONTA';
+      stopSpeakingAnim();
     }
   }
 
   // Conversação Inteligente com a Luna
   async function askLuna(message) {
-    luna.setState('thinking');
+    mochi.setState('thinking');
     badgeTop.textContent = 'PENSANDO';
     transcriptionText.textContent = `"${message}"`;
     voiceTranscription.classList.remove('hidden');
@@ -492,14 +736,14 @@
       voiceTranscription.classList.remove('hidden');
 
       if (data.state === 'sleeping') {
-        luna.setState('sleeping');
+        mochi.setState('sleeping');
         badgeTop.textContent = 'SONO';
       }
 
       await speak(reply);
     } catch (err) {
       console.warn('Erro ao falar com a Luna:', err);
-      luna.setState('idle');
+      mochi.setState('idle');
       badgeTop.textContent = 'PRONTA';
     }
   }
@@ -507,10 +751,7 @@
   // Reconhecimento de Voz (Microfone)
   function setupSpeech() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.warn('SpeechRecognition não suportado neste navegador.');
-      return;
-    }
+    if (!SpeechRecognition) return;
 
     recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
@@ -522,6 +763,7 @@
       micBtn.classList.add('listening');
       micLabel.textContent = 'OUVINDO...';
       badgeTop.textContent = 'OUVINDO';
+      mochi.setState('listening');
       transcriptionText.textContent = 'Pode falar, estou ouvindo...';
       voiceTranscription.classList.remove('hidden');
     };
@@ -543,7 +785,7 @@
   }
 
   function startListening() {
-    if (!recognition || isListening || isSpeaking) return;
+    if (!recognition || isListening || mochi.speaking) return;
     try {
       recognition.start();
     } catch (e) {}
@@ -553,8 +795,9 @@
     isListening = false;
     micBtn.classList.remove('listening');
     micLabel.textContent = 'OUVIR';
-    if (!isSpeaking) {
+    if (!mochi.speaking) {
       badgeTop.textContent = 'PRONTA';
+      mochi.setState('idle');
     }
   }
 
@@ -614,10 +857,10 @@
     if (e.key === 'Enter') submitPin();
   });
 
-  // Toque na mascote para saudação amigável
+  // Toque na mascote para saudação
   document.getElementById('luna-wrapper').addEventListener('click', () => {
-    if (!isSpeaking && !isListening) {
-      luna.setState('talking');
+    if (!mochi.speaking && !isListening) {
+      mochi.squash();
       speak("Oi! Eu sou a Luna. Toque no microfone para falar comigo!");
     }
   });
