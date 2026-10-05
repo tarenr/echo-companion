@@ -23,6 +23,10 @@ Aplicativos externos em status **Testing** podem ter refresh tokens com validade
 
 ## Comandos e confirmação
 
+Cards de consulta e conexão fecham automaticamente após o tempo de leitura (no mínimo 20 segundos; textos e listas maiores permanecem mais tempo). Tocar ou rolar o card adia o fechamento. Propostas com confirmação pendente permanecem abertas para confirmar ou cancelar.
+
+No rodapé, Celular, Agenda, Check e Ativo/Ouvir exibem somente ícones com a tela em pé. Com a tela deitada, os mesmos ícones aparecem junto dos textos. Os nomes acessíveis continuam disponíveis em ambas as orientações. Check preserva o raio e Ativo/Ouvir preserva o microfone.
+
 - “Quais compromissos tenho hoje?” ou “O que tenho na agenda amanhã?”
 - “Quais compromissos tenho entre 10 e 15 de outubro?”
 - “Marque dentista em 10 de outubro de 2026, das 14h às 15h.”

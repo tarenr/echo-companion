@@ -940,3 +940,15 @@ body.sleep-mode .bottom-bar {
 }
 
 
+
+/* Ícone do Celular preserva o botão e seu rótulo dinâmico. */
+#phone-mode-btn::before {
+  content: ''; width: 13px; height: 13px; flex-shrink: 0; background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='6' y='2' width='12' height='20' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M10 18h4' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+/* Rodapé: em pé somente ícones; deitado ícones e texto. */
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  .bottom-actions .footer-label, .bottom-actions #phone-mode-label { display: none; }
+  .bottom-actions .btn-icon { font-size: 18px; line-height: 1; }
+  .bottom-actions #phone-mode-btn::before, .bottom-actions .footer-icon, .bottom-actions .mic-button svg { width: 18px; height: 18px; flex-shrink: 0; }
+}

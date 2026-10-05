@@ -1422,6 +1422,11 @@
     clearTimeout(infoCardTimeout);
     const duration = Math.max(20000, ((replyText || '').length * 100) + 12000);
     infoCardTimeout = setTimeout(() => {
+      // Consultas fecham; propostas aguardam a confirmação do usuário.
+      if (typeof calendarActions !== 'undefined' && calendarActions &&
+          (typeof calendarConfirmation === 'undefined' || !calendarConfirmation)) {
+        calendarActions.hidden = true;
+      }
       if (echoWrapper.classList.contains('mode-info') && currentState?.mode !== 'info' && (!wazeLink || wazeLink.hidden) && (typeof calendarActions === 'undefined' || !calendarActions || calendarActions.hidden)) {
         echoWrapper.className = 'echo-wrapper mode-full';
         infoPanel.classList.remove('visible');
