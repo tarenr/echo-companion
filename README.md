@@ -42,7 +42,7 @@ Ele monitora em tempo real:
    - **Modo Dormindo (`sleeping`):** Ativado após 6 minutos de inatividade ou por comando de voz direto ("boa noite", "vai dormir", "soneca"). Apresenta arcos serenos nos olhos `( ˘ _ ˘ )`, respiração lenta e profunda (física senoidal), partículas flutuantes lilás de `z Z z` e dimerização suave de brilho da tela (economia para telas OLED). Desperta instantaneamente com toque na tela, comando de voz ou eventos em tempo real dos agentes de IA.
 7. **Telemetria do PC**: Uso contínuo de CPU e memória RAM (com alarme automático quando a CPU ultrapassa 90%).
 8. **Voz Neural Oficial em Português (Edge TTS Antonio)**: Fala com voz brasileira natural, dinâmica e de alta fidelidade (`pt-BR-AntonioNeural`), transmitida em streaming direto MP3 a 24kHz com entrega instantânea (~1s), fluidez conversacional e custo zero sem necessidade de chave de API externa.
-9. **Desbloqueio de Áudio e WakeLock em Toque Único**: O aviso inicial de ativação de som fecha imediatamente em qualquer toque na tela ou diretamente no toast, liberando o contexto de Web Audio e ativando o bloqueio de desligamento de tela (`WakeLock API`). O navegador solta esse bloqueio sempre que o app sai da frente (outro app, barra de notificações, tela bloqueada); por isso Echo e Luna pedem a tela acesa de novo ao voltar para a frente e a cada toque, se tiver sido perdida. Só funciona em HTTPS (endereço da Cloudflare) ou em `localhost`; pelo IP local em HTTP o navegador não permite.
+9. **Desbloqueio de Áudio e WakeLock em Toque Único**: O aviso inicial de ativação de som fecha imediatamente em qualquer toque na tela ou diretamente no toast, liberando o contexto de Web Audio e ativando o bloqueio de desligamento de tela (`WakeLock API`). O navegador solta esse bloqueio sempre que o app sai da frente (outro app, barra de notificações, tela bloqueada); por isso Echo, Luna e a página do robô pedem a tela acesa de novo ao voltar para a frente e a cada toque, se tiver sido perdida. Só funciona em HTTPS (endereço da Cloudflare) ou em `localhost`; pelo IP local em HTTP o navegador não permite.
 
 ---
 
@@ -171,6 +171,73 @@ Mascote companheira desenvolvida especialmente para uso pessoal com inteligênci
 
 ---
 
+## 🤖 Robô // Página de Testes do Segundo Personagem
+
+Página separada para avaliar o robô que pode, no futuro, substituir a "bolha" do Echo. Não muda nada no Echo.
+
+- **Endereço:** `/robo.html` (ex.: `https://echo.tfr-info.com.br/robo.html`). Usa o PIN do Echo: abra depois de entrar no Echo no mesmo navegador.
+- **Personagem:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_` (falando, `o`), etiqueta `>_` no alto da cabeça que vira o selo do estado (pontinhos trabalhando, `!` na aprovação, ponto verde ou vermelho no fim), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão. As mãos são as mesmas do Echo e aparecem ao falar.
+- **Rosto como peça única:** visor, olhos, boca e bochechas são desenhados a partir de um só ponto e uma só escala (`faceFrame` em `public/robo.js`). Ao olhar para os lados, para cima, para baixo ou no giro de comemoração, as partes andam juntas. No Echo atual as bochechas usam outra conta e não acompanham a boca.
+- **Botões:** estados (repouso, trabalhando, multiagente, pensando, aprovação, concluído, erro, ouvindo, dormindo), expressões (amor, surpresa, orgulho, feliz), guarda-roupa, acessórios de trabalho (lupa, teclado, impressora, comemoração, café, nenhum), animações (entrada, dançar 10 s, dançar com a música, som), ações (falar, piscar, toque, girar, pular), olhar (esquerda, direita, cima, baixo, centro, para o cartão, seguir o dedo), sensores (sensor de movimento, chacoalhar simulado) e janela flutuante.
+- **Motor:** cópia do motor de animação do Echo (`public/app.js`, classe `Bot`), como já acontece com a Luna; o desenho, as roupas (`public/robo-roupas.js`), as reações e as animações de entrada e dança são próprios. As ideias de guarda-roupa, estações e entrada vêm do Coucou, mas os desenhos e coreografias foram feitos do zero (a aparência e as animações do Mochi são reservadas pela licença do Coucou). No console do navegador, `robo` dá acesso ao personagem para testes.
+
+### Quando cada animação acontece
+
+| Animação | Acontece sozinha quando… | Botão de teste |
+|---|---|---|
+| Entrada (cai, amassa, quica, desliza, acena e volta ao centro) | a página abre; o robô acorda do modo dormindo (toque nele ou outro estado); você volta para a página depois de mais de 30 min fora | Entrada |
+| Troca de roupa (a peça antiga sobe e some, a nova cai e quica; óculos encolhem até o rosto) | você escolhe uma peça; no modo automático, ao abrir a página e quando vira o dia | peças do guarda-roupa |
+| Balanço das roupas (pompom, pontas, orelhas, laço, cachecol) | o tempo todo: pulos, inclinação, giro, toque, dança e celular inclinado ou chacoalhado | — |
+| Dança (balanço, pulinhos e mãos) | "Dançar com a música" ligado e o microfone ouvindo batidas; para 3 s depois da última | Dançar com a música / Dançar (10 s) |
+| Inclinar (olha e se inclina para o lado mais baixo) | "Sensor de movimento" ligado e o celular inclinado | Sensor de movimento |
+| Tonto (olhos em espiral por 2 s) | o celular é chacoalhado, com o sensor ligado | Chacoalhar (simulado) |
+
+### Reações ao toque
+
+| Gesto | Reação |
+|---|---|
+| 1 toque no corpo | achata e as roupas balançam |
+| 2 toques rápidos | pula e gira |
+| 5 ou mais toques em 2 s | fica bravo: olhos inclinados e vermelho por 2 s, chacoalha |
+| toque no visor | pisca e faz cara de surpresa |
+| toque na tela do peito | a tela mostra outro símbolo por 2 s (♥, :), !, ?, ♪) |
+| toque no chapéu | o chapéu pula e volta |
+| passar o dedo na cabeça (carinho) | olhos felizes, bochechas coradas e corações |
+| segurar 0,6 s | abre o guarda-roupa (como o botão direito no Coucou) |
+| tocar no robô dormindo | acorda com a animação de entrada |
+
+### Guarda-roupa
+
+- **Peças (11, desenhadas em código):** cabeça — chapéu de festa, gorro com pompom, coroa, chapéu de bruxa, gorro de Papai Noel, orelhas de coelho, laço, abóbora; rosto — óculos escuros, óculos redondos; pescoço — cachecol.
+- **Como usar:** tocar numa peça veste; tocar de novo tira. Uma peça por lugar (outro chapéu troca o atual) e dá para combinar os três lugares. "Tirar tudo" tira as três. Segurar o dedo no robô rola a página até o guarda-roupa. Dá para usar junto com os acessórios de trabalho (ex.: gorro e caneca de café).
+- **Óculos:** ficam no mesmo referencial do rosto, então acompanham os olhos ao olhar e no giro. Chapéus ficam no alto da cabeça, à direita da etiqueta `>_`, e deslizam um pouco junto com o rosto.
+- **Chapéu alto:** o robô recua aos poucos para a peça caber no quadro (até 75% com o chapéu de bruxa).
+- **Automático (estação):** ligado por padrão. Escolher uma peça à mão desliga o automático; o topo da página mostra "Automático: …" ou as peças vestidas. "Data de teste" mostra o que o automático vestiria em qualquer dia.
+
+| Período (Brasil) | Automático veste |
+|---|---|
+| 26/12 a 02/01 | chapéu de festa (Ano Novo) |
+| semana da Páscoa (segunda a domingo de Páscoa, calculada a cada ano) | orelhas de coelho |
+| 21/06 a 22/09 (inverno) | gorro e cachecol |
+| 25/10 a 31/10 | chapéu de bruxa |
+| 01 e 02/11 | abóbora |
+| 01/12 a 25/12 | gorro de Papai Noel |
+| 21/12 a 20/03 (verão), fora das datas acima | óculos escuros |
+| resto do ano | nada |
+
+- **Memória:** a página guarda no próprio navegador a roupa, o modo automático e o som (`robo_preferencias`).
+
+### Sons, microfone, sensor e janela flutuante
+
+- **Som:** gerado no navegador, sem arquivos (assobio na queda, "boing" no quique, tom no aceno e no pulo). Só toca com o botão "Som" ligado e depois de um toque na tela, por regra dos navegadores.
+- **Dançar com a música:** pede o microfone ao tocar no botão; analisa só os graves (40–160 Hz) para achar batidas, tudo no navegador: nada é gravado nem enviado. Não sabe qual música toca (a web não lê o Spotify); um som alto e contínuo, sem batidas, não faz dançar.
+- **Sensor de movimento:** o iPhone e as versões recentes do Chrome pedem permissão ao tocar no botão; nos demais, liga direto. Só funciona pelo endereço HTTPS. Sem leitura em 1,5 s (PC ou endereço HTTP), o botão desliga e avisa.
+- **Janela flutuante:** no PC (Chrome/Edge 116+), o robô vai para uma janela pequena sempre na frente, onde continua tocável, e volta à página quando ela fecha. No Android (Chrome 105+), ou se a janela do PC for recusada, vira um vídeo flutuante do robô por cima dos outros apps, só para ver; enquanto isso, um relógio em segundo plano (Worker) continua desenhando. Os dois abrem só com um toque no botão.
+
+- **Testes:** `tests/robo.test.js` confere que as partes do rosto mantêm as mesmas distâncias em qualquer olhar e giro, que o rosto não sai da cabeça, que a tela acesa é pedida de novo no Echo, na Luna e no robô, a Páscoa e a tabela de estações, a mola das roupas, o guarda-roupa e a transição, o recuo para chapéu alto, os óculos sobre os olhos, os gestos, o sensor e o detector de batidas.
+
+---
+
 ## 🏗️ Estrutura do Projeto
 
 ```text
@@ -188,6 +255,10 @@ echo-companion/
 │   ├── luna.css            # Estilos em Lavanda/Lilás Neon da Luna
 │   ├── manifest-luna.json  # Manifesto PWA da Luna
 │   ├── icon-luna.svg       # Ícone vetorial da Luna com laço
+│   ├── robo.html           # Página de testes do segundo personagem (robô)
+│   ├── robo.js             # Robô com rosto como peça única, reações, entrada, dança, sensores e botões
+│   ├── robo-roupas.js      # Guarda-roupa do robô: 11 peças, estações (com a Páscoa) e física das roupas
+│   ├── robo.css            # Estilos da página do robô
 │   └── sw.js               # Service Worker unificado com auto-update v4.0
 ├── src/
 │   ├── connectors/         # Conectores com os projetos locais

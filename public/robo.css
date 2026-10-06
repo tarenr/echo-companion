@@ -1,0 +1,188 @@
+/* Robô // página de testes do segundo personagem do Echo */
+:root {
+  --bg: #020617;
+  --cyan: #00e5ff;
+  --muted: #64748b;
+  --mono: 'Consolas', 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, #081630 0%, #01040a 100%) var(--bg);
+  color: #e2e8f0;
+  font-family: var(--mono);
+  /* Sem zoom: só arrastar e rolar */
+  touch-action: pan-x pan-y;
+}
+
+.robo-screen {
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  padding: max(env(safe-area-inset-top, 0px), 0.6rem) 1rem max(env(safe-area-inset-bottom, 0px), 0.8rem);
+}
+
+.robo-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: clamp(0.78rem, 0.7rem + 0.4vw, 0.95rem);
+  letter-spacing: 0.08em;
+}
+
+.robo-title {
+  color: var(--cyan);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.robo-status {
+  min-width: 0;
+  color: #94a3b8;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* O tamanho do robô vem do palco (robo.js); o canvas flutua no centro e não aumenta o palco */
+.robo-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#robo-canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
+  cursor: pointer;
+  /* Arrastar sobre o robô é carinho, não rolagem */
+  touch-action: none;
+}
+
+/* Em pé: botões embaixo, rolando dentro da própria área */
+.robo-controls {
+  max-height: 46dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding-bottom: 0.4rem;
+}
+
+.robo-group h2 {
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.robo-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 0.45rem;
+}
+
+.robo-btn {
+  min-height: 44px;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 12px;
+  background: rgba(4, 22, 34, 0.75);
+  color: #e2e8f0;
+  font: inherit;
+  font-size: clamp(0.78rem, 0.72rem + 0.3vw, 0.9rem);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.robo-btn:active {
+  transform: scale(0.97);
+}
+
+.robo-btn.active,
+.robo-btn.flash {
+  border-color: var(--cyan);
+  background: rgba(0, 229, 255, 0.16);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+}
+
+/* Grupo destacado ao segurar o robô (atalho do guarda-roupa) */
+.robo-group {
+  border-radius: 12px;
+  transition: background 0.4s;
+}
+
+.robo-group.flash {
+  background: rgba(0, 229, 255, 0.08);
+}
+
+/* Avisos de cada grupo (microfone negado, sem sensor etc.) */
+.robo-note {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #94a3b8;
+}
+
+/* Data de teste do modo automático */
+.robo-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.robo-date input {
+  min-height: 40px;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 10px;
+  background: rgba(4, 22, 34, 0.75);
+  color: #e2e8f0;
+  font: inherit;
+  color-scheme: dark;
+}
+
+.robo-date-result {
+  flex-basis: 100%;
+  color: #cbd5e1;
+}
+
+/* Deitado: robô à esquerda, botões à direita */
+@media (orientation: landscape) and (min-width: 640px) {
+  .robo-screen {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 42%);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .robo-top {
+    grid-column: 1 / -1;
+  }
+
+  .robo-controls {
+    max-height: none;
+  }
+}
