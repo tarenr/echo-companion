@@ -339,3 +339,24 @@ test('cabelos de teste da Luna: preto e cacheado só no robô de teste; o ruivo 
     assert.ok(!read(page).includes('robo-roupas-luna-teste.js'), `${page} não carrega as peças de teste`);
   }
 });
+
+test('cabelo cacheado é curto: nenhum cacho passa da base da cabeça (y = -86)', () => {
+  const sandbox = { console };
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  for (const file of ['robo-roupas.js', 'robo-roupas-luna.js', 'robo-roupas-luna-teste.js']) vm.runInContext(read(file), sandbox);
+  const shapes = [];
+  const recorder = new Proxy({}, {
+    get: (t, k) => (k in t ? t[k] : (...args) => {
+      if (k === 'arc') shapes.push(args[1] + args[2]);         // centro y + raio
+      if (k === 'ellipse') shapes.push(args[1] + args[3]);     // centro y + raio vertical
+      return { addColorStop() {} };
+    }),
+    set: (t, k, v) => { t[k] = v; return true; }
+  });
+  const it = sandbox.RoboRoupas.ITEMS.cabeloCacheado;
+  for (const a of [[0, 0], [1, -1]]) { it.back(recorder, 0, a); it.draw(recorder, 0, a); }
+  assert.ok(shapes.length > 10, 'desenhou os cachos');
+  const lowest = Math.max(...shapes);
+  assert.ok(lowest < -86, `cacho mais baixo em y = ${lowest.toFixed(1)}, acima da base da cabeça`);
+});

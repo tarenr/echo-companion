@@ -282,7 +282,7 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
   - **O que ela não tem:** acessórios de trabalho e modo automático (roupa só por escolha).
   - **Peças em teste (desde 06/10/2026)**, só nesta página, ainda não na Luna de verdade (`public/robo-roupas-luna-teste.js`):
     - "Cabelo preto": o mesmo corte comprido do ruivo, preto com brilho azulado.
-    - "Cabelo cacheado castanho": cachos de tamanhos variados em volta da cabeça até os ombros, com a franja parando acima do visor; o robô recua um pouco para os cachos caberem.
+    - "Cabelo cacheado castanho": curto, com cachos de tamanhos variados no alto e nos lados da cabeça, parando na altura das orelhas (não passa da base da cabeça), e franja de cachos acima do visor; o robô recua um pouco para os cachos caberem.
     - Os dois ficam no lugar da cabeça, então trocam com o cabelo ruivo, o laço e os chapéus. O corte comprido vem da função `longHair` de `robo-roupas-luna.js`.
   - **Como funciona:** o `robo.js` lê o personagem em `<body data-personagem>` e guarda as escolhas em `robo_luna_preferencias`, separadas das do Echo.
 - **Personagem:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_` (falando, `o`), quadro no alto da cabeça que só aparece durante ações (pontinhos trabalhando ou pensando, `!` na aprovação; some parado, ouvindo, dormindo, no fim e na entrada), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão. As mãos são as mesmas do Echo e aparecem ao falar.

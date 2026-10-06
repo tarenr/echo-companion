@@ -40,10 +40,11 @@
   }
 
   // Cachos de um lado (x positivo), espelhados para o outro; [x, y, raio]
-  // Tamanhos variados, para os cachos não parecerem bolinhas iguais
+  // Tamanhos variados, para os cachos não parecerem bolinhas iguais. Cabelo curto: os cachos de baixo param na
+  // altura das orelhas (y = -107), acima da base da cabeça (y = -86)
   const BACK_CURLS = [
     [0, -230, 19], [31, -229, 18], [59, -217, 20], [83, -197, 17], [99, -172, 19],
-    [107, -144, 16], [109, -116, 18], [105, -89, 15], [97, -66, 17], [85, -47, 14]
+    [106, -146, 16], [104, -122, 15]
   ];
   // Franja de cachos só no alto da cabeça (para antes do visor, que começa em y = -174)
   const FRONT_CURLS = [
@@ -59,27 +60,22 @@
     cabeloCacheado: {
       label: 'Cabelo cacheado castanho', slot: 'cabeca', owner: 'luna', anchor: 'robo', top: 34,   // cacho mais alto: 33 px acima da cabeça
       springs: [[40, 3.5, -1], [46, 3.5, 1]],
-      // Parte de trás: volume de cachos em volta da cabeça até os ombros; os de baixo balançam
+      // Parte de trás: cachos curtos em volta do alto e dos lados da cabeça; os dois de baixo balançam de leve
       back(x, t, a) {
-        // Fundo escuro entre os cachos, para não aparecer buraco atrás da cabeça
+        // Fundo escuro entre os cachos, para não aparecer buraco atrás da cabeça (acaba acima da base dela)
         x.beginPath();
-        x.ellipse(0, -150, 100, 84, 0, 0, Math.PI * 2);
+        x.ellipse(0, -165, 100, 70, 0, 0, Math.PI * 2);
         x.fillStyle = CASTANHO.dark;
         x.fill();
         for (const sd of [-1, 1]) {
-          const sw = (sd < 0 ? a[0] : a[1]) * 7;
-          x.beginPath();
-          x.ellipse(sd * 90 + sw * 0.5, -86, 24, 46, sd * -0.12, 0, Math.PI * 2);
-          x.fillStyle = CASTANHO.dark;
-          x.fill();
+          const sw = (sd < 0 ? a[0] : a[1]) * 3;
           BACK_CURLS.forEach(([cx, cy, r], i) => {
             if (cx === 0 && sd < 0) return;   // o do meio só uma vez
-            const swing = i >= 6 ? sw * (i - 5) / 4 : 0;
-            curl(x, sd * cx + swing, cy, r);
+            curl(x, sd * cx + (i >= 5 ? sw : 0), cy, r);
           });
         }
       },
-      // Frente: franja de cachos no alto da cabeça e cachos descendo pelos lados do rosto
+      // Frente: franja de cachos no alto da cabeça, parando acima do visor
       draw(x, t, a) {
         for (const sd of [-1, 1]) {
           const sw = (sd < 0 ? a[0] : a[1]) * 3;
