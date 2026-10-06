@@ -672,6 +672,12 @@
 
   window.addEventListener('pointerdown', unlockAudio, { passive: true });
   window.addEventListener('touchstart', unlockAudio, { passive: true });
+
+  // Sem zoom por gesto: cancela pinça (dois ou mais dedos) e o gesto de zoom do Safari
+  document.addEventListener('touchmove', (event) => {
+    if (event.touches && event.touches.length > 1) event.preventDefault();
+  }, { passive: false });
+  document.addEventListener('gesturestart', (event) => event.preventDefault());
   if (audioToast) {
     audioToast.addEventListener('click', unlockAudio);
   }

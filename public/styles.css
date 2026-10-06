@@ -33,20 +33,25 @@ html, body {
   background-color: var(--bg-color);
   font-family: var(--font-mono);
   color: #f8fafc;
+  /* Sem zoom: só arrastar e rolar (bloqueia pinça e toque duplo) */
+  touch-action: pan-x pan-y;
 }
 
 body {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* "safe": se o conteúdo passar da tela, alinha pelo topo em vez de cortar em cima e embaixo */
+  align-items: safe center;
+  justify-content: safe center;
   background: var(--bg-gradient);
 }
 
 /* Container do Celular (Full Screen) */
 .echo-screen {
   position: relative;
-  width: 100vw;
+  width: 100%;
+  /* Altura realmente visível (sem as barras do navegador e do Android); 100vh fica de reserva */
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -86,7 +91,7 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  font-size: 0.72rem;
+  font-size: clamp(0.7rem, 0.58rem + 0.4vw, 0.9rem);
   letter-spacing: 0.12em;
   color: var(--cyan-neon);
   opacity: 0.95;
@@ -221,12 +226,16 @@ body {
 /* Palco Central do Echo */
 .stage {
   flex: 1;
+  /* Pode encolher abaixo do conteúdo: o mascote se ajusta à área livre (app.js) */
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   z-index: 10;
   width: 100%;
+  /* padding-top reservado pelo app.js quando o balão aparece, para ele não cobrir o mascote */
+  transition: padding-top 0.3s ease;
 }
 
 /* Wrapper do Mascote com Física Suave */
@@ -425,14 +434,21 @@ body {
 .info-panel {
   position: absolute;
   right: 0.8rem;
-  width: 50%;
-  max-width: 470px;
-  padding-left: 1.2rem;
+  /* Altura limitada ao palco (entre a barra de cima e a de baixo); o que passar rola */
+  top: 0.4rem;
+  bottom: 0.4rem;
+  width: 56%;
+  max-width: 540px;
+  padding-left: 1.1rem;
+  padding-right: 0.3rem;
   border-left: 2px solid rgba(0, 229, 255, 0.25);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 0.45rem;
+  justify-content: safe center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  gap: 0.4rem;
   opacity: 0;
   transform: translateX(40px);
   pointer-events: none;
@@ -457,14 +473,19 @@ body {
   text-transform: uppercase;
 }
 
+/* Título compacto: o selo já diz o assunto; aqui vai o número principal */
 .main-stat-text {
-  font-size: clamp(1.3rem, 3.4vw, 2.1rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  font-size: clamp(1rem, 0.6rem + 1.4vw, 1.25rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   color: var(--amber-neon);
-  text-shadow: 0 0 20px var(--amber-glow);
+  text-shadow: 0 0 6px rgba(251, 191, 36, 0.25);
   word-break: break-word;
+}
+
+.main-stat-text:empty {
+  display: none;
 }
 
 .progress-track {
@@ -487,12 +508,17 @@ body {
 }
 
 .sub-detail-text {
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   color: #cbd5e1;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.15rem;
   opacity: 0.9;
+}
+
+.sub-detail-text span:empty,
+.sub-detail-text:not(:has(span:not(:empty))) {
+  display: none;
 }
 
 .sub-detail-muted {
@@ -503,10 +529,59 @@ body {
 .panel-extra-items {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  margin-top: 0.3rem;
+  gap: 0.25rem;
+  margin-top: 0.15rem;
   width: 100%;
 }
+
+/* Com linhas para ler, o cartão aceita toque e rolagem */
+.info-panel.visible.has-rows {
+  pointer-events: auto;
+}
+
+/* Linha de dados: bolinha de status, rótulo e valor */
+.panel-row {
+  display: grid;
+  grid-template-columns: 0.45rem minmax(0, max-content) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.5rem;
+  font-size: clamp(0.72rem, 0.62rem + 0.35vw, 0.9rem);
+  line-height: 1.3;
+  padding: 0.28rem 0.55rem;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 6px;
+  text-align: left;
+}
+
+.row-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.panel-row.status-ok .row-dot { background: var(--emerald-neon); }
+.panel-row.status-warn .row-dot { background: var(--amber-neon); }
+.panel-row.status-error .row-dot { background: var(--rose-neon); }
+.panel-row.status-none .row-dot { visibility: hidden; }
+
+.row-label {
+  color: #94a3b8;
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-value {
+  color: #e2e8f0;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+.panel-row.status-error .row-value { color: #fda4af; }
 
 .panel-extra-item {
   font-size: 0.74rem;
@@ -601,7 +676,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   border-radius: 9999px;
-  font-size: 0.62rem;
+  font-size: clamp(0.62rem, 0.52rem + 0.3vw, 0.78rem);
   font-weight: 700;
   letter-spacing: 0.05em;
   cursor: pointer;
@@ -684,18 +759,41 @@ body {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  width: auto;
-  max-width: min(90vw, 420px);
+  /* Largura pelo conteúdo: com left: 50%, "auto" ficava preso à metade direita e virava uma coluna estreita */
+  width: max-content;
+  max-width: min(90vw, 440px);
   text-align: center;
   box-sizing: border-box;
   word-break: break-word;
   transition: all 0.3s ease;
 }
 
+/* Altura fixa de 3 linhas: o texto sobe acompanhando a fala (rolagem controlada pelo app.js) */
+#transcription-text {
+  display: block;
+  min-width: 0;
+  line-height: 1.45;
+  max-height: calc(1.45em * 3);
+  overflow: hidden;
+}
+
 .voice-transcription.hidden {
   opacity: 0;
   transform: translateX(-50%) translateY(-10px);
   pointer-events: none;
+}
+
+/* Tela deitada e baixa: o balão fica ao lado do mascote (classe e --echo-half definidos pelo app.js) */
+.voice-transcription.beside {
+  top: 50%;
+  left: calc(50% + var(--echo-half, 140px) + 0.8rem);
+  transform: translateY(-50%);
+  max-width: min(calc(50% - var(--echo-half, 140px) - 1.6rem), 440px);
+  text-align: left;
+}
+
+.voice-transcription.beside.hidden {
+  transform: translateY(-50%) translateX(-10px);
 }
 
 /* Toast de Áudio Inicial */
@@ -837,7 +935,8 @@ body.sleep-mode .bottom-bar {
    ======================================================== */
 @media (orientation: portrait), (max-aspect-ratio: 1/1) {
   .echo-screen {
-    padding: env(safe-area-inset-top, 1.2rem) 1rem env(safe-area-inset-bottom, 1.2rem) 1rem;
+    /* Margem mínima em cima e embaixo, mesmo quando o aparelho informa área segura zero */
+    padding: max(env(safe-area-inset-top, 0px), 0.6rem) 1rem max(env(safe-area-inset-bottom, 0px), 0.9rem) 1rem;
   }
 
   .stage {
@@ -865,21 +964,28 @@ body.sleep-mode .bottom-bar {
     transform: translateY(-20%) scale(0.74);
   }
 
+  /* Com linhas de dados, o mascote encolhe e sobe mais para o cartão ocupar a metade de baixo */
+  .stage:has(.info-panel.visible.has-rows) .echo-wrapper.mode-info {
+    transform: translateY(-38%) scale(0.5);
+  }
+
   /* O painel de informações fica posicionado na metade inferior em modo retrato */
   .info-panel {
     position: absolute;
     right: auto;
     left: 50%;
     top: auto;
-    bottom: 4%;
-    width: 92%;
-    max-width: 440px;
+    bottom: 2%;
+    max-height: 64%;
+    width: 94%;
+    max-width: 460px;
     padding-left: 0;
-    padding-top: 1rem;
+    padding-right: 0;
+    padding-top: 0.8rem;
     border-left: none;
     border-top: 2px solid rgba(0, 229, 255, 0.25);
-    align-items: center;
-    text-align: center;
+    align-items: stretch;
+    text-align: left;
     transform: translate(-50%, 30px);
     transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -891,12 +997,11 @@ body.sleep-mode .bottom-bar {
 
   .info-panel .progress-track {
     width: 100%;
-    max-width: 320px;
   }
 
   .info-panel .sub-detail-text {
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start;
+    text-align: left;
   }
 
   .info-panel .voice-subtitle {
@@ -936,6 +1041,358 @@ body.sleep-mode .bottom-bar {
   }
   .agents-chips-row {
     width: auto;
+  }
+}
+
+/* ========================================================
+   FAIXA DE ATIVIDADE (Plano 2B): passo atual do agente e os anteriores
+   ======================================================== */
+.activity-ticker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.6rem;
+  font-size: clamp(0.7rem, 0.58rem + 0.4vw, 0.88rem);
+  line-height: 1.35;
+  color: #cbd5e1;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 8px;
+}
+
+.activity-ticker.hidden {
+  display: none;
+}
+
+.activity-step {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.5;
+}
+
+.activity-step.current {
+  opacity: 1;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.step-agent {
+  margin-right: 0.4rem;
+  color: var(--coral-neon);
+  text-transform: uppercase;
+}
+
+.step-project {
+  margin-left: 0.4rem;
+  font-weight: 400;
+  color: #64748b;
+}
+
+@media (orientation: landscape) and (min-width: 640px) {
+  .top-bar {
+    flex-wrap: wrap;
+  }
+
+  .activity-ticker {
+    flex-basis: 100%;
+  }
+}
+
+/* Tela baixa: só o passo atual e o anterior */
+@media (max-height: 640px) {
+  .activity-step:nth-child(n+3) {
+    display: none;
+  }
+}
+
+/* ========================================================
+   MODO CELULAR (Plano 2A): botão, cartão de aprovação/pergunta e aviso de modo computador
+   ======================================================== */
+.phone-mode-btn {
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #cbd5e1;
+}
+
+.phone-mode-btn.active {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--emerald-neon);
+  color: #6ee7b7;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.approval-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(1, 4, 10, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.approval-sheet.hidden {
+  display: none;
+}
+
+.approval-card {
+  width: min(100%, 460px);
+  max-height: 90vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem 1.1rem;
+  background: #07121f;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  border-radius: 18px;
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.25);
+}
+
+.approval-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.approval-timer {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--amber-neon);
+  font-variant-numeric: tabular-nums;
+}
+
+.approval-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #f8fafc;
+  word-break: break-word;
+}
+
+.approval-summary {
+  font-size: 0.95rem;
+  color: var(--amber-neon);
+  word-break: break-word;
+}
+
+.approval-project {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.approval-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.approval-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-height: 44px;
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  font: inherit;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.approval-option.selected {
+  border-color: var(--cyan-neon);
+  background: rgba(0, 229, 255, 0.15);
+}
+
+.option-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.option-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.approval-pin {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.5rem;
+  font-family: inherit;
+  font-size: 1.2rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+  color: #f8fafc;
+  background: #020617;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  border-radius: 10px;
+}
+
+.approval-error {
+  font-size: 0.8rem;
+  color: #fda4af;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.approval-btn {
+  flex: 1;
+  min-height: 52px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  border: 1px solid;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.approval-btn.primary {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--emerald-neon);
+}
+
+.approval-btn.secondary {
+  color: #fda4af;
+  background: rgba(244, 63, 94, 0.15);
+  border-color: var(--rose-neon);
+}
+
+.approval-link {
+  min-height: 40px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.approval-sheet [hidden] {
+  display: none;
+}
+
+.approval-btn:disabled,
+.approval-link:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.desktop-hint {
+  position: absolute;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: min(92%, 520px);
+  padding: 0.7rem 0.9rem;
+  font-size: 0.85rem;
+  color: #fde68a;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid var(--amber-neon);
+  border-radius: 12px;
+}
+
+.desktop-hint.hidden {
+  display: none;
+}
+
+.desktop-hint button {
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 1rem;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Visual em pé: topo e rodapé maiores, botões de 44 px dividindo a largura;
+   fontes proporcionais à largura da tela (mínimo e máximo) */
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  .top-bar-main {
+    font-size: clamp(0.78rem, 0.62rem + 0.7vw, 0.95rem);
+  }
+
+  .agents-header-tag {
+    font-size: clamp(0.68rem, 0.56rem + 0.5vw, 0.82rem);
+  }
+
+  .agent-chip {
+    font-size: clamp(0.7rem, 0.58rem + 0.55vw, 0.86rem);
+    padding: 0.25rem 0.6rem;
+  }
+
+  .activity-ticker {
+    font-size: clamp(0.74rem, 0.6rem + 0.6vw, 0.9rem);
+  }
+
+  .header-action-btn {
+    min-width: 40px;
+    min-height: 36px;
+  }
+
+  .bottom-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    font-size: 0.74rem;
+  }
+
+  #connection-status {
+    text-align: center;
+  }
+
+  .bottom-actions {
+    width: 100%;
+    min-width: 0;
+    gap: 0.4rem;
+  }
+
+  .footer-btn,
+  .mic-button {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 0 0.25rem;
+    font-size: 0.74rem;
+  }
+
+  .mic-button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .voice-transcription {
+    font-size: clamp(0.86rem, 0.7rem + 0.7vw, 1.05rem);
+    padding: 0.7rem 1.1rem;
+    max-width: min(92vw, 460px);
+  }
+
+  /* Rodapé mais alto: o aviso de som fica acima dos botões */
+  .unlock-audio-toast {
+    bottom: 6.5rem;
+    font-size: 0.8rem;
   }
 }
 

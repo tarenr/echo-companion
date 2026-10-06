@@ -49,11 +49,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Só o shell público (a mesma lista do precache) é guardado; arquivos protegidos por PIN nunca ficam no cache
+  const cacheable = STATIC_ASSETS.includes(url.pathname);
+
   // Estratégia Network First para o shell estático, com fallback para o cache
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+        if (cacheable && networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
@@ -71,5 +74,35 @@ self.addEventListener('fetch', (event) => {
           }
         });
       })
+  );
+});
+
+// Notificação do modo celular: só o tipo de pedido e o projeto (nada de comando nem caminho)
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (_) { data = {}; }
+  const title = data.title || 'Echo';
+  event.waitUntil(self.registration.showNotification(title, {
+    body: data.body || 'Abra o Echo para responder',
+    tag: data.tag || 'echo-aprovacao',
+    renotify: true,
+    requireInteraction: true,
+    vibrate: [200, 100, 200, 100, 300],
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: data.url || '/' }
+  }));
+});
+
+// Tocar na notificação abre (ou traz para frente) o Echo
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/', self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((client) => client.url.startsWith(self.location.origin));
+      if (open) return open.focus();
+      return self.clients.openWindow(target);
+    })
   );
 });

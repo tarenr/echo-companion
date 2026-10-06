@@ -3,7 +3,7 @@
 [![GitHub Repository](https://img.shields.io/badge/GitHub-tarenr%2Fecho--companion-blue?logo=github)](https://github.com/tarenr/echo-companion)
 [![License: ISC](https://img.shields.io/badge/License-ISC-green.svg)](https://opensource.org/licenses/ISC)
 
-> **Painel de mesa inteligente e minimalista para smartphone (local ou remoto via Cloudflare), integrado aos agentes de IA (Claude Code, Antigravity, Codex CLI) com Kaomoji expressivo, telemetria do PC, voz neural da OpenAI e proteção por PIN.**
+> **Painel de mesa inteligente e minimalista para smartphone (local ou remoto via Cloudflare), integrado aos agentes de IA (Claude Code, Antigravity, Codex CLI) com Kaomoji expressivo, telemetria do PC, voz neural gratuita do Microsoft Edge (Antonio) e proteção por PIN.**
 
 ---
 
@@ -36,6 +36,7 @@ Ele monitora em tempo real:
    - **Em pé (Retrato / Celular na mesa):** O mascote ocupa a parte superior e, ao responder consultas estruturadas de dados (Backups, Telemetria, Bancos, Cartões, Contas, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), desliza suavemente para cima e direciona o olhar para baixo (`mochi.look.y = 0.85`), abrindo o painel de cards neon na metade inferior sem espremer o texto.
    - **Deitado (Paisagem):** O mascote desliza suavemente para a esquerda e fixa o olhar para a direita (`mochi.look.x = 0.85`), mantendo o painel lateral clássico.
    - **Rotação Livre e Fluida:** O PWA opera com `orientation: any`, adaptando-se instantaneamente em tempo real quando o celular é girado. Ao finalizar a apresentação dos dados, retorna suavemente para o centro da tela (`.mode-full`).
+   - **Cartões compactos (`src/cards.js`):** o selo diz o assunto e o título traz o número principal (ex.: total dos saldos, `22/24 online`). Abaixo vêm linhas de rótulo e valor com uma bolinha de status (verde ok, âmbar atenção, vermelho erro): um banco, cartão, conta, serviço com problema, backup ou tarefa do Forge por linha, até 8 linhas. A barra de progresso só aparece quando o cartão tem um percentual (telemetria). Em pé, o mascote encolhe para o cartão ocupar a metade de baixo; deitado, o cartão fica entre as barras de cima e de baixo. Se passar do espaço, o cartão rola, e ele não fecha enquanto você rola ou toca nele; os eventos em tempo real dos agentes também não o fecham antes do tempo. Consulta que falhou aparece como "Indisponível" com o erro, nunca como sucesso.
 6. **Ciclo de Ociosidade e Modo Dormindo (`sleeping`)**:
    - **Ocioso (Idle):** Em repouso, alterna a cada 20 a 30s entre poses orgânicas (`¯\_( ¬ _ ¬ )_/¯`, `~( ˘ _ ˘ ~)`, `( ^ _ ^ )`).
    - **Xícara de Café (`coffee`):** Ativado após 3 minutos sem interação.
@@ -43,6 +44,11 @@ Ele monitora em tempo real:
 7. **Telemetria do PC**: Uso contínuo de CPU e memória RAM (com alarme automático quando a CPU ultrapassa 90%).
 8. **Voz Neural Oficial em Português (Edge TTS Antonio)**: Fala com voz brasileira natural, dinâmica e de alta fidelidade (`pt-BR-AntonioNeural`), transmitida em streaming direto MP3 a 24kHz com entrega instantânea (~1s), fluidez conversacional e custo zero sem necessidade de chave de API externa.
 9. **Desbloqueio de Áudio e WakeLock em Toque Único**: O aviso inicial de ativação de som fecha imediatamente em qualquer toque na tela ou diretamente no toast, liberando o contexto de Web Audio e ativando o bloqueio de desligamento de tela (`WakeLock API`). O navegador solta esse bloqueio sempre que o app sai da frente (outro app, barra de notificações, tela bloqueada); por isso Echo, Luna e a página do robô pedem a tela acesa de novo ao voltar para a frente e a cada toque, se tiver sido perdida. Só funciona em HTTPS (endereço da Cloudflare) ou em `localhost`; pelo IP local em HTTP o navegador não permite.
+10. **Sons do mascote (opcionais, só locais)**: arquivos `.wav` colocados em `data/sounds/` (pasta fora do repositório) são entregues pela rota `/api/sounds/:nome`, que exige PIN, e tocados nas trocas de estado (`work`, `think`, `approval`, `error`, `finish`, `sleep`), no toque (`slap`), nas expressões (`love`, `pop`, `proud`) e ao liberar o áudio (`greet`). Cada som toca só quando o estado muda, não a cada evento. Sem o arquivo, o Echo usa os tons sintetizados no navegador. Os sons nunca vão para `public/` nem para o git.
+11. **Alertas com prioridade sobre a escuta**: com o mãos-livres ativo (padrão), pedidos de aprovação e erros aparecem na hora, com painel e pose, mesmo enquanto o microfone está ouvindo; a fala do alerta espera o fim da escuta. Os demais estados preservam a pose de "ouvindo". Enquanto o microfone espera não há balão: o botão roxo (ATIVO) e a pose de escuta indicam o microfone ligado, e o balão só aparece com o texto que o Echo entendeu da sua fala.
+12. **Sem zoom por toque**: Echo e Luna bloqueiam pinça e toque duplo (`touch-action: pan-x pan-y` e cancelamento de gestos com dois dedos), evitando que a tela fique ampliada e pareça travada. Se o celular tiver "forçar ativação do zoom" ligado na acessibilidade do navegador, vale desligar.
+13. **Controles legíveis em pé**: em pé, topo e rodapé têm fontes maiores e os botões do rodapé dividem a largura com 44 px de altura (o status da conexão fica numa linha acima). Se a página for montada bem mais larga que a tela de um aparelho de toque (modo "Site para computador"), aparece uma vez um aviso para desativar esse modo.
+14. **Mascote proporcional e balão que não cobre o mascote**: o tamanho do Echo acompanha a área livre da tela (em pé, até 80% da largura e 380 px; deitado, até 42% da largura e 340 px) e o desenho continua nítido em qualquer tamanho. O balão de fala tem altura fixa de 3 linhas: quando o texto é maior, ele sobe acompanhando a fala (pela posição do áudio da voz neural, pela palavra dita pela voz do navegador ou, sem áudio, no ritmo de leitura); a sua fala transcrita mostra sempre as últimas palavras. Com o balão visível, o mascote fica abaixo dele e encolhe se faltar espaço; em tela deitada e baixa, o balão vai para o lado do mascote, que mantém o tamanho. Com um cartão aberto, o mascote reduzido vai para a área livre (acima do cartão em pé, à esquerda dele deitado, com o balão em cima dele); em pé, se o balão aparecer junto com o cartão, o cartão encolhe e rola para sobrar espaço entre os dois.
 
 ---
 
@@ -53,10 +59,15 @@ O Echo pode ser acessado de **dentro de casa (Wi-Fi)** ou de **qualquer lugar do
 - **URL Pública Oficial:** `https://echo.tfr-info.com.br`
 - **PIN de Segurança:** Configurado de forma privada no arquivo `.env` local (`ECHO_PIN`). Sem PIN definido no `.env`, o acesso externo fica bloqueado.
 - **Como funciona:**
-  - Requisições locais no próprio computador (`127.0.0.1`) são liberadas para que os agentes locais não sofram qualquer atraso.
-  - Qualquer requisição vinda pela internet através do Cloudflare Tunnel exige o **PIN de Acesso**.
-  - Sem o PIN correto, os endpoints `/api/stream`, `/api/speak` e `/api/events` retornam `401 Unauthorized`.
-  - No celular, você só digita o PIN uma vez: o navegador salva a credencial em cookie e `localStorage`.
+  - Requisições feitas no próprio computador (`127.0.0.1`, sem passar pelo túnel) são liberadas para que os agentes locais não sofram qualquer atraso.
+  - Qualquer requisição vinda pela internet (Cloudflare Tunnel) ou pela rede de casa exige o **PIN de Acesso**, enviado por cabeçalho (`x-echo-pin`), parâmetro `?pin=` ou cookie.
+  - Sem PIN, quem vem de fora só recebe o que as telas de entrada precisam: `/`, `index.html`, `app.js`, `styles.css`, `sw.js`, `manifest.json`, os ícones e os arquivos da Luna (`/luna`, `luna.*`, `manifest-luna.json`, `icon-luna.svg`). Todo o resto de `public/` e todas as rotas `/api/` (inclusive `/api/events`, `/api/sounds`, `/api/stream`, `/api/speak`) respondem `401`.
+  - **Limite de tentativas:** 10 PINs errados diferentes em 15 minutos bloqueiam aquele IP por 15 minutos (`429` com `Retry-After`). Os contadores do Echo e da Luna são separados, enviar sem PIN não conta como erro e repetir o mesmo PIN errado (cookie antigo, reconexão) conta uma vez. Reiniciar o serviço zera os contadores. No Wi-Fi, o celular e o PC saem pelo mesmo IP na internet.
+  - O IP informado pelo Cloudflare (`cf-connecting-ip`) só é aceito quando a conexão vem do próprio PC, onde roda o túnel; vindo da rede de casa, vale o endereço real.
+  - No celular, você só digita o PIN uma vez: o navegador o guarda no `localStorage` e num cookie `HttpOnly` (com `Secure` quando o acesso vem pelo Cloudflare).
+  - O log (`echo.log`) mostra o IP real de quem vem pelo Cloudflare e esconde o PIN que vem na URL (`pin=***`).
+  - O Service Worker só guarda no celular os arquivos da tela de entrada; nada protegido por PIN fica no cache.
+  - Nomes de agentes e textos que chegam do servidor são exibidos sempre como texto, nunca como HTML.
 
 ---
 
@@ -100,11 +111,44 @@ O Echo foi configurado como um serviço autônomo e permanente no **Agendador de
 
 ## 🔌 Integração com os Agentes de IA
 
-O Echo inclui um despachante universal ultrarrápido (`bin/dispatcher.js`) que envia eventos em menos de 50ms para a porta 4884 via HTTP, sem jamais bloquear ou atrasar a execução dos agentes.
+O Echo inclui um despachante universal (`bin/dispatcher.js`) que envia eventos para a porta 4884 via HTTP, sem jamais bloquear ou atrasar a execução dos agentes: processa cada chamada uma única vez, espera no máximo 300 ms pelos dados do agente e sempre termina com código 0 (teto de 900 ms), mesmo com o Echo desligado.
 
-- **Claude Code:** Configurado em `~/.claude/settings.json` nos eventos `PreToolUse` e `Stop`.
-- **Antigravity:** Configurado em `~/.gemini/config/hooks.json` interceptando execuções de ferramentas e finalização.
-- **Codex CLI:** Configurado em `~/.codex/config.toml` através do disparador `notify` chamando `bin/codex-notify.cmd`.
+- **Claude Code:** configurado em `~/.claude/settings.json` nos eventos `UserPromptSubmit`, `PreToolUse`, `PermissionRequest`, `Notification` e `Stop`, no formato atual de hooks (cada comando dentro de `"hooks": [{ "type": "command", "command": "...", "timeout": 5 }]`). O despachante lê a ferramenta, o arquivo ou comando e a pasta do projeto: `Write`/`Edit`/`MultiEdit`/`NotebookEdit` e comandos que escrevem viram "implementando"; o resto, "pesquisando". Um pedido de permissão acende a pose de aprovação; as notificações em que o Claude espera você (`idle_prompt`, `elicitation_dialog`, `agent_needs_input`) acendem a espera; as demais são ignoradas. O Claude Code não recebe nenhuma resposta do despachante. Mudanças nos hooks só valem em sessões novas do Claude Code.
+- **Antigravity:** Configurado em `~/.gemini/config/hooks.json` interceptando execuções de ferramentas e finalização. Só o Antigravity recebe a resposta `{"decision":"allow"}` no `PreToolUse`.
+- **Codex CLI:** Configurado em `~/.codex/config.toml` através do disparador `notify`: o próprio Codex chama o executável dele e passa `bin/codex-notify.cmd` como `--previous-notify`. O `.cmd` muda o console para UTF-8 (`chcp 65001`) para os acentos chegarem certos.
+- **Privacidade dos comandos:** o despachante nunca envia o comando inteiro. Vai só o programa e o primeiro argumento (ex.: `Bash: npm test`), com valores longos e `CHAVE=valor` escondidos (`***`), ou o nome do arquivo sem o caminho.
+- **Faixa de atividade:** abaixo do agente, no topo, o Echo mostra o passo atual (ex.: `✏️ Edit server.js • echo-companion`) e os 3 anteriores mais apagados (2 em telas baixas). Ícones: 🔍 leitura, ✏️ escrita, ⌘ comando, ✋ permissão, ❓ pergunta, ✓ turno concluído. Com mais de um agente, o nome dele aparece antes do passo. O Claude Code e o Antigravity mostram cada passo (o Antigravity com os nomes internos das ferramentas); o Codex só avisa o fim do turno. A faixa some quando o Echo volta ao STANDBY.
+
+---
+
+## 📲 Aprovar pelo celular (modo celular)
+
+Com o modo celular ligado, os pedidos de permissão e as perguntas (`AskUserQuestion`) do **Claude Code** aparecem num cartão no Echo, e você responde de onde estiver. Codex e Antigravity não entram: o hook deles não permite esperar uma decisão.
+
+**Configuração (uma vez):**
+1. Defina `ECHO_APPROVAL_PIN` no `.env` (um segundo PIN, diferente do `ECHO_PIN`) e registre-o no `credenciais.md`. Sem ele, o modo celular fica desativado.
+2. As chaves de notificação (`ECHO_VAPID_PUBLIC_KEY`, `ECHO_VAPID_PRIVATE_KEY`, `ECHO_VAPID_SUBJECT`) ficam no `.env`. Para gerar um par novo: `npx web-push generate-vapid-keys`. Trocar as chaves invalida as inscrições, e cada celular precisa ativar as notificações de novo.
+3. Reinicie a tarefa `EchoCompanion` para carregar o `.env`.
+
+**Uso:**
+- Toque em **CELULAR** no rodapé e digite o segundo PIN para ligar (o botão fica verde). No mesmo toque o Android pede permissão de notificação. Para desligar, basta tocar de novo. O modo vive só na memória do servidor e volta desligado a cada reinício.
+- **PIN lembrado:** depois de ligar o modo, o segundo PIN fica lembrado **só na memória** daquele celular (nunca gravado) e é enviado sozinho em cada decisão; o campo some do cartão. Ele é esquecido ao desligar o modo, se o servidor recusar o PIN ou quando o app é fechado ou recarregado (aí o cartão pede o PIN uma vez e volta a lembrar). O servidor continua exigindo o segundo PIN em cada decisão.
+- **Pedido de permissão:** o cartão mostra a ferramenta e o programa ou arquivo (nunca o comando inteiro), o projeto e a contagem regressiva. **PERMITIR** e **NEGAR** usam o segundo PIN; **Responder no terminal** devolve o pedido ao terminal na hora.
+- **Pergunta do Claude:** uma pergunta por vez, com as opções como botões. Na multi-seleção, marque uma ou mais e toque em **ENVIAR**. O envio usa o segundo PIN.
+- **Notificação:** com a tela bloqueada chega só "Claude Code precisa de aprovação" ou "Claude Code fez uma pergunta" e o nome do projeto. Tocar abre o Echo.
+
+**Como funciona:**
+- `bin/approval-hook.js` roda nos eventos `PermissionRequest` e `PreToolUse` (matcher `AskUserQuestion`) do `~/.claude/settings.json`, com `timeout: 130`, em paralelo ao despachante.
+- O hook só espera quando o modo está ligado, o segundo PIN está configurado e o celular é alcançável: conectado agora (pela internet ou pela rede) **ou** com uma inscrição de notificação registrada, para avisar com a tela bloqueada (o Android corta a conexão do app quando a tela bloqueia). Nos outros casos, ou com o Echo desligado, ele sai na hora sem resposta e o terminal pergunta como sempre. O motivo aparece no `echo.log` (`pedido não enviado ao celular (modo_desligado | sem_celular | sem_segundo_pin)`).
+- **O Claude Code só mostra o pedido no terminal depois que o hook responde.** Com o modo ligado, cada pedido espera até 110 s pelo celular antes de aparecer no terminal. Desligue o modo quando estiver no PC.
+- Cada pedido tem um identificador aleatório, vale por no máximo 120 s e aceita uma única resposta. Uma resposta depois do prazo é recusada; se o hook for interrompido, o pedido é cancelado; reiniciar o servidor invalida todos.
+- O hook nunca libera sozinho: só envia ao Claude Code uma decisão que veio do celular.
+- **Segurança das rotas:**
+  - criar pedido (`POST /api/approvals/request`) só a partir do próprio PC;
+  - decidir (`POST /api/approvals/:id/decision`), ligar o modo (`POST /api/approvals/mode`) e inscrever notificações (`POST /api/push/subscribe`) exigem o PIN do Echo e a origem da página presente e igual ao endereço do Echo;
+  - permitir, negar, responder e ligar o modo exigem também o segundo PIN no cabeçalho `x-echo-approval-pin`, inclusive a partir do próprio PC;
+  - o segundo PIN tem limite próprio: 5 erros diferentes em 15 minutos bloqueiam aquele IP por 15 minutos.
+- As inscrições de notificação ficam em `data/push/subscriptions.json` (fora do git); inscrições vencidas são removidas no envio. A variável `ECHO_PUSH_FILE` troca esse arquivo (usada pelos testes, para não mexer nas inscrições reais).
 
 ---
 
@@ -143,7 +187,7 @@ Validação automatizada: `node --test tests/navigation.test.js`. Os testes usam
 
 O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado diretamente aos sistemas e bancos de dados locais do ecossistema Estratégia Nerd via Function Calling:
 
-- ⚡ **Briefing do Sistema & Verificações (`executar_briefing_sistema` / Botão `CHECK` / `POST /api/briefing`):** Dispara uma checagem integrada do ecossistema com saudação contextual pelo horário de Brasília, verificando os 24 serviços e bancos, conferindo a execução dos backups diários e agendamentos do Windows, listando as tarefas pendentes no The Forge e lendo e-mails não lidos. O Echo responde em áudio neural fluente e apresenta o card consolidado com layout espaçoso sem sobreposições.
+- ⚡ **Briefing do Sistema & Verificações (`executar_briefing_sistema` / Botão `CHECK` / `POST /api/briefing`):** Dispara uma checagem integrada do ecossistema com saudação contextual pelo horário de Brasília, verificando os 24 serviços e bancos, conferindo a execução dos backups diários e agendamentos do Windows, contando as tarefas pendentes no The Forge e lendo e-mails não lidos. O Echo responde em áudio neural e mostra um cartão compacto, uma linha por item: serviços online (até 2 com problema listados), backups e agendadas numa linha só (`3/3 OK`, com uma linha extra para cada falha), total de pendências do Forge (`26 pendentes em 4 projetos`) e as pendências de até 4 projetos, do maior para o menor (o restante vira `+N projetos`), e e-mails quando configurados. As pendências vêm da contagem de cada projeto no Forge (tarefas totais − concluídas); títulos de tarefas não aparecem no CHECK.
 - 🕒 **Tarefas Agendadas do Windows (`src/connectors/scheduledTasks.js`):** Consulta segura com cache de 60s via `Get-ScheduledTaskInfo` para checar os backups diários de todos os projetos, backup do blog/banco de dados e publicador do Instagram.
 - 📧 **Conector Modular de E-mails (`src/connectors/email.js`):** Integração IMAP nativa sobre TLS pronta para consultar a quantidade de e-mails não lidos na Caixa de Entrada via credenciais seguras no `.env`.
 - 🟢 **Monitor de Serviços em Tempo Real (`consultar_monitor_servicos`):** Conecta-se ao monitor contínuo NerdOPS (`:5000`) com fallback para o The Forge (`:4477`), checando a saúde operacional de todos os apps locais, bancos de dados (SQLite, MySQL, MariaDB, PostgreSQL), túneis Cloudflare e integrações de todos os 5 projetos em menos de 50ms.
@@ -243,8 +287,11 @@ Página separada para avaliar o robô que pode, no futuro, substituir a "bolha" 
 ```text
 echo-companion/
 ├── bin/
+│   ├── approval-hook.js    # Hook do modo celular: espera a aprovação/resposta do celular (nunca libera sozinho)
 │   ├── codex-notify.cmd    # Wrapper para hook do Codex CLI
-│   └── dispatcher.js       # Bridge HTTP ultrarrápido com classificação de leitura vs escrita
+│   └── dispatcher.js       # Bridge HTTP com classificação de leitura vs escrita e comandos resumidos
+├── data/                   # Banco SQLite da memória e sons opcionais em data/sounds/ (fora do git)
+├── docs/                   # Guias: Google Agenda, opções de voz e ferramentas do ecossistema
 ├── public/
 │   ├── app.js              # Cliente SSE, física do mascote Echo, áudio neural e PIN auth
 │   ├── index.html          # Interface OLED do Echo com botões de ação e telemetria
@@ -259,20 +306,30 @@ echo-companion/
 │   ├── robo.js             # Robô com rosto como peça única, reações, entrada, dança, sensores e botões
 │   ├── robo-roupas.js      # Guarda-roupa do robô: 11 peças, estações (com a Páscoa) e física das roupas
 │   ├── robo.css            # Estilos da página do robô
-│   └── sw.js               # Service Worker unificado com auto-update v4.0
+│   └── sw.js               # Service Worker (cache v5.1 só do shell público, auto-update)
 ├── src/
 │   ├── connectors/         # Conectores com os projetos locais
 │   │   ├── briefing.js     # Orquestrador de briefing e saudação diária
 │   │   ├── email.js        # Leitura opcional de e-mails não lidos via IMAP TLS
 │   │   ├── estrategiaNerd.js # Métricas e agendamentos do Blog/Instagram
 │   │   ├── forge.js        # Projetos, tarefas e status de backups
+│   │   ├── googleCalendar.js # Cliente da API do Google Agenda
 │   │   ├── gymOs.js        # Treinos, streaks e missões RPG
 │   │   ├── scheduledTasks.js # Status do Windows Task Scheduler e backups
 │   │   ├── servicesMonitor.js # Monitor em tempo real de serviços, bancos e túneis (NerdOPS)
-│   │   └── strategyHub.js  # Saldos bancários, cartões e contas a pagar
+│   │   ├── strategyHub.js  # Saldos bancários, cartões e contas a pagar
+│   │   └── weather.js      # Previsão do tempo (Open-Meteo)
+│   ├── calendarAuth.js     # OAuth do Google Agenda com tokens criptografados
+│   ├── calendarRoutes.js   # Rotas /api/calendar e comandos de agenda por voz
+│   ├── calendarService.js  # CRUD da agenda com confirmação por dispositivo
+│   ├── calendarStore.js    # Armazenamento local criptografado da agenda
+│   ├── approvals.js        # Pedidos do modo celular: prazo, uso único, resumo seguro e texto da notificação
+│   ├── cards.js            # Cartões de dados: título com o número principal e linhas com status
 │   ├── memory.js           # Memória de longo prazo e preferências em SQLite
+│   ├── navigation.js       # Destinos salvos e links do Waze
 │   └── tools.js            # Definição e execução das ferramentas de Function Calling
-├── package.json            # Dependências mínimas
+├── tests/                  # Testes (node --test): cartões, agenda e navegação, sem banco real
+├── package.json            # Dependências mínimas; `npm test` roda os testes
 ├── server.js               # Hub local (SSE, webhook, telemetria, TTS, briefing, trava de PIN)
 └── README.md               # Documentação técnica e guia de uso
 ```

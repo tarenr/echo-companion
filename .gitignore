@@ -16,6 +16,12 @@ data/voices/cache/
 __pycache__/
 *.pyc
 
+# Índice local do CodeGraph (gerado, nunca commitado)
+/.codegraph/
 
+
+
+# Inscrições de notificação push dos celulares (modo celular)
+data/push/
 
 data/location/

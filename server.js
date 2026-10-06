@@ -9,6 +9,7 @@ const memory = require('./src/memory');
 const tools = require('./src/tools');
 const navigation = require('./src/navigation');
 const briefing = require('./src/connectors/briefing');
+const cards = require('./src/cards');
 
 // Inicializa banco de memória persistente SQLite
 memory.initMemory().then(() => {
@@ -66,7 +67,7 @@ const localEnvPath = path.resolve(__dirname, '.env');
 if (fs.existsSync(localEnvPath)) {
   try {
     const localEnv = fs.readFileSync(localEnvPath, 'utf8');
-    for (const key of ['ECHO_PIN', 'LUNA_PIN', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET', 'GOOGLE_CALENDAR_REDIRECT_URI', 'GOOGLE_CALENDAR_ENCRYPTION_KEY', 'LOCATION_ENCRYPTION_KEY', 'LOCATION_GOOGLE_GEOCODING_KEY']) {
+    for (const key of ['ECHO_PIN', 'LUNA_PIN', 'ECHO_APPROVAL_PIN', 'ECHO_VAPID_PUBLIC_KEY', 'ECHO_VAPID_PRIVATE_KEY', 'ECHO_VAPID_SUBJECT', 'ECHO_PUBLIC_ORIGIN', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET', 'GOOGLE_CALENDAR_REDIRECT_URI', 'GOOGLE_CALENDAR_ENCRYPTION_KEY', 'LOCATION_ENCRYPTION_KEY', 'LOCATION_GOOGLE_GEOCODING_KEY']) {
       const m = localEnv.match(new RegExp(`^${key}=(.*)$`, 'm'));
       if (m && m[1].trim() && !process.env[key]) {
         process.env[key] = m[1].trim().replace(/^['"]|['"]$/g, '');
@@ -83,17 +84,41 @@ const PORT = process.env.PORT || 4884;
 // Sem PIN configurado, o acesso externo fica bloqueado (não há valor padrão)
 const ECHO_PIN = (process.env.ECHO_PIN || '').trim();
 const LUNA_PIN = (process.env.LUNA_PIN || '').trim();
+// Segundo PIN: exigido para aprovar, negar e responder pelo celular. Sem ele, o modo celular fica desativado.
+const ECHO_APPROVAL_PIN = (process.env.ECHO_APPROVAL_PIN || '').trim();
 if (!ECHO_PIN) console.warn('⚠️ ECHO_PIN não configurado: acesso externo ao Echo bloqueado.');
 if (!LUNA_PIN) console.warn('⚠️ LUNA_PIN não configurado: acesso externo à Luna bloqueado.');
+if (!ECHO_APPROVAL_PIN) console.warn('⚠️ ECHO_APPROVAL_PIN não configurado: aprovação pelo celular desativada.');
 
 function pinMatches(candidate, expected) {
   return Boolean(expected) && candidate !== undefined && candidate !== null && String(candidate).trim() === expected;
 }
 
+function socketAddress(req) {
+  return req.socket?.remoteAddress || '';
+}
+
+function isLoopbackAddress(ip) {
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+}
+
+// O IP informado pelo Cloudflare só vale quando a conexão vem do cloudflared, que roda neste PC.
+// Vindo da rede local, o cabeçalho é ignorado e vale o endereço real da conexão.
+function clientAddress(req) {
+  const peer = socketAddress(req);
+  const cfIp = req.headers['cf-connecting-ip'];
+  return isLoopbackAddress(peer) && cfIp ? String(cfIp) : peer;
+}
+
+function isViaCloudflare(req) {
+  return isLoopbackAddress(socketAddress(req)) && Boolean(req.headers['cf-connecting-ip']);
+}
+
 app.use((req, res, next) => {
-  // Códigos e state OAuth não devem aparecer em logs de requisição.
-  const loggedUrl = req.path.startsWith('/api/calendar/') ? req.path : req.url;
-  console.log(`[HTTP ${req.method}] ${loggedUrl} (${req.ip})`);
+  // Códigos e state OAuth não devem aparecer em logs de requisição; o PIN na URL é mascarado.
+  const loggedUrl = req.path.startsWith('/api/calendar/') ? req.path : req.originalUrl.replace(/([?&]pin=)[^&]*/gi, '$1***');
+  const origin = isViaCloudflare(req) ? `${clientAddress(req)} via Cloudflare` : socketAddress(req);
+  console.log(`[HTTP ${req.method}] ${loggedUrl} (${origin})`);
   next();
 });
 
@@ -108,67 +133,116 @@ function parseCookies(cookieHeader) {
     name = name?.trim();
     if (!name) return;
     const value = rest.join('=').trim();
-    list[name] = decodeURIComponent(value);
+    try {
+      list[name] = decodeURIComponent(value);
+    } catch (_) {
+      list[name] = value;
+    }
   });
   return list;
 }
 
-function isAuthorized(req) {
-  const cfIp = req.headers['cf-connecting-ip'];
-  const isFromCloudflare = Boolean(cfIp);
+// Apenas conexões locais diretas (sem passar pelo Cloudflare Tunnel) são confiadas sem PIN
+function isLocalDirect(req) {
+  return isLoopbackAddress(socketAddress(req)) && !req.headers['cf-connecting-ip'];
+}
 
-  // Apenas conexões locais diretas (sem passar pelo Cloudflare Tunnel) são confiadas
-  const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || '';
-  const isLocalDirect = !isFromCloudflare && (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1');
+// Limite de tentativas: 10 PINs errados diferentes em 15 min bloqueiam aquele IP por 15 min.
+// Contadores separados para Echo e Luna; repetir o mesmo PIN errado (cookie antigo, reconexão) conta uma vez.
+// O segundo PIN (aprovações) só vem por cabeçalho, vale até para acesso local e bloqueia após 5 erros.
+const PIN_SCOPES = {
+  echo: { pin: () => ECHO_PIN, header: 'x-echo-pin', cookie: 'echo_pin', query: true, localBypass: true },
+  luna: { pin: () => LUNA_PIN, header: 'x-luna-pin', cookie: 'luna_pin', query: true, localBypass: true },
+  approval: { pin: () => ECHO_APPROVAL_PIN, header: 'x-echo-approval-pin', cookie: null, query: false, localBypass: false, maxFailures: 5 }
+};
+const PIN_FAIL_WINDOW_MS = 15 * 60 * 1000;
+const PIN_BLOCK_MS = 15 * 60 * 1000;
+const PIN_MAX_FAILURES = 10;
+const pinFailures = { echo: new Map(), luna: new Map(), approval: new Map() };
 
-  if (isLocalDirect) {
-    return true;
+function pinBlockRemainingMs(scope, req) {
+  const key = clientAddress(req);
+  const entry = pinFailures[scope].get(key);
+  if (!entry) return 0;
+  const now = Date.now();
+  if (entry.blockedUntil) {
+    if (entry.blockedUntil > now) return entry.blockedUntil - now;
+    pinFailures[scope].delete(key);
+    return 0;
   }
+  if (now - entry.first > PIN_FAIL_WINDOW_MS) pinFailures[scope].delete(key);
+  return 0;
+}
 
-  // Requisições externas (via Cloudflare ou rede): EXIGEM PIN obrigatório
-  const pinHeader = req.headers['x-echo-pin'];
-  const pinQuery = req.query?.pin;
-  const cookies = parseCookies(req.headers.cookie);
-  const pinCookie = cookies['echo_pin'];
+function registerPinFailure(scope, req, candidates) {
+  const key = clientAddress(req);
+  const now = Date.now();
+  let entry = pinFailures[scope].get(key);
+  if (!entry || now - entry.first > PIN_FAIL_WINDOW_MS) {
+    entry = { first: now, wrong: new Set(), blockedUntil: 0 };
+    pinFailures[scope].set(key, entry);
+  }
+  candidates.forEach(value => entry.wrong.add(value));
+  if (entry.wrong.size >= (PIN_SCOPES[scope].maxFailures || PIN_MAX_FAILURES) && !entry.blockedUntil) {
+    entry.blockedUntil = now + PIN_BLOCK_MS;
+    console.warn(`[PIN] ${scope}: ${key} bloqueado por ${PIN_BLOCK_MS / 60000} min após ${entry.wrong.size} tentativas erradas`);
+  }
+}
 
-  return (
-    pinMatches(pinHeader, ECHO_PIN) ||
-    pinMatches(pinQuery, ECHO_PIN) ||
-    pinMatches(pinCookie, ECHO_PIN)
-  );
+function pinCandidates(req, scope) {
+  const cfg = PIN_SCOPES[scope];
+  const cookies = cfg.cookie ? parseCookies(req.headers.cookie) : {};
+  return [req.headers[cfg.header], cfg.query ? req.query?.pin : undefined, cfg.cookie ? cookies[cfg.cookie] : undefined]
+    .filter(value => value !== undefined && value !== null && String(value).trim() !== '')
+    .map(value => String(value).trim());
+}
+
+// Retorna 'ok', 'missing' (nenhum PIN enviado), 'wrong' ou 'blocked'
+function checkPin(req, scope, { register = true } = {}) {
+  if (PIN_SCOPES[scope].localBypass && isLocalDirect(req)) return 'ok';
+  if (pinBlockRemainingMs(scope, req) > 0) return 'blocked';
+  const candidates = pinCandidates(req, scope);
+  if (candidates.length === 0) return 'missing';
+  if (candidates.some(value => pinMatches(value, PIN_SCOPES[scope].pin()))) {
+    pinFailures[scope].delete(clientAddress(req));
+    return 'ok';
+  }
+  if (!register) return 'wrong';
+  registerPinFailure(scope, req, candidates);
+  return pinBlockRemainingMs(scope, req) > 0 ? 'blocked' : 'wrong';
+}
+
+function sendPinError(res, req, status, scope, message) {
+  if (status === 'blocked') {
+    const seconds = Math.ceil(pinBlockRemainingMs(scope, req) / 1000);
+    res.setHeader('Retry-After', String(seconds));
+    return res.status(429).json({
+      ok: false,
+      error: `Muitas tentativas de PIN. Tente de novo em ${Math.ceil(seconds / 60)} min.`,
+      authRequired: true,
+      retryAfterSeconds: seconds
+    });
+  }
+  return res.status(401).json({ ok: false, error: message, authRequired: true });
+}
+
+function pinCookie(req, name, value) {
+  const secure = isViaCloudflare(req) ? '; Secure' : '';
+  return `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly${secure}`;
+}
+
+function isAuthorized(req) {
+  return checkPin(req, 'echo') === 'ok';
 }
 
 function isAuthorizedLuna(req) {
-  const cfIp = req.headers['cf-connecting-ip'];
-  const isFromCloudflare = Boolean(cfIp);
-  const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || '';
-  const isLocalDirect = !isFromCloudflare && (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1');
-
-  if (isLocalDirect) {
-    return true;
-  }
-
-  const pinHeader = req.headers['x-luna-pin'];
-  const pinQuery = req.query?.pin;
-  const cookies = parseCookies(req.headers.cookie);
-  const pinCookie = cookies['luna_pin'];
-
-  return (
-    pinMatches(pinHeader, LUNA_PIN) ||
-    pinMatches(pinQuery, LUNA_PIN) ||
-    pinMatches(pinCookie, LUNA_PIN)
-  );
+  return checkPin(req, 'luna') === 'ok';
 }
 
 function requirePin(req, res, next) {
-  if (isAuthorized(req)) {
-    return next();
-  }
-  return res.status(401).json({
-    ok: false,
-    error: 'Acesso bloqueado: PIN de segurança inválido ou ausente.',
-    authRequired: true
-  });
+  const status = checkPin(req, 'echo');
+  if (status === 'ok') return next();
+  return sendPinError(res, req, status, 'echo', 'Acesso bloqueado: PIN de segurança inválido ou ausente.');
 }
 
 const { CalendarAuth } = require('./src/calendarAuth');
@@ -180,6 +254,12 @@ const calendarService = new CalendarService({ auth: calendarAuth, api: new Googl
 const calendarRoutes = createCalendarRoutes({ auth: calendarAuth, service: calendarService, requirePin });
 app.use('/api/calendar', calendarRoutes.router);
 
+function requireLunaPin(req, res, next) {
+  const status = checkPin(req, 'luna');
+  if (status === 'ok') return next();
+  return sendPinError(res, req, status, 'luna', 'Acesso bloqueado: PIN da Luna inválido ou ausente.');
+}
+
 const { LocationService, createLocationRoutes } = require('./src/location');
 const locationService = new LocationService({ memory });
 const locationRoutes = createLocationRoutes({ service: locationService, requirePin, requireLunaPin });
@@ -187,53 +267,43 @@ app.use('/api/location', locationRoutes.router);
 // Expiração física da última posição, sem histórico nem coordenadas nos logs.
 setInterval(() => { if (locationService.store.configured) { try { locationService.read(); } catch (_) {} } }, 60000).unref();
 
-
-
-function requireLunaPin(req, res, next) {
-  if (isAuthorizedLuna(req)) {
-    return next();
-  }
-  return res.status(401).json({
-    ok: false,
-    error: 'Acesso bloqueado: PIN da Luna inválido ou ausente.',
-    authRequired: true
-  });
+function requireAnyPin(req, res, next) {
+  const echo = checkPin(req, 'echo', { register: false });
+  const luna = checkPin(req, 'luna', { register: false });
+  if (echo === 'ok' || luna === 'ok') return next();
+  // Nenhum dos dois confere: a tentativa conta nos dois contadores
+  const echoStatus = echo === 'wrong' ? checkPin(req, 'echo') : echo;
+  const lunaStatus = luna === 'wrong' ? checkPin(req, 'luna') : luna;
+  const blockedScope = echoStatus === 'blocked' ? 'echo' : (lunaStatus === 'blocked' ? 'luna' : null);
+  if (blockedScope) return sendPinError(res, req, 'blocked', blockedScope);
+  return sendPinError(res, req, 'wrong', 'echo', 'Acesso bloqueado: PIN inválido ou ausente.');
 }
 
-function requireAnyPin(req, res, next) {
-  if (isAuthorized(req) || isAuthorizedLuna(req)) {
-    return next();
-  }
-  return res.status(401).json({
-    ok: false,
-    error: 'Acesso bloqueado: PIN inválido ou ausente.',
-    authRequired: true
-  });
+function verifyPinRoute(scope, okMessage, wrongMessage) {
+  return (req, res) => {
+    if (pinBlockRemainingMs(scope, req) > 0) return sendPinError(res, req, 'blocked', scope);
+    const pin = String((req.body || {}).pin ?? '').trim();
+    const expected = PIN_SCOPES[scope].pin();
+    if (pinMatches(pin, expected)) {
+      pinFailures[scope].delete(clientAddress(req));
+      res.setHeader('Set-Cookie', pinCookie(req, PIN_SCOPES[scope].cookie, expected));
+      return res.json({ ok: true, message: okMessage });
+    }
+    if (pin) registerPinFailure(scope, req, [pin]);
+    const status = pinBlockRemainingMs(scope, req) > 0 ? 'blocked' : 'wrong';
+    return sendPinError(res, req, status, scope, wrongMessage);
+  };
 }
 
 // Endpoint para validar PIN vindo do celular (Echo)
-app.post('/api/auth/verify', (req, res) => {
-  const { pin } = req.body || {};
-  if (pinMatches(pin, ECHO_PIN)) {
-    res.setHeader('Set-Cookie', `echo_pin=${ECHO_PIN}; Path=/; Max-Age=31536000; SameSite=Lax`);
-    return res.json({ ok: true, message: 'Autenticado com sucesso' });
-  }
-  return res.status(401).json({ ok: false, error: 'PIN incorreto' });
-});
+app.post('/api/auth/verify', verifyPinRoute('echo', 'Autenticado com sucesso', 'PIN incorreto'));
 
 app.get('/api/auth/status', (req, res) => {
   res.json({ ok: true, authorized: isAuthorized(req) });
 });
 
 // Endpoint para validar PIN vindo do celular (Luna)
-app.post('/api/luna/auth/verify', (req, res) => {
-  const { pin } = req.body || {};
-  if (pinMatches(pin, LUNA_PIN)) {
-    res.setHeader('Set-Cookie', `luna_pin=${LUNA_PIN}; Path=/; Max-Age=31536000; SameSite=Lax`);
-    return res.json({ ok: true, message: 'Autenticada com sucesso!' });
-  }
-  return res.status(401).json({ ok: false, error: 'PIN incorreto.' });
-});
+app.post('/api/luna/auth/verify', verifyPinRoute('luna', 'Autenticada com sucesso!', 'PIN incorreto.'));
 
 app.get('/api/luna/auth/status', (req, res) => {
   res.json({ ok: true, authorized: isAuthorizedLuna(req) });
@@ -242,6 +312,20 @@ app.get('/api/luna/auth/status', (req, res) => {
 // Rota dedicada da Luna
 app.get('/luna', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'luna.html'));
+});
+
+// Sem PIN, quem vem de fora só recebe o que as telas de entrada do Echo e da Luna precisam
+const PUBLIC_STATIC_PATHS = new Set([
+  '/', '/index.html', '/app.js', '/styles.css', '/sw.js', '/manifest.json',
+  '/icon-192.png', '/icon-512.png', '/icon.svg',
+  '/location.js', '/location.css', '/luna', '/luna.html', '/luna.js', '/luna.css', '/manifest-luna.json', '/icon-luna.svg'
+]);
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/') || PUBLIC_STATIC_PATHS.has(req.path)) return next();
+  const status = checkPin(req, 'echo');
+  if (status === 'ok') return next();
+  return sendPinError(res, req, status, 'echo', 'Acesso bloqueado: PIN de segurança inválido ou ausente.');
 });
 
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -353,6 +437,18 @@ function broadcastEvent(eventType, eventData) {
 }
 
 // Endpoint SSE para o Celular
+// Sons opcionais em data/sounds/ (fora do repositório); sem o arquivo, o app usa os sons sintetizados
+const SOUNDS_DIR = path.join(__dirname, 'data', 'sounds');
+app.get('/api/sounds/:name', requirePin, (req, res) => {
+  const match = /^([a-z]+)\.wav$/.exec(req.params.name || '');
+  if (!match) return res.status(404).end();
+  const filePath = path.join(SOUNDS_DIR, `${match[1]}.wav`);
+  if (!fs.existsSync(filePath)) return res.status(404).end();
+  res.setHeader('Cache-Control', 'private, max-age=604800');
+  res.type('audio/wav');
+  return res.sendFile(filePath);
+});
+
 app.get('/api/stream', requirePin, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -360,7 +456,8 @@ app.get('/api/stream', requirePin, (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   const clientId = Date.now();
-  const newClient = { id: clientId, res };
+  // external: celular pela internet ou pela rede (o modo celular só espera quando há um conectado)
+  const newClient = { id: clientId, res, external: !isLocalDirect(req) };
   sseClients.push(newClient);
 
   // Envia estado atual imediatamente ao conectar
@@ -377,8 +474,200 @@ app.get('/api/stream', requirePin, (req, res) => {
   });
 });
 
+// ========================================================
+// MODO CELULAR: aprovar, negar e responder ao Claude Code pelo celular (Plano 2A)
+// ========================================================
+const approvals = require('./src/approvals');
+const approvalStore = new approvals.ApprovalStore();
+const phoneMode = { enabled: false }; // só em memória: volta desligado a cada reinício
+const PUBLIC_ORIGIN = (process.env.ECHO_PUBLIC_ORIGIN || 'https://echo.tfr-info.com.br').replace(/\/$/, '');
+
+function hasExternalClient() {
+  return sseClients.some(client => client.external);
+}
+
+// Rotas que mudam algo exigem a origem da página presente e igual ao endereço do próprio Echo
+function requireSameOrigin(req, res, next) {
+  const origin = req.headers.origin;
+  if (!origin) return res.status(403).json({ ok: false, error: 'Origem ausente.' });
+  let originHost;
+  try { originHost = new URL(origin).host; } catch (_) { return res.status(403).json({ ok: false, error: 'Origem inválida.' }); }
+  const allowed = originHost === req.headers.host || (isViaCloudflare(req) && origin === PUBLIC_ORIGIN);
+  if (!allowed) return res.status(403).json({ ok: false, error: 'Origem não permitida.' });
+  return next();
+}
+
+function requireApprovalPin(req, res, next) {
+  if (!ECHO_APPROVAL_PIN) return res.status(503).json({ ok: false, error: 'Segundo PIN não configurado no servidor.' });
+  const status = checkPin(req, 'approval');
+  if (status === 'ok') return next();
+  return sendPinError(res, req, status, 'approval', 'Segundo PIN inválido ou ausente.');
+}
+
+// Notificações push (VAPID no .env; inscrições em data/push/, fora do git; ECHO_PUSH_FILE troca o arquivo nos testes)
+const PUSH_FILE = process.env.ECHO_PUSH_FILE || path.join(__dirname, 'data', 'push', 'subscriptions.json');
+let webpush = null;
+if (process.env.ECHO_VAPID_PUBLIC_KEY && process.env.ECHO_VAPID_PRIVATE_KEY) {
+  try {
+    webpush = require('web-push');
+    webpush.setVapidDetails(process.env.ECHO_VAPID_SUBJECT || PUBLIC_ORIGIN, process.env.ECHO_VAPID_PUBLIC_KEY, process.env.ECHO_VAPID_PRIVATE_KEY);
+  } catch (err) {
+    console.warn('⚠️ Notificações push indisponíveis:', err.message);
+    webpush = null;
+  }
+}
+
+function readSubscriptions() {
+  try { return JSON.parse(fs.readFileSync(PUSH_FILE, 'utf8')); } catch (_) { return []; }
+}
+
+function writeSubscriptions(list) {
+  fs.mkdirSync(path.dirname(PUSH_FILE), { recursive: true });
+  fs.writeFileSync(PUSH_FILE, JSON.stringify(list, null, 2));
+}
+
+async function sendPushToAll(payload) {
+  if (!webpush) return;
+  const subscriptions = readSubscriptions();
+  const expired = new Set();
+  await Promise.all(subscriptions.map(sub => webpush.sendNotification(sub, JSON.stringify(payload), { TTL: 120, urgency: 'high' }).catch(err => {
+    // Inscrição vencida ou removida no celular: sai da lista
+    if (err.statusCode === 404 || err.statusCode === 410) expired.add(sub.endpoint);
+    else console.warn('[PUSH] falha ao enviar:', err.statusCode || err.message);
+  })));
+  if (expired.size) writeSubscriptions(readSubscriptions().filter(sub => !expired.has(sub.endpoint)));
+}
+
+function showApprovalState(item) {
+  const question = item.kind === 'question';
+  echoState.mode = 'info';
+  echoState.state = 'waiting';
+  echoState.actionType = 'waiting';
+  echoState.badge = question ? 'PERGUNTA DO CLAUDE' : 'APROVAÇÃO NECESSÁRIA';
+  echoState.title = question ? 'Claude Code fez uma pergunta' : 'Claude Code precisa de aprovação';
+  echoState.detail = item.project ? `${item.summary} • ${item.project}` : item.summary;
+  echoState.timestamp = Date.now();
+  broadcastState();
+}
+
+function clearApprovalState(outcome) {
+  if (echoState.state !== 'waiting') return;
+  echoState.mode = 'full';
+  echoState.state = 'working';
+  echoState.actionType = 'research';
+  echoState.badge = 'EXECUTANDO';
+  echoState.title = outcome === 'deny' ? 'Pedido negado pelo celular' : 'Claude Code continua o trabalho';
+  echoState.detail = outcome === 'expired' || outcome === 'terminal' ? 'Resposta pelo terminal' : 'Resposta enviada pelo celular';
+  echoState.timestamp = Date.now();
+  broadcastState();
+}
+
+// O celular alcança o pedido se estiver conectado agora ou se puder ser avisado por notificação (tela bloqueada)
+function phoneReachable() {
+  return hasExternalClient() || (Boolean(webpush) && readSubscriptions().length > 0);
+}
+
+// Pedido do hook (só do próprio PC). Sem modo celular, segundo PIN ou celular alcançável, responde na hora
+app.post('/api/approvals/request', async (req, res) => {
+  if (!isLocalDirect(req)) return res.status(403).json({ ok: false, error: 'Somente o hook local cria pedidos.' });
+  const { kind, session_id: sessionId, cwd, tool_name: toolName, tool_input: toolInput } = req.body || {};
+  const skip = (reason) => {
+    console.log(`[APROVAÇÃO] pedido não enviado ao celular (${reason}): o terminal pergunta`);
+    return res.json({ decision: null, reason });
+  };
+  if (!ECHO_APPROVAL_PIN) return skip('sem_segundo_pin');
+  if (!phoneMode.enabled) return skip('modo_desligado');
+  if (!phoneReachable()) return skip('sem_celular');
+
+  const isQuestion = kind === 'question';
+  const questions = isQuestion ? approvals.normalizeQuestions(toolInput) : [];
+  if (isQuestion && !questions.length) return skip('pergunta_invalida');
+
+  const item = approvalStore.create({
+    kind: isQuestion ? 'question' : 'permission',
+    sessionId,
+    project: approvals.projectName(cwd),
+    summary: isQuestion ? (questions[0].header || 'Pergunta') : approvals.summarizeTool(toolName, toolInput),
+    questions
+  });
+  console.log(`[APROVAÇÃO] pedido de ${item.kind} criado: ${item.summary}`);
+  // O hook desistiu antes da resposta (sessão interrompida): pedido cancelado
+  res.on('close', () => { if (!res.writableEnded) approvalStore.cancel(item.id); });
+
+  showApprovalState(item);
+  broadcastEvent('approval_request', approvalStore.publicView(item));
+  sendPushToAll(approvals.buildPushPayload(item)).catch(() => {});
+
+  const result = await approvalStore.wait(item.id, approvals.WAIT_MS);
+  console.log(`[APROVAÇÃO] pedido de ${item.kind} encerrado: ${result.outcome}`);
+  broadcastEvent('approval_resolved', { id: item.id, outcome: result.outcome });
+  clearApprovalState(result.outcome);
+  if (res.writableEnded || res.destroyed) return undefined;
+  const decision = ['allow', 'deny', 'answer'].includes(result.outcome) ? result.outcome : null;
+  return res.json({ decision, ...(result.answers ? { answers: result.answers } : {}) });
+});
+
+app.get('/api/approvals', requirePin, (req, res) => {
+  res.json({
+    ok: true,
+    configured: Boolean(ECHO_APPROVAL_PIN),
+    push: Boolean(webpush),
+    mode: { enabled: phoneMode.enabled },
+    pending: approvalStore.list()
+  });
+});
+
+// Ligar o modo celular pede os dois PINs; desligar, só o do Echo
+app.post('/api/approvals/mode', requirePin, requireSameOrigin, (req, res) => {
+  const turnOff = () => {
+    phoneMode.enabled = false;
+    console.log('[APROVAÇÃO] modo celular desligado');
+    broadcastEvent('approval_mode', { enabled: false });
+    return res.json({ ok: true, enabled: false });
+  };
+  if (!req.body?.enabled) return turnOff();
+  return requireApprovalPin(req, res, () => {
+    phoneMode.enabled = true;
+    console.log('[APROVAÇÃO] modo celular ligado');
+    broadcastEvent('approval_mode', { enabled: true });
+    return res.json({ ok: true, enabled: true });
+  });
+});
+
+// Permitir, negar e responder pedem o segundo PIN; devolver ao terminal não comanda nada no PC
+app.post('/api/approvals/:id/decision', requirePin, requireSameOrigin, (req, res) => {
+  const action = String(req.body?.action || '');
+  const apply = () => {
+    const result = approvalStore.resolve(req.params.id, { action, answers: req.body?.answers });
+    if (!result.ok) {
+      const error = result.reason === 'not_pending' ? 'Este pedido não está mais pendente.' : 'Resposta inválida.';
+      return res.status(409).json({ ok: false, error, reason: result.reason });
+    }
+    return res.json({ ok: true });
+  };
+  if (action === 'terminal') return apply();
+  return requireApprovalPin(req, res, apply);
+});
+
+app.get('/api/push/key', requirePin, (req, res) => {
+  res.json({ ok: Boolean(webpush), publicKey: webpush ? process.env.ECHO_VAPID_PUBLIC_KEY : null });
+});
+
+app.post('/api/push/subscribe', requirePin, requireSameOrigin, (req, res) => {
+  if (!webpush) return res.status(503).json({ ok: false, error: 'Notificações não configuradas no servidor.' });
+  const sub = req.body?.subscription;
+  if (!sub || typeof sub.endpoint !== 'string' || !/^https:\/\//.test(sub.endpoint) || !sub.keys?.p256dh || !sub.keys?.auth) {
+    return res.status(400).json({ ok: false, error: 'Inscrição inválida.' });
+  }
+  const list = readSubscriptions().filter(s => s.endpoint !== sub.endpoint);
+  list.push({ endpoint: sub.endpoint, keys: { p256dh: String(sub.keys.p256dh), auth: String(sub.keys.auth) }, createdAt: new Date().toISOString() });
+  writeSubscriptions(list.slice(-10));
+  return res.json({ ok: true });
+});
+
 // Endpoint Webhook para receber eventos dos Agentes de IA
-app.post('/api/events', (req, res) => {
+// Os agentes enviam do próprio PC (acesso local direto); de fora, só com PIN
+app.post('/api/events', requirePin, (req, res) => {
   const { agent, event, actionType, project, tool, command, error, message } = req.body;
   console.log(`[EVENTO RECEBIDO] ${agent || 'Desconhecido'} (${actionType || event}): ${command || tool || message || 'Ação'}`);
 
@@ -694,8 +983,11 @@ app.post('/api/converse', requirePin, locationRoutes.converse('echo'), calendarR
     quickCard = {
       badge: 'TELEMETRIA PC',
       title: `CPU: ${echoState.telemetry.cpuPercent}%`,
-      detail1: `RAM: ${echoState.telemetry.ramPercent}% em uso`,
-      detail2: 'Hardware monitorado'
+      progress: Number(echoState.telemetry.cpuPercent),
+      rows: [
+        { label: 'CPU', value: `${echoState.telemetry.cpuPercent}%`, status: Number(echoState.telemetry.cpuPercent) >= 90 ? 'error' : 'ok' },
+        { label: 'RAM', value: `${echoState.telemetry.ramPercent}% em uso`, status: Number(echoState.telemetry.ramPercent) >= 90 ? 'warn' : 'ok' }
+      ]
     };
   } else if (/est[aá] me ouvindo|me ouve|teste de voz/i.test(textLower)) {
     quickReply = "Estou te ouvindo perfeitamente, Mestre!";
@@ -800,6 +1092,7 @@ REGRAS OBRIGATÓRIAS:
       const models = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash'];
       let finalReply = null;
       let finalAccessory = 'none';
+      let finalCard = null;
 
       for (const model of models) {
         try {
@@ -855,84 +1148,8 @@ REGRAS OBRIGATÓRIAS:
               finalAccessory = 'lupa';
             }
 
-            if (fc.name === 'consultar_status_backup_forge') {
-              finalCard = {
-                badge: 'BACKUP ECOSSISTEMA',
-                title: toolResult?.tarefa_agendada?.ultimo_resultado || 'Backup Verificado',
-                detail1: `Última: ${toolResult?.tarefa_agendada?.ultima_execucao ? toolResult.tarefa_agendada.ultima_execucao.replace('T', ' ') : 'Ontem'}`,
-                detail2: `Próxima: ${toolResult?.tarefa_agendada?.proxima_execucao ? toolResult.tarefa_agendada.proxima_execucao.replace('T', ' ') : 'Hoje 20h'}`
-              };
-            } else if (fc.name === 'consultar_saldos_bancos') {
-              finalCard = {
-                badge: 'FINANÇAS STRATEGY HUB',
-                title: 'Saldos Bancários',
-                detail1: toolResult?.saldo_total_formatado ? `Total: ${toolResult.saldo_total_formatado}` : 'Contas consultadas',
-                detail2: `${toolResult?.total_bancos || 'Todos'} bancos cadastrados`
-              };
-            } else if (fc.name === 'consultar_cartoes_credito') {
-              finalCard = {
-                badge: 'CARTÕES DE CRÉDITO',
-                title: 'Faturas & Limites',
-                detail1: 'Consulta de faturas do mês',
-                detail2: 'Strategy Hub'
-              };
-            } else if (fc.name === 'consultar_contas_a_pagar') {
-              finalCard = {
-                badge: 'CONTAS A PAGAR',
-                title: 'Despesas & Contas',
-                detail1: toolResult?.total_pendente ? `Total: ${toolResult.total_pendente}` : 'Contas consultadas',
-                detail2: 'Strategy Hub'
-              };
-            } else if (fc.name === 'executar_briefing_sistema') {
-              finalCard = toolResult?.card || {
-                badge: 'BRIEFING DO SISTEMA',
-                title: 'Tudo Operacional',
-                detail1: 'Serviços, Backups e The Forge',
-                detail2: 'Relatório diário consolidado'
-              };
-            } else if (fc.name === 'consultar_projetos_forge' || fc.name === 'consultar_tarefas_forge') {
-              finalCard = {
-                badge: 'THE FORGE',
-                title: 'Projetos & Tarefas',
-                detail1: toolResult?.total_encontradas ? `${toolResult.total_encontradas} tarefas encontradas` : 'Painel central',
-                detail2: 'Status atualizado'
-              };
-            } else if (fc.name === 'consultar_monitor_servicos') {
-              finalCard = {
-                badge: 'MONITOR DE SERVIÇOS',
-                title: toolResult?.todos_online ? 'Todos os Serviços Online' : `${toolResult?.online}/${toolResult?.total_servicos} Online`,
-                detail1: toolResult?.resumo || 'Serviços verificados',
-                detail2: 'NerdOPS / The Forge'
-              };
-            } else if (fc.name === 'consultar_agendamento_posts') {
-              finalCard = {
-                badge: 'POSTS AGENDADOS',
-                title: 'Estratégia Nerd',
-                detail1: `Instagram: ${toolResult?.total_instagram_agendados || 0} agendados`,
-                detail2: `Blog: ${toolResult?.total_blog_agendados || 0} agendados`
-              };
-            } else if (fc.name === 'consultar_metricas_blog' || fc.name === 'consultar_metricas_instagram') {
-              finalCard = {
-                badge: 'MÉTRICAS DO CANAL',
-                title: toolResult?.canal || 'Estratégia Nerd',
-                detail1: toolResult?.total_visualizacoes ? `${toolResult.total_visualizacoes} views` : (toolResult?.seguidores ? `${toolResult.seguidores} seguidores` : 'Métricas consolidadas'),
-                detail2: 'Canal oficial ativo'
-              };
-            } else if (fc.name === 'consultar_treino_e_streak_gym_os') {
-              finalCard = {
-                badge: 'GYM OS RPG',
-                title: toolResult?.treino_hoje ? `Treino: ${toolResult.treino_hoje}` : 'Treino do Dia',
-                detail1: toolResult?.streak_dias ? `🔥 Streak: ${toolResult.streak_dias} dias` : 'Missão diária',
-                detail2: toolResult?.nivel ? `Nível ${toolResult.nivel}` : 'Bata sua meta!'
-              };
-            } else if (fc.name === 'consultar_previsao_tempo') {
-              finalCard = {
-                badge: 'CLIMA & TEMPO',
-                title: `${toolResult?.cidade || 'Serra, ES'}: ${toolResult?.temperatura ?? '--'}°C`,
-                detail1: `${toolResult?.condicao || 'Tempo atual'} (Sensação ${toolResult?.sensacao ?? '--'}°C)`,
-                detail2: `Máx: ${toolResult?.maxima ?? '--'}°C | Mín: ${toolResult?.minima ?? '--'}°C | Chuva: ${toolResult?.probabilidade_chuva ?? 0}%`
-              };
-            }
+            // Cartão com os dados que a ferramenta devolveu (src/cards.js)
+            finalCard = cards.buildToolCard(fc.name, toolResult) || finalCard;
 
             // Segunda rodada: devolve o resultado da tool para o Gemini sintetizar a fala
             contents.push({ role: 'model', parts: candidateParts });

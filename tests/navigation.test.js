@@ -233,3 +233,65 @@ test('timer normal não esconde ação Waze pendente', () => {
   callback();
   assert.equal(removed, true);
 });
+
+// renderState inteiro do app.js, num contexto com o mínimo do DOM e do mascote
+function loadRenderState(overrides = {}) {
+  const source = fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8');
+  const start = source.indexOf('  function renderState(state)');
+  const end = source.indexOf('\n  // ========================================================\n  // 10. CONEXÃO SSE', start);
+  const calls = { setState: [], panelVisible: null };
+  const context = vm.createContext({
+    currentState: null, brandProject: {}, badgeTop: {}, renderAgentChips: () => {},
+    echoWrapper: { className: '', classList: { add: () => {}, remove: () => {} } },
+    infoPanel: {
+      dataset: {},
+      classList: { add: v => { if (v === 'visible') calls.panelVisible = true; }, remove: v => { if (v === 'visible') calls.panelVisible = false; } }
+    },
+    wazeLink: { hidden: true }, calendarActions: { hidden: true },
+    setLookForInfoMode: () => {}, mochi: { look: { x: 0, y: 0 }, setState: s => calls.setState.push(s) },
+    isListening: false,
+    panelBadge: {}, panelMainText: { style: {} }, panelSubLine1: {}, panelSubLine2: {},
+    setPanelProgress: () => {}, renderCardRows: () => {},
+    lastVoicePlayed: null, voiceText: {}, panelVoice: { style: {} }, speak: () => { calls.spoke = true; },
+    ...overrides
+  });
+  vm.runInContext(source.slice(start, end), context);
+  return { context, calls };
+}
+
+test('aprovação aparece mesmo com o microfone ouvindo (mãos-livres)', () => {
+  const { context, calls } = loadRenderState({ isListening: true });
+  context.renderState({ mode: 'info', state: 'waiting', badge: 'APROVAÇÃO NECESSÁRIA', title: 'CLAUDE CODE precisa de aprovação explícita', detail: 'Bash: npm run', voiceMessage: 'teste' });
+  assert.deepEqual(calls.setState, ['approval']);
+  assert.equal(context.panelBadge.textContent, 'APROVAÇÃO NECESSÁRIA');
+  assert.equal(context.panelSubLine1.textContent, 'Bash: npm run');
+  assert.equal(calls.panelVisible, true);
+  assert.equal(calls.spoke, undefined, 'a fala espera o fim da escuta');
+});
+
+test('com o microfone ouvindo, estados comuns não trocam a pose de escuta', () => {
+  const { context, calls } = loadRenderState({ isListening: true });
+  context.renderState({ mode: 'full', state: 'working', badge: 'PESQUISANDO' });
+  assert.deepEqual(calls.setState, []);
+});
+
+test('cartão cujo tempo acaba durante uma aprovação fecha na atualização seguinte', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../public/app.js'), 'utf8');
+  const start = source.indexOf('    infoCardTimeout = setTimeout(');
+  const end = source.indexOf('\n  async function processAndRespond', start);
+  let callback;
+  const { context, calls } = loadRenderState();
+  context.infoPanel.dataset.card = 'open';
+  Object.assign(context, {
+    infoCardTimeout: null, duration: 20000, panelExtraItems: null,
+    currentState: { mode: 'info' }, // aprovação na tela quando o tempo do cartão acaba
+    setTimeout: fn => { callback = fn; }
+  });
+  context.echoWrapper.classList.contains = () => true;
+  vm.runInContext(source.slice(start, end).trim().replace(/\}\s*$/, ''), context);
+  callback();
+  assert.equal('card' in context.infoPanel.dataset, false);
+  // A aprovação termina: o próximo estado comum fecha o painel
+  context.renderState({ mode: 'full', state: 'working', badge: 'PESQUISANDO' });
+  assert.equal(calls.panelVisible, false);
+});

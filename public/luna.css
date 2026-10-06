@@ -26,6 +26,8 @@ html, body {
   background-color: var(--bg-deep);
   color: var(--text-main);
   font-family: var(--font-family);
+  /* Sem zoom: só arrastar e rolar (bloqueia pinça e toque duplo) */
+  touch-action: pan-x pan-y;
 }
 
 .luna-screen {

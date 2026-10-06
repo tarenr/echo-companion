@@ -53,7 +53,7 @@ node -e "
 const t0 = Date.now();
 fetch('http://127.0.0.1:4884/api/speak', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'x-echo-pin': '1984' },
+  headers: { 'Content-Type': 'application/json', 'x-echo-pin': 'SEU_PIN' },
   body: JSON.stringify({ text: 'Olá Mestre! Voz padrão ativa e respondendo com fluidez.' })
 }).then(async r => {
   console.log('Status:', r.status, 'Tempo:', (Date.now() - t0) + 'ms', 'Tipo:', r.headers.get('content-type'));
