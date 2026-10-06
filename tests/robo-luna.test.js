@@ -293,3 +293,49 @@ test('Luna vira o robô: scripts na página, tema lavanda, folha dela e backup d
   const backup = fs.readFileSync(path.join(__dirname, '..', 'docs', 'legado', 'mascote-luna.js'), 'utf8');
   assert.match(backup, /class LunaBot/, 'backup do desenho antigo guardado');
 });
+
+test('cabelos de teste da Luna: preto e cacheado só no robô de teste; o ruivo continua idêntico', () => {
+  const sandbox = { console };
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(read('robo-roupas.js'), sandbox);
+  vm.runInContext(read('robo-roupas-luna.js'), sandbox);
+
+  // Assinatura dos comandos de desenho do ruivo, gravada antes de o corte virar a função longHair (06/10/2026)
+  const crypto = require('node:crypto');
+  const log = [];
+  const recorder = new Proxy({}, {
+    get: (t, k) => (k in t ? t[k] : (...args) => {
+      log.push([k, args.map(v => (typeof v === 'number' ? +v.toFixed(4) : typeof v === 'object' ? 'obj' : v))]);
+      return { addColorStop: (...s) => log.push(['stop', s]) };
+    }),
+    set: (t, k, v) => { log.push(['set', k, typeof v === 'object' ? 'obj' : v]); return true; }
+  });
+  const ruivo = sandbox.RoboRoupas.ITEMS.cabeloRuivo;
+  for (const a of [[0, 0], [0.3, -0.2]]) { ruivo.back(recorder, 1.5, a); ruivo.draw(recorder, 1.5, a); }
+  assert.equal(log.length, 244);
+  assert.equal(crypto.createHash('sha256').update(JSON.stringify(log)).digest('hex'), 'd2533bfc59590c5187c4914748b5259b6193babf4aed2eaa4a280a6d08fd1c79', 'ruivo igual ao de antes');
+
+  vm.runInContext(read('robo-roupas-luna-teste.js'), sandbox);
+  const { ITEMS, itemsFor, headroomZoom } = sandbox.RoboRoupas;
+  for (const id of ['cabeloPreto', 'cabeloCacheado']) {
+    const it = ITEMS[id];
+    assert.equal(it.owner, 'luna', `${id}: da Luna`);
+    assert.equal(it.slot, 'cabeca');
+    assert.equal(it.anchor, 'robo');
+    const a = it.springs.map(() => 0.3);
+    assert.doesNotThrow(() => { it.back(fakeContext(), 0, a); it.draw(fakeContext(), 0, a); }, id);
+    assert.ok(headroomZoom(it.top) * (216 + it.top) <= 246 - 12 + 1e-9, `${id}: cabe no quadro`);
+  }
+  const ids = [...itemsFor('luna').map(([id]) => id)];
+  assert.ok(ids.includes('cabeloPreto') && ids.includes('cabeloCacheado'));
+  assert.ok(![...itemsFor('echo').map(([id]) => id)].includes('cabeloPreto'), 'o Echo não tem esses cabelos');
+
+  // Só a página de testes da Luna carrega; a Luna de verdade, o Echo e a página do Echo não
+  const lab = read('robo-luna.html');
+  const luna = lab.indexOf('robo-roupas-luna.js'), teste = lab.indexOf('robo-roupas-luna-teste.js'), motor = lab.indexOf('robo-motor.js');
+  assert.ok(luna > 0 && luna < teste && teste < motor, 'ordem dos scripts no robo-luna.html');
+  for (const page of ['luna.html', 'index.html', 'robo.html']) {
+    assert.ok(!read(page).includes('robo-roupas-luna-teste.js'), `${page} não carrega as peças de teste`);
+  }
+});

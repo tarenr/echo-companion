@@ -280,6 +280,10 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
   - **Estados dela:** Pronta, Falando, Pensando (com o quadro `>_`), Ouvindo, Feliz e Dormindo.
   - **Guarda-roupa:** as peças comuns e a fantasia de boneca de pano. Começa fantasiada; tirar a fantasia devolve o "Laço".
   - **O que ela não tem:** acessórios de trabalho e modo automático (roupa só por escolha).
+  - **Peças em teste (desde 06/10/2026)**, só nesta página, ainda não na Luna de verdade (`public/robo-roupas-luna-teste.js`):
+    - "Cabelo preto": o mesmo corte comprido do ruivo, preto com brilho azulado.
+    - "Cabelo cacheado castanho": cachos de tamanhos variados em volta da cabeça até os ombros, com a franja parando acima do visor; o robô recua um pouco para os cachos caberem.
+    - Os dois ficam no lugar da cabeça, então trocam com o cabelo ruivo, o laço e os chapéus. O corte comprido vem da função `longHair` de `robo-roupas-luna.js`.
   - **Como funciona:** o `robo.js` lê o personagem em `<body data-personagem>` e guarda as escolhas em `robo_luna_preferencias`, separadas das do Echo.
 - **Personagem:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_` (falando, `o`), quadro no alto da cabeça que só aparece durante ações (pontinhos trabalhando ou pensando, `!` na aprovação; some parado, ouvindo, dormindo, no fim e na entrada), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão. As mãos são as mesmas do Echo e aparecem ao falar.
 - **Rosto como peça única:** visor, olhos, boca e bochechas são desenhados a partir de um só ponto e uma só escala (`faceFrame` em `public/robo-motor.js`). Ao olhar para os lados, para cima, para baixo ou no giro de comemoração, as partes andam juntas. Na antiga bolha, as bochechas usavam outra conta e não acompanhavam a boca.
@@ -387,6 +391,7 @@ echo-companion/
 │   ├── robo-roupas.js      # Guarda-roupa do robô: 11 peças, estações (com a Páscoa) e física das roupas
 │   ├── robo-roupas-echo.js # Peças exclusivas do Echo: fantasia de esqueleto
 │   ├── robo-roupas-luna.js # Peças exclusivas da Luna: fantasia de boneca de pano
+│   ├── robo-roupas-luna-teste.js # Peças da Luna em teste (cabelo preto e cacheado), só no robô de teste dela
 │   ├── robo-personagem.js  # Folha Personagem compartilhada (Echo e Luna): guarda-roupa, fantasia, automático, janela flutuante, sensor
 │   ├── robo-personagem.css # Estilos da folha Personagem (ciano no Echo, lavanda na Luna)
 │   ├── robo.css            # Estilos das páginas de teste (ciano; lavanda na da Luna)

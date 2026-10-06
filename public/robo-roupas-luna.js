@@ -15,12 +15,114 @@
   const THREAD = '#2b1d2e';
   const LUNA_INK = '#2e1065';
 
-  function hairGradient(x, top, bottom) {
+  function gradient(x, c, top, bottom) {
     const g = x.createLinearGradient(0, top, 0, bottom);
-    g.addColorStop(0, '#ef4444');
-    g.addColorStop(1, '#991b1b');
+    g.addColorStop(0, c.top);
+    g.addColorStop(1, c.bottom);
     return g;
   }
+
+  // Cabelo comprido e liso com risca no meio (o corte do ruivo), nas cores dadas:
+  // { top, bottom } do degradê, line (contorno e risca), strandsBack e strandsFront (fios), shine (brilho)
+  function longHair(c) {
+    return {
+      // Parte de trás: comprida, por trás da cabeça e do corpo, com as pontas balançando
+      back(x, t, a) {
+        const sl = a[0] * 8, sr = a[1] * 8;
+        x.beginPath();
+        x.moveTo(0, -226);
+        x.bezierCurveTo(66, -230, 104, -205, 104, -150);
+        x.bezierCurveTo(104, -100, 106, -50, 112 + sr, -18);
+        x.quadraticCurveTo(106 + sr, -6, 98 + sr, -16);
+        x.quadraticCurveTo(92 + sr, -4, 84 + sr, -16);
+        x.quadraticCurveTo(78 + sr * 0.5, -6, 70, -18);
+        x.quadraticCurveTo(62 + sr * 0.3, -6, 52, -18);
+        // Borda de dentro sobe por dentro do corpo até baixo da cabeça: o cabelo encosta no corpo e o resto
+        // fica escondido atrás dele
+        x.lineTo(36, -22);
+        x.lineTo(42, -92);
+        x.lineTo(-42, -92);
+        x.lineTo(-36, -22);
+        x.lineTo(-52, -18);
+        x.quadraticCurveTo(-62 + sl * 0.3, -6, -70, -18);
+        x.quadraticCurveTo(-78 + sl * 0.5, -6, -84 + sl, -16);
+        x.quadraticCurveTo(-92 + sl, -4, -98 + sl, -16);
+        x.quadraticCurveTo(-106 + sl, -6, -112 + sl, -18);
+        x.bezierCurveTo(-106, -50, -104, -100, -104, -150);
+        x.bezierCurveTo(-104, -205, -66, -230, 0, -226);
+        x.closePath();
+        x.fillStyle = gradient(x, c, -226, -10);
+        x.fill();
+        x.strokeStyle = c.line;
+        x.lineWidth = 1.5;
+        x.stroke();
+        // Fios
+        x.strokeStyle = c.strandsBack;
+        x.lineWidth = 1.4;
+        for (const sd of [-1, 1]) {
+          const sw = sd < 0 ? sl : sr;
+          for (const [x0, x1] of [[96, 104], [88, 94]]) {
+            x.beginPath();
+            x.moveTo(sd * x0, -170);
+            x.quadraticCurveTo(sd * (x0 + 6), -100, sd * x1 + sw, -24);
+            x.stroke();
+          }
+        }
+      },
+      // Frente: cobre o alto da cabeça com risca no meio e desce pelos lados do rosto
+      draw(x, t, a) {
+        for (const sd of [-1, 1]) {
+          const sw = (sd < 0 ? a[0] : a[1]) * 4;
+          x.save();
+          x.scale(sd, 1);
+          x.beginPath();
+          x.moveTo(0, -220);
+          x.bezierCurveTo(48, -226, 92, -214, 96, -178);
+          x.bezierCurveTo(99, -150, 100, -118, 97 + sw, -92);
+          x.lineTo(86 + sw, -96);
+          x.bezierCurveTo(86, -130, 84, -160, 76, -180);
+          x.bezierCurveTo(60, -198, 30, -204, 2, -201);
+          x.closePath();
+          x.fillStyle = gradient(x, c, -224, -92);
+          x.fill();
+          x.strokeStyle = c.line;
+          x.lineWidth = 1.4;
+          x.stroke();
+          // Fios do alto da cabeça e da mecha
+          x.strokeStyle = c.strandsFront;
+          x.lineWidth = 1.2;
+          x.beginPath();
+          x.moveTo(8, -214);
+          x.quadraticCurveTo(50, -214, 82, -190);
+          x.moveTo(14, -207);
+          x.quadraticCurveTo(52, -206, 78, -184);
+          x.moveTo(92, -170);
+          x.quadraticCurveTo(95, -130, 92 + sw, -98);
+          x.stroke();
+          // Brilho
+          x.strokeStyle = c.shine;
+          x.lineWidth = 2;
+          x.beginPath();
+          x.moveTo(24, -216);
+          x.quadraticCurveTo(50, -219, 68, -210);
+          x.stroke();
+          x.restore();
+        }
+        // Risca no meio
+        x.strokeStyle = c.line;
+        x.lineWidth = 1.6;
+        x.beginPath();
+        x.moveTo(0, -221);
+        x.lineTo(0, -202);
+        x.stroke();
+      }
+    };
+  }
+
+  const RUIVO = {
+    top: '#ef4444', bottom: '#991b1b', line: '#7f1d1d',
+    strandsBack: 'rgba(127, 29, 29, 0.75)', strandsFront: 'rgba(127, 29, 29, 0.7)', shine: 'rgba(254, 202, 202, 0.45)'
+  };
 
   // Espiral dos retalhos rosa
   function swirl(x, cx, cy, turns) {
@@ -51,96 +153,7 @@
     cabeloRuivo: {
       label: 'Cabelo ruivo', slot: 'cabeca', owner: 'luna', anchor: 'robo', top: 4,
       springs: [[45, 4, -1], [50, 4, 1]],
-      // Parte de trás: comprida, por trás da cabeça e do corpo, com as pontas balançando
-      back(x, t, a) {
-        const sl = a[0] * 8, sr = a[1] * 8;
-        x.beginPath();
-        x.moveTo(0, -226);
-        x.bezierCurveTo(66, -230, 104, -205, 104, -150);
-        x.bezierCurveTo(104, -100, 106, -50, 112 + sr, -18);
-        x.quadraticCurveTo(106 + sr, -6, 98 + sr, -16);
-        x.quadraticCurveTo(92 + sr, -4, 84 + sr, -16);
-        x.quadraticCurveTo(78 + sr * 0.5, -6, 70, -18);
-        x.quadraticCurveTo(62 + sr * 0.3, -6, 52, -18);
-        // Borda de dentro sobe por dentro do corpo até baixo da cabeça: o cabelo encosta no corpo e o resto
-        // fica escondido atrás dele
-        x.lineTo(36, -22);
-        x.lineTo(42, -92);
-        x.lineTo(-42, -92);
-        x.lineTo(-36, -22);
-        x.lineTo(-52, -18);
-        x.quadraticCurveTo(-62 + sl * 0.3, -6, -70, -18);
-        x.quadraticCurveTo(-78 + sl * 0.5, -6, -84 + sl, -16);
-        x.quadraticCurveTo(-92 + sl, -4, -98 + sl, -16);
-        x.quadraticCurveTo(-106 + sl, -6, -112 + sl, -18);
-        x.bezierCurveTo(-106, -50, -104, -100, -104, -150);
-        x.bezierCurveTo(-104, -205, -66, -230, 0, -226);
-        x.closePath();
-        x.fillStyle = hairGradient(x, -226, -10);
-        x.fill();
-        x.strokeStyle = '#7f1d1d';
-        x.lineWidth = 1.5;
-        x.stroke();
-        // Fios
-        x.strokeStyle = 'rgba(127, 29, 29, 0.75)';
-        x.lineWidth = 1.4;
-        for (const sd of [-1, 1]) {
-          const sw = sd < 0 ? sl : sr;
-          for (const [x0, x1] of [[96, 104], [88, 94]]) {
-            x.beginPath();
-            x.moveTo(sd * x0, -170);
-            x.quadraticCurveTo(sd * (x0 + 6), -100, sd * x1 + sw, -24);
-            x.stroke();
-          }
-        }
-      },
-      // Frente: cobre o alto da cabeça com risca no meio e desce pelos lados do rosto
-      draw(x, t, a) {
-        for (const sd of [-1, 1]) {
-          const sw = (sd < 0 ? a[0] : a[1]) * 4;
-          x.save();
-          x.scale(sd, 1);
-          x.beginPath();
-          x.moveTo(0, -220);
-          x.bezierCurveTo(48, -226, 92, -214, 96, -178);
-          x.bezierCurveTo(99, -150, 100, -118, 97 + sw, -92);
-          x.lineTo(86 + sw, -96);
-          x.bezierCurveTo(86, -130, 84, -160, 76, -180);
-          x.bezierCurveTo(60, -198, 30, -204, 2, -201);
-          x.closePath();
-          x.fillStyle = hairGradient(x, -224, -92);
-          x.fill();
-          x.strokeStyle = '#7f1d1d';
-          x.lineWidth = 1.4;
-          x.stroke();
-          // Fios do alto da cabeça e da mecha
-          x.strokeStyle = 'rgba(127, 29, 29, 0.7)';
-          x.lineWidth = 1.2;
-          x.beginPath();
-          x.moveTo(8, -214);
-          x.quadraticCurveTo(50, -214, 82, -190);
-          x.moveTo(14, -207);
-          x.quadraticCurveTo(52, -206, 78, -184);
-          x.moveTo(92, -170);
-          x.quadraticCurveTo(95, -130, 92 + sw, -98);
-          x.stroke();
-          // Brilho
-          x.strokeStyle = 'rgba(254, 202, 202, 0.45)';
-          x.lineWidth = 2;
-          x.beginPath();
-          x.moveTo(24, -216);
-          x.quadraticCurveTo(50, -219, 68, -210);
-          x.stroke();
-          x.restore();
-        }
-        // Risca no meio
-        x.strokeStyle = '#7f1d1d';
-        x.lineWidth = 1.6;
-        x.beginPath();
-        x.moveTo(0, -221);
-        x.lineTo(0, -202);
-        x.stroke();
-      }
+      ...longHair(RUIVO)
     },
     rostoBoneca: {
       label: 'Rosto de boneca', slot: 'rosto', owner: 'luna', top: 0, springs: [],
@@ -224,6 +237,9 @@
       }
     }
   });
+
+  // Corte comprido disponível para outros cabelos da Luna (robo-roupas-luna-teste.js)
+  Roupas.longHair = longHair;
 
   // Tirar a fantasia devolve o laço comum (o visual da Luna sem fantasia)
   Roupas.SETS.bonecaDePano = {
