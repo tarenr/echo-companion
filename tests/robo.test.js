@@ -6,12 +6,12 @@ const vm = require('node:vm');
 
 const read = file => fs.readFileSync(path.join(__dirname, '..', 'public', file), 'utf8');
 
-// Geometria do rosto do robô (bloco entre os marcadores do robo.js)
+// Geometria do rosto do robô (bloco entre os marcadores do robo-motor.js)
 function loadFace() {
-  const source = read('robo.js');
+  const source = read('robo-motor.js');
   const start = source.indexOf('// [rosto-inicio]');
   const end = source.indexOf('// [rosto-fim]');
-  assert.ok(start > 0 && end > start, 'marcadores do rosto no robo.js');
+  assert.ok(start > 0 && end > start, 'marcadores do rosto no robo-motor.js');
   const context = vm.createContext({ Math });
   vm.runInContext(`const clamp = (v, a, b) => Math.max(a, Math.min(b, v));\n${source.slice(start, end)}\nthis.api = { FACE, faceFrame, facePoints };`, context);
   return context.api;
@@ -145,12 +145,12 @@ function loadRoupas() {
   return context.RoboRoupas;
 }
 
-// Bloco do robo.js entre os marcadores [nome-inicio] e [nome-fim]
+// Bloco do robo-motor.js entre os marcadores [nome-inicio] e [nome-fim]
 function loadBlock(name, names) {
-  const source = read('robo.js');
+  const source = read('robo-motor.js');
   const start = source.indexOf(`// [${name}-inicio]`);
   const end = source.indexOf(`// [${name}-fim]`);
-  assert.ok(start > 0 && end > start, `marcadores ${name} no robo.js`);
+  assert.ok(start > 0 && end > start, `marcadores ${name} no robo-motor.js`);
   const context = vm.createContext({});
   vm.runInContext(`const clamp = (v, a, b) => Math.max(a, Math.min(b, v));\n${source.slice(start, end)}\nthis.api = { ${names} };`, context);
   return context.api;

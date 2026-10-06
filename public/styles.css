@@ -1409,3 +1409,101 @@ body.sleep-mode .bottom-bar {
   .bottom-actions .btn-icon { font-size: 18px; line-height: 1; }
   .bottom-actions #phone-mode-btn::before, .bottom-actions .footer-icon, .bottom-actions .mic-button svg { width: 18px; height: 18px; flex-shrink: 0; }
 }
+
+/* ========================================================
+   PERSONAGEM: guarda-roupa e janela flutuante (abre ao segurar o robô)
+   ======================================================== */
+.character-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(1, 4, 10, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.character-sheet.hidden {
+  display: none;
+}
+
+.character-card {
+  width: min(100%, 520px);
+  max-height: 85vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem 1.1rem;
+  background: #07121f;
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  border-radius: 18px;
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.2);
+}
+
+.character-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.character-close {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.character-status {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.character-items,
+.character-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0.45rem;
+}
+
+.character-actions {
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(0, 229, 255, 0.15);
+}
+
+.character-item {
+  min-height: 44px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 12px;
+  background: rgba(4, 22, 34, 0.75);
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.character-item.active {
+  border-color: var(--cyan-neon);
+  background: rgba(0, 229, 255, 0.16);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+}
+
+.character-item[hidden],
+.character-note[hidden] {
+  display: none;
+}
+
+.character-note {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
