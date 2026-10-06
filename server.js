@@ -10,6 +10,7 @@ const tools = require('./src/tools');
 const navigation = require('./src/navigation');
 const briefing = require('./src/connectors/briefing');
 const cards = require('./src/cards');
+const pinPage = require('./src/pinPage');
 
 // Inicializa banco de memória persistente SQLite
 memory.initMemory().then(() => {
@@ -321,10 +322,20 @@ const PUBLIC_STATIC_PATHS = new Set([
   '/location.js', '/location.css', '/luna', '/luna.html', '/luna.js', '/luna.css', '/manifest-luna.json', '/icon-luna.svg'
 ]);
 
+// Quem abre uma página protegida sem o PIN recebe a tela de PIN (em vez do erro em texto)
+function sendPinPage(res, req, status) {
+  const blocked = status === 'blocked';
+  const remainingMs = blocked ? pinBlockRemainingMs('echo', req) : 0;
+  if (blocked) res.setHeader('Retry-After', String(Math.ceil(remainingMs / 1000)));
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(blocked ? 429 : 401).type('html').send(pinPage.renderPinPage({ blocked, retryMinutes: remainingMs / 60000 }));
+}
+
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/') || PUBLIC_STATIC_PATHS.has(req.path)) return next();
   const status = checkPin(req, 'echo');
   if (status === 'ok') return next();
+  if (pinPage.wantsPage(req)) return sendPinPage(res, req, status);
   return sendPinError(res, req, status, 'echo', 'Acesso bloqueado: PIN de segurança inválido ou ausente.');
 });
 
