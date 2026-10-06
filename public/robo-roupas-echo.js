@@ -1,7 +1,7 @@
-// Robô // peças só da página de testes (/robo.html): o visual é aprovado aqui antes de ir para o Echo.
-// Carregado depois de robo-roupas.js; acrescenta as peças ao mesmo guarda-roupa. O Echo não carrega este arquivo.
-// Fantasia de esqueleto (sem braços): desenho próprio no estilo de fantasia de Halloween (sorriso costurado,
-// terno listrado e gravata de morcego), feito do zero, sem copiar personagem.
+// Robô // peças exclusivas do Echo: a fantasia de esqueleto (sem braços)
+// Carregado depois de robo-roupas.js pelo Echo e pela página de testes do Echo (/robo.html); a Luna não carrega.
+// Desenho próprio no estilo de fantasia de Halloween (sorriso costurado, terno listrado e gravata de morcego),
+// feito do zero, sem copiar personagem.
 // Coordenadas: as mesmas de robo-roupas.js (rosto: centro do visor; pescoço: base do corpo, y negativo para cima).
 
 (function (root) {
@@ -10,53 +10,11 @@
   const Roupas = root.RoboRoupas;
   if (!Roupas) return;
 
-  // Mesmas medidas do corpo em robo-motor.js (BODY); um teste confere
-  const BODY = { cy: -39, hw: 50, bottomHw: 40, hh: 39, r: 24 };
-  // Tela do peito (rr(-30, -64, 60, 36, 10) no motor) com 1 px de folga para a borda colorida
-  const SCREEN = { x: -31, y: -65, w: 62, h: 38, r: 11 };
+  const { BODY, clipBodyWithoutScreen, bodyOutline, stitchedCurve } = Roupas.shape;
   const INK = '#0b1220';
   const SUIT = '#121417';
   const PIN = 'rgba(226, 232, 240, 0.9)';
   const SHIRT = '#f1f5f9';
-
-  // Contorno do corpo (trapézio arredondado), sem beginPath: entra num caminho composto
-  function bodyOutline(x) {
-    const { cy, hw, bottomHw, hh, r } = BODY, top = cy - hh, bottom = cy + hh;
-    x.moveTo(-hw + r, top);
-    x.lineTo(hw - r, top);
-    x.quadraticCurveTo(hw, top, hw, top + r);
-    x.lineTo(bottomHw, bottom - r);
-    x.quadraticCurveTo(bottomHw, bottom, bottomHw - r, bottom);
-    x.lineTo(-bottomHw + r, bottom);
-    x.quadraticCurveTo(-bottomHw, bottom, -bottomHw, bottom - r);
-    x.lineTo(-hw, top + r);
-    x.quadraticCurveTo(-hw, top, -hw + r, top);
-    x.closePath();
-  }
-
-  // Retângulo arredondado sem beginPath (o buraco da tela no caminho composto)
-  function roundRectOutline(x, { x: X, y: Y, w: W, h: H, r: R }) {
-    x.moveTo(X + R, Y);
-    x.arcTo(X + W, Y, X + W, Y + H, R);
-    x.arcTo(X + W, Y + H, X, Y + H, R);
-    x.arcTo(X, Y + H, X, Y, R);
-    x.arcTo(X, Y, X + W, Y, R);
-    x.closePath();
-  }
-
-  // Sorriso: curva entre as bochechas, passando pelo lugar da boca (0, 38)
-  const SMILE = { from: [-44, 29], ctrl: [0, 47], to: [44, 29] };
-  function smilePoint(t) {
-    const u = 1 - t, { from: a, ctrl: c, to: b } = SMILE;
-    return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]];
-  }
-  function smileNormal(t) {
-    const { from: a, ctrl: c, to: b } = SMILE;
-    const dx = 2 * (1 - t) * (c[0] - a[0]) + 2 * t * (b[0] - c[0]);
-    const dy = 2 * (1 - t) * (c[1] - a[1]) + 2 * t * (b[1] - c[1]);
-    const len = Math.hypot(dx, dy) || 1;
-    return [-dy / len, dx / len];
-  }
 
   // Gravata de morcego: asas com a borda de baixo recortada, cabecinha com orelhas e olhos brancos.
   // Fica logo abaixo da cabeça (que termina em y = -86), sobre a camisa branca.
@@ -116,38 +74,27 @@
 
   Object.assign(Roupas.ITEMS, {
     sorrisoCosturado: {
-      label: 'Sorriso costurado', slot: 'rosto', top: 0, springs: [],
+      label: 'Sorriso costurado', slot: 'rosto', owner: 'echo', top: 0, springs: [],
       draw(x) {
+        // Curva entre as bochechas, passando pelo lugar da boca (0, 38), com as pontas viradas para cima
         x.strokeStyle = INK;
         x.lineCap = 'round';
         x.lineWidth = 2.6;
         x.beginPath();
         x.moveTo(-49, 24);
-        x.lineTo(...SMILE.from);
-        x.quadraticCurveTo(...SMILE.ctrl, ...SMILE.to);
+        x.lineTo(-44, 29);
+        x.moveTo(44, 29);
         x.lineTo(49, 24);
         x.stroke();
-        // Pontos de costura cruzando a linha
-        x.lineWidth = 2;
-        for (let i = 0; i <= 10; i++) {
-          const t = 0.04 + i * 0.092;
-          const [px, py] = smilePoint(t), [nx, ny] = smileNormal(t);
-          x.beginPath();
-          x.moveTo(px - nx * 5, py - ny * 5);
-          x.lineTo(px + nx * 5, py + ny * 5);
-          x.stroke();
-        }
+        stitchedCurve(x, [-44, 29], [0, 47], [44, 29], 11, 5);
       }
     },
     ternoEsqueleto: {
-      label: 'Terno de esqueleto', slot: 'pescoco', top: 0, springs: [[90, 6, 0]],
+      label: 'Terno de esqueleto', slot: 'pescoco', owner: 'echo', top: 0, springs: [[90, 6, 0]],
       draw(x, t, a) {
         // Terno só no corpo, com abertura para a tela do peito
         x.save();
-        x.beginPath();
-        bodyOutline(x);
-        roundRectOutline(x, SCREEN);
-        x.clip('evenodd');
+        clipBodyWithoutScreen(x);
         x.fillStyle = SUIT;
         x.fillRect(-BODY.hw - 2, -2 * BODY.hh - 2, 2 * BODY.hw + 4, 2 * BODY.hh + 4);
         // Listras finas que acompanham o corpo (mais estreito embaixo)
@@ -191,6 +138,8 @@
     }
   });
 
-  Roupas.LAB_ITEMS = ['sorrisoCosturado', 'ternoEsqueleto'];
-  Roupas.SUIT_BODY = BODY;
+  Roupas.SETS.esqueleto = {
+    label: 'Fantasia de esqueleto', owner: 'echo',
+    items: ['sorrisoCosturado', 'ternoEsqueleto']
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

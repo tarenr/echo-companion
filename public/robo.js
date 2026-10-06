@@ -1,12 +1,13 @@
-// Robô // página de testes (laboratório) do personagem do Echo
-// O personagem vem do motor compartilhado (robo-motor.js) e as roupas de robo-roupas.js. Aqui ficam a página,
-// os botões e os testes que o Echo não usa (dança pelo microfone e giroscópio).
+// Robô // páginas de testes (laboratório) dos personagens: /robo.html (Echo) e /robo-luna.html (Luna)
+// O personagem vem do motor compartilhado (robo-motor.js) e as roupas de robo-roupas.js, mais as exclusivas de
+// cada um (robo-roupas-echo.js ou robo-roupas-luna.js). A página diz quem é em <body data-personagem>. Aqui ficam
+// a página, os botões e os testes que o Echo não usa (dança pelo microfone e giroscópio).
 
 (function () {
   'use strict';
 
   const Roupas = window.RoboRoupas;
-  const { RoboBot, STATES, EMOTES, GestureReader, BeatDetector, Sfx, E, createDriver, createFloating, createSensors } = window.RoboMotor;
+  const { RoboBot, THEMES, EMOTES, GestureReader, BeatDetector, Sfx, E, createDriver, createFloating, createSensors } = window.RoboMotor;
   const NOW = () => performance.now();
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -17,15 +18,19 @@
   const stage = document.getElementById('robo-stage');
   const controls = document.getElementById('robo-controls');
   const statusEl = document.getElementById('robo-status');
-  const robo = new RoboBot(canvas);
+  // Echo (padrão) ou Luna: cores, estados e peças exclusivas
+  const PERSONAGEM = document.body.dataset.personagem === 'luna' ? 'luna' : 'echo';
+  const IS_ECHO = PERSONAGEM === 'echo';
+  const robo = new RoboBot(canvas, { theme: THEMES[PERSONAGEM] });
   robo.onSound = name => Sfx.play(name);
   // Acesso pelo console do navegador, para testes
   window.robo = robo;
 
-  // Preferências só deste navegador: roupa, modo automático e som
-  const PREFS_KEY = 'robo_preferencias';
+  // Preferências só deste navegador: roupa, modo automático e som. A Luna começa com a fantasia dela e não
+  // tem modo automático (roupa só por escolha)
+  const PREFS_KEY = IS_ECHO ? 'robo_preferencias' : 'robo_luna_preferencias';
   function loadPrefs() {
-    const base = { auto: true, roupa: {}, som: false };
+    const base = IS_ECHO ? { auto: true, roupa: {}, som: false } : { auto: false, roupa: Roupas.outfitOf('bonecaDePano'), som: false };
     try {
       return Object.assign(base, JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'));
     } catch (_) {
@@ -72,14 +77,14 @@
     return Roupas.seasonFor(testDate || new Date());
   }
   function applyWardrobe() {
-    if (prefs.auto) robo.wardrobe.set(currentSeason().outfit, NOW());
+    if (IS_ECHO && prefs.auto) robo.wardrobe.set(currentSeason().outfit, NOW());
     else robo.wardrobe.set(prefs.roupa || {}, NOW());
     lastDay = dayKey(new Date());
     refreshUI();
   }
   // Modo automático: troca sozinho quando vira o dia
   setInterval(() => {
-    if (prefs.auto && !testDate && dayKey(new Date()) !== lastDay) applyWardrobe();
+    if (IS_ECHO && prefs.auto && !testDate && dayKey(new Date()) !== lastDay) applyWardrobe();
   }, 60000);
 
   function wardrobeAction(id) {
@@ -93,6 +98,7 @@
     }
     prefs.auto = false;
     if (id === 'tirar') robo.wardrobe.clear(now);
+    else if (id.startsWith('fantasia:')) Roupas.toggleSet(robo.wardrobe, id.slice(9), now);
     else robo.wardrobe.toggle(id, now);
     prefs.roupa = robo.wardrobe.outfit();
     savePrefs();
@@ -196,7 +202,7 @@
   const GROUPS = [
     {
       id: 'estados', title: 'Estados',
-      items: Object.entries(STATES).map(([id, c]) => [id, c.label]),
+      items: Object.entries(robo.states).map(([id, c]) => [id, c.label]),
       isActive: id => chosen.estado === id,
       run: id => {
         // Acordar do modo dormindo faz a entrada (no motor)
@@ -211,12 +217,22 @@
     },
     {
       id: 'guarda-roupa', title: 'Guarda-roupa',
-      items: [...Object.entries(Roupas.ITEMS).map(([id, it]) => [id, it.label]), ['auto', 'Automático (estação)'], ['tirar', 'Tirar tudo']],
-      isActive: id => (id === 'auto' ? prefs.auto : robo.wardrobe.has(id)),
+      // Fantasias do personagem, peças comuns e as dele; a Luna não tem o automático (nem a data de teste)
+      items: [
+        ...Roupas.setsFor(PERSONAGEM).map(([id, set]) => ['fantasia:' + id, set.label]),
+        ...Roupas.itemsFor(PERSONAGEM).map(([id, it]) => [id, it.label]),
+        ...(IS_ECHO ? [['auto', 'Automático (estação)']] : []),
+        ['tirar', 'Tirar tudo']
+      ],
+      isActive: id => (id === 'auto' ? prefs.auto
+        : id.startsWith('fantasia:') ? Roupas.setWorn(robo.wardrobe, id.slice(9))
+        : robo.wardrobe.has(id)),
       run: wardrobeAction,
-      extra: buildDateField
+      extra: IS_ECHO ? buildDateField : null
     },
     {
+      // Só o Echo usa acessórios de trabalho
+      only: 'echo',
       id: 'acessorios', title: 'Acessórios de trabalho',
       items: ACCESSORIES,
       isActive: id => chosen.acessorio === id,
@@ -335,8 +351,8 @@
   };
 
   function updateStatus() {
-    const parts = [STATES[chosen.estado].label];
-    if (prefs.auto) parts.push(`Automático: ${currentSeason().label}`);
+    const parts = [robo.states[chosen.estado].label];
+    if (IS_ECHO && prefs.auto) parts.push(`Automático: ${currentSeason().label}`);
     else {
       const ids = robo.wardrobe.ids();
       if (ids.length) parts.push(ids.map(id => Roupas.ITEMS[id].label).join(', '));
@@ -361,7 +377,7 @@
   }
 
   function buildControls() {
-    const sections = GROUPS.map(group => {
+    const sections = GROUPS.filter(group => !group.only || group.only === PERSONAGEM).map(group => {
       const section = document.createElement('section');
       section.className = 'robo-group';
       section.dataset.group = group.id;

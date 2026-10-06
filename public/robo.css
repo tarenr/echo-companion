@@ -1,9 +1,20 @@
-/* Robô // página de testes do segundo personagem do Echo */
+/* Robô // páginas de testes dos personagens (Echo: ciano; Luna: lavanda, em body[data-personagem="luna"]) */
 :root {
   --bg: #020617;
   --cyan: #00e5ff;
+  --accent-rgb: 0, 229, 255;
+  --bg-glow: #081630;
+  --bg-edge: #01040a;
   --muted: #64748b;
   --mono: 'Consolas', 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* Luna: lavanda */
+body[data-personagem="luna"] {
+  --cyan: #c084fc;
+  --accent-rgb: 192, 132, 252;
+  --bg-glow: #1a0b30;
+  --bg-edge: #05020a;
 }
 
 * {
@@ -16,7 +27,7 @@
 html, body {
   height: 100%;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 30%, #081630 0%, #01040a 100%) var(--bg);
+  background: radial-gradient(circle at 50% 30%, var(--bg-glow) 0%, var(--bg-edge) 100%) var(--bg);
   color: #e2e8f0;
   font-family: var(--mono);
   /* Sem zoom: só arrastar e rolar */
@@ -104,7 +115,7 @@ html, body {
 .robo-btn {
   min-height: 44px;
   padding: 0.5rem 0.6rem;
-  border: 1px solid rgba(0, 229, 255, 0.25);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
   border-radius: 12px;
   background: rgba(4, 22, 34, 0.75);
   color: #e2e8f0;
@@ -121,9 +132,9 @@ html, body {
 .robo-btn.active,
 .robo-btn.flash {
   border-color: var(--cyan);
-  background: rgba(0, 229, 255, 0.16);
+  background: rgba(var(--accent-rgb), 0.16);
   color: #fff;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.3);
 }
 
 /* Grupo destacado ao segurar o robô (atalho do guarda-roupa) */
@@ -133,7 +144,7 @@ html, body {
 }
 
 .robo-group.flash {
-  background: rgba(0, 229, 255, 0.08);
+  background: rgba(var(--accent-rgb), 0.08);
 }
 
 /* Avisos de cada grupo (microfone negado, sem sensor etc.) */
@@ -158,7 +169,7 @@ html, body {
 .robo-date input {
   min-height: 40px;
   padding: 0.3rem 0.5rem;
-  border: 1px solid rgba(0, 229, 255, 0.25);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
   border-radius: 10px;
   background: rgba(4, 22, 34, 0.75);
   color: #e2e8f0;

@@ -271,13 +271,14 @@ test('óculos ficam sobre os olhos: lentes no mesmo lugar dos olhos do rosto', (
   assert.equal(-LENS_X, FACE.eyes[0].x);
 });
 
-test('peças só do robô de teste: fantasia de esqueleto entra no guarda-roupa e desenha sem erro', () => {
+test('fantasia de esqueleto do Echo: entra no guarda-roupa e desenha sem erro', () => {
   const context = vm.createContext({});
   vm.runInContext(read('robo-roupas.js'), context);
-  vm.runInContext(read('robo-roupas-teste.js'), context);
-  const { ITEMS, LAB_ITEMS, SUIT_BODY, Wardrobe } = context.RoboRoupas;
-  assert.deepEqual([...LAB_ITEMS], ['sorrisoCosturado', 'ternoEsqueleto']);
-  assert.equal(Object.keys(ITEMS).length, 13, '11 peças + 2 de teste');
+  vm.runInContext(read('robo-roupas-echo.js'), context);
+  const { ITEMS, SETS, shape, Wardrobe } = context.RoboRoupas;
+  assert.deepEqual([...SETS.esqueleto.items], ['sorrisoCosturado', 'ternoEsqueleto']);
+  assert.equal(SETS.esqueleto.owner, 'echo');
+  assert.equal(Object.keys(ITEMS).length, 13, '11 peças comuns + 2 do Echo');
   assert.equal(ITEMS.sorrisoCosturado.slot, 'rosto');
   assert.equal(ITEMS.ternoEsqueleto.slot, 'pescoco');
 
@@ -291,21 +292,21 @@ test('peças só do robô de teste: fantasia de esqueleto entra no guarda-roupa 
     assert.doesNotThrow(() => it.draw(ctx, 0, it.springs.map(() => 0.2)), id);
   }
 
-  // O terno usa as mesmas medidas do corpo do motor
+  // O terno e o vestido usam as mesmas medidas do corpo do motor
   const motorBody = read('robo-motor.js').match(/const BODY = (\{[^}]+\});/);
   assert.ok(motorBody, 'BODY no robo-motor.js');
-  assert.deepEqual({ ...SUIT_BODY }, { ...vm.runInNewContext(`(${motorBody[1]})`) });
+  assert.deepEqual({ ...shape.BODY }, { ...vm.runInNewContext(`(${motorBody[1]})`) });
 
   const w = new Wardrobe();
   w.wear('sorrisoCosturado', 0);
   w.wear('ternoEsqueleto', 0);
   assert.deepEqual({ ...w.outfit() }, { cabeca: null, rosto: 'sorrisoCosturado', pescoco: 'ternoEsqueleto' }, 'veste as duas juntas');
 
-  // Só a página de testes carrega as peças; o Echo não
+  // A página de testes do Echo carrega a fantasia dele, entre as peças comuns e o robo.js
   const lab = read('robo.html');
-  const roupas = lab.indexOf('robo-roupas.js'), teste = lab.indexOf('robo-roupas-teste.js'), robo = lab.indexOf('robo.js?');
-  assert.ok(roupas > 0 && roupas < teste && teste < robo, 'ordem dos scripts na página de testes');
-  assert.ok(!read('index.html').includes('robo-roupas-teste.js'), 'o Echo não carrega as peças de teste');
+  const roupas = lab.indexOf('robo-roupas.js'), echo = lab.indexOf('robo-roupas-echo.js'), robo = lab.indexOf('robo.js?');
+  assert.ok(roupas > 0 && roupas < echo && echo < robo, 'ordem dos scripts na página de testes');
+  assert.ok(!lab.includes('robo-roupas-luna.js'), 'a página do Echo não carrega a fantasia da Luna');
 });
 
 test('gestos: toque, duplo, bravo, regiões, segurar e carinho', () => {

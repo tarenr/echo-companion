@@ -265,6 +265,12 @@ Mascote companheira desenvolvida especialmente para uso pessoal com inteligênci
 Página separada com o mesmo robô do Echo e botões para testar cada animação, mais a dança pelo microfone (que o Echo não usa) e o giroscópio (o mesmo sensor do Echo, vindo do motor). Desde 06/10/2026 o robô é o personagem do Echo (ver [Personagem do Echo](#-personagem-do-echo-robô)).
 
 - **Endereço:** `/robo.html` (ex.: `https://echo.tfr-info.com.br/robo.html`). Usa o PIN do Echo: se o navegador ainda não tiver o PIN, a página mostra a tela de PIN.
+- **Robô de teste da Luna (desde 06/10/2026):** `/robo-luna.html`, a mesma página de botões com o tema da Luna. Também usa o PIN do Echo.
+  - **Visual:** casca lavanda, visor roxo-escuro e destaque lavanda na página.
+  - **Estados dela:** Pronta, Falando, Pensando (com o quadro `>_`), Ouvindo, Feliz e Dormindo.
+  - **Guarda-roupa:** as peças comuns e a fantasia de boneca de pano. Começa fantasiada; tirar a fantasia devolve o "Laço".
+  - **O que ela não tem:** acessórios de trabalho e modo automático (roupa só por escolha).
+  - **Como funciona:** o `robo.js` lê o personagem em `<body data-personagem>` e guarda as escolhas em `robo_luna_preferencias`, separadas das do Echo.
 - **Personagem:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_` (falando, `o`), quadro no alto da cabeça que só aparece durante ações (pontinhos trabalhando ou pensando, `!` na aprovação; some parado, ouvindo, dormindo, no fim e na entrada), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão. As mãos são as mesmas do Echo e aparecem ao falar.
 - **Rosto como peça única:** visor, olhos, boca e bochechas são desenhados a partir de um só ponto e uma só escala (`faceFrame` em `public/robo-motor.js`). Ao olhar para os lados, para cima, para baixo ou no giro de comemoração, as partes andam juntas. Na antiga bolha, as bochechas usavam outra conta e não acompanhavam a boca.
 - **Botões:** estados (repouso, trabalhando, multiagente, pensando, aprovação, concluído, erro, ouvindo, dormindo), expressões (amor, surpresa, orgulho, feliz), guarda-roupa, acessórios de trabalho (lupa, teclado, impressora, comemoração, café, nenhum), animações (entrada, dançar 10 s, dançar com a música, som), ações (falar, piscar, toque, girar, pular), olhar (esquerda, direita, cima, baixo, centro, para o cartão, seguir o dedo), sensores (sensor de movimento, chacoalhar simulado) e janela flutuante.
@@ -298,11 +304,23 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
 ### Guarda-roupa
 
 - **Peças (11, desenhadas em código):** cabeça — chapéu de festa, gorro com pompom, coroa, chapéu de bruxa, gorro de Papai Noel, orelhas de coelho, laço, abóbora; rosto — óculos escuros, óculos redondos; pescoço — cachecol.
-- **Peças só de teste (desde 06/10/2026):** a fantasia de esqueleto, em duas peças:
-  - **Sorriso costurado (rosto):** curva entre as bochechas com pontos de costura; acompanha o rosto e não combina com óculos.
-  - **Terno de esqueleto (pescoço):** preto listrado, camisa branca em V, gravata de morcego cujas asas balançam, e a tela `>_` do peito à mostra; não combina com o cachecol.
-  - Ficam em `public/robo-roupas-teste.js`, que só esta página carrega: o Echo não mostra essas peças e o automático (estação) não as usa.
-  - Desenho próprio no estilo de fantasia de Halloween, sem braços e sem copiar personagem.
+- **Fantasias exclusivas (desde 06/10/2026):** cada personagem tem a sua, sem braços. São desenhos próprios no estilo de fantasia de Halloween, sem copiar personagem.
+  - **Regras gerais:** as 11 peças comuns valem para os dois. Nenhuma fantasia entra no automático (estação): elas são só por escolha.
+  - **Botão "Fantasia de …":** veste ou tira todas as peças da fantasia de uma vez. As peças também aparecem soltas.
+  - **Echo, "Fantasia de esqueleto"** (`public/robo-roupas-echo.js`):
+    - "Sorriso costurado" (rosto): curva com pontos de costura entre as bochechas; não combina com óculos.
+    - "Terno de esqueleto" (pescoço): preto listrado, camisa branca em V, gravata de morcego cujas asas balançam e a tela `>_` à mostra; não combina com o cachecol.
+  - **Luna, "Fantasia de boneca de pano"** (`public/robo-roupas-luna.js`):
+    - "Cabelo ruivo" (cabeça): comprido, com risca no meio. A parte de trás fica atrás da cabeça e do corpo e as pontas balançam. Fica preso à cabeça (`anchor: 'robo'`), não na base dos chapéus.
+    - "Rosto de boneca" (rosto): cílios, sorriso costurado fino e costuras nas bochechas.
+    - "Vestido de retalhos" (pescoço): retalhos verde-água, amarelo, rosa com espirais, rosa-claro e cinza, com costuras, gola em V e a tela `>_` à mostra.
+    - Tirar essa fantasia devolve o "Laço" comum, o visual dela sem fantasia.
+  - **Separação por dono:** cada página carrega só o arquivo do seu personagem, e as peças têm dono (`owner`), então uma não aparece na lista da outra. Por enquanto as fantasias estão só nas páginas de teste.
+  - **Funções comuns:** `robo-roupas.js` reúne as funções dos conjuntos (`SETS`, `toggleSet`, `itemsFor`, `outfitOf`) e as medidas do corpo usadas pelo terno e pelo vestido (`shape`).
+- **Desenho do motor:**
+  - Peças podem ter parte de trás (`back`), desenhada antes do corpo.
+  - O quadro `>_` da cabeça fica por cima das peças da cabeça.
+  - As cores vêm do tema: `THEMES.echo`, o padrão, ciano e igual ao de antes; `THEMES.luna`, lavanda.
 - **Como usar:** tocar numa peça veste; tocar de novo tira. Uma peça por lugar (outro chapéu troca o atual) e dá para combinar os três lugares. "Tirar tudo" tira as três. Segurar o dedo no robô rola a página até o guarda-roupa. Dá para usar junto com os acessórios de trabalho (ex.: gorro e caneca de café).
 - **Óculos:** ficam no mesmo referencial do rosto, então acompanham os olhos ao olhar e no giro. Chapéus ficam no alto da cabeça, à direita da etiqueta `>_`, e deslizam um pouco junto com o rosto.
 - **Chapéu alto:** o robô recua aos poucos para a peça caber no quadro (até 75% com o chapéu de bruxa).
@@ -328,7 +346,7 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
 - **Sensor de movimento:** o iPhone e as versões recentes do Chrome pedem permissão ao tocar no botão; nos demais, liga direto. Só funciona pelo endereço HTTPS. Sem leitura em 1,5 s (PC ou endereço HTTP), o botão desliga e avisa.
 - **Janela flutuante:** no PC (Chrome/Edge 116+), o robô vai para uma janela pequena sempre na frente, onde continua tocável, e volta à página quando ela fecha. No Android (Chrome 105+), ou se a janela do PC for recusada, vira um vídeo flutuante do robô por cima dos outros apps, só para ver; enquanto isso, um relógio em segundo plano (Worker) continua desenhando. Os dois abrem só com um toque no botão.
 
-- **Testes:** `tests/robo.test.js` confere que as partes do rosto mantêm as mesmas distâncias em qualquer olhar e giro, que o rosto não sai da cabeça, que a tela acesa é pedida de novo no Echo, na Luna e no robô, a Páscoa e a tabela de estações, a mola das roupas, o guarda-roupa e a transição, o recuo para chapéu alto, os óculos sobre os olhos, os gestos, o sensor e o detector de batidas. `tests/robo-echo.test.js` confere a troca no Echo (scripts, lista pública, cache, sons, entrada ao acordar, dança e o comando de voz) e `tests/pin-page.test.js`, a tela de PIN.
+- **Testes:** `tests/robo.test.js` confere que as partes do rosto mantêm as mesmas distâncias em qualquer olhar e giro, que o rosto não sai da cabeça, que a tela acesa é pedida de novo no Echo, na Luna e no robô, a Páscoa e a tabela de estações, a mola das roupas, o guarda-roupa e a transição, o recuo para chapéu alto, os óculos sobre os olhos, os gestos, o sensor e o detector de batidas. `tests/robo-echo.test.js` confere a troca no Echo (scripts, lista pública, cache, sons, entrada ao acordar, dança e o comando de voz), `tests/pin-page.test.js` confere a tela de PIN e `tests/robo-luna.test.js` confere o tema (Echo com as cores de antes, Luna com as dela e os seus estados), as fantasias exclusivas, o conjunto com o laço de volta, as camadas do desenho e as duas páginas de teste.
 
 ---
 
@@ -352,12 +370,14 @@ echo-companion/
 │   ├── luna.css            # Estilos em Lavanda/Lilás Neon da Luna
 │   ├── manifest-luna.json  # Manifesto PWA da Luna
 │   ├── icon-luna.svg       # Ícone vetorial da Luna com laço
-│   ├── robo.html           # Página de testes do segundo personagem (robô)
+│   ├── robo.html           # Página de testes do robô do Echo
+│   ├── robo-luna.html      # Página de testes do robô da Luna (tema lavanda)
 │   ├── robo-motor.js       # Motor do robô (Echo e laboratório): rosto, gestos, sensores, ritmo, laço e janela flutuante
-│   ├── robo.js             # Laboratório do robô: botões, dança pelo microfone e giroscópio
+│   ├── robo.js             # Laboratório do robô (Echo e Luna, pelo data-personagem): botões, dança pelo microfone e giroscópio
 │   ├── robo-roupas.js      # Guarda-roupa do robô: 11 peças, estações (com a Páscoa) e física das roupas
-│   ├── robo-roupas-teste.js # Peças só da página de testes (fantasia de esqueleto), antes de irem para o Echo
-│   ├── robo.css            # Estilos da página do robô
+│   ├── robo-roupas-echo.js # Peças exclusivas do Echo: fantasia de esqueleto
+│   ├── robo-roupas-luna.js # Peças exclusivas da Luna: fantasia de boneca de pano
+│   ├── robo.css            # Estilos das páginas de teste (ciano; lavanda na da Luna)
 │   └── sw.js               # Service Worker (cache v5.1 só do shell público, auto-update)
 ├── src/
 │   ├── connectors/         # Conectores com os projetos locais

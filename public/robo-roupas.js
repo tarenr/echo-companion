@@ -573,6 +573,111 @@
   }
 
   // ========================================================
+  // FANTASIAS E PEÇAS POR PERSONAGEM
+  // ========================================================
+  // As 11 peças acima são comuns. Peças com dono (owner) e as fantasias vêm de robo-roupas-echo.js e
+  // robo-roupas-luna.js; cada página carrega só o arquivo do seu personagem.
+  const SETS = {};
+
+  function itemsFor(owner) {
+    return Object.entries(ITEMS).filter(([, it]) => !it.owner || it.owner === owner);
+  }
+
+  function setsFor(owner) {
+    return Object.entries(SETS).filter(([, set]) => set.owner === owner);
+  }
+
+  function setWorn(wardrobe, id) {
+    const set = SETS[id];
+    return !!set && set.items.every(item => wardrobe.has(item));
+  }
+
+  // Roupa ({ lugar: peça }) com a fantasia vestida: serve de padrão para quem começa fantasiado
+  function outfitOf(id) {
+    const out = {};
+    for (const item of (SETS[id] ? SETS[id].items : [])) out[ITEMS[item].slot] = item;
+    return out;
+  }
+
+  // Veste a fantasia inteira; se ela já estiver vestida, tira as peças dela e veste o que ela pede no
+  // lugar (afterRemove, ex.: o laço da Luna)
+  function toggleSet(wardrobe, id, now) {
+    const set = SETS[id];
+    if (!set) return false;
+    if (setWorn(wardrobe, id)) {
+      for (const item of set.items) wardrobe.remove(ITEMS[item].slot, now);
+      for (const item of Object.values(set.afterRemove || {})) wardrobe.wear(item, now);
+    } else {
+      for (const item of set.items) wardrobe.wear(item, now);
+    }
+    return true;
+  }
+
+  // Forma do corpo para as roupas que o cobrem (terno, vestido): mesmas medidas do corpo em robo-motor.js
+  // (BODY; um teste confere) e a tela do peito (rr(-30, -64, 60, 36, 10)) com 1 px de folga para a borda
+  const BODY = { cy: -39, hw: 50, bottomHw: 40, hh: 39, r: 24 };
+  const SCREEN = { x: -31, y: -65, w: 62, h: 38, r: 11 };
+
+  // Contorno do corpo sem beginPath: entra num caminho composto
+  function bodyOutline(x) {
+    const { cy, hw, bottomHw, hh, r } = BODY, top = cy - hh, bottom = cy + hh;
+    x.moveTo(-hw + r, top);
+    x.lineTo(hw - r, top);
+    x.quadraticCurveTo(hw, top, hw, top + r);
+    x.lineTo(bottomHw, bottom - r);
+    x.quadraticCurveTo(bottomHw, bottom, bottomHw - r, bottom);
+    x.lineTo(-bottomHw + r, bottom);
+    x.quadraticCurveTo(-bottomHw, bottom, -bottomHw, bottom - r);
+    x.lineTo(-hw, top + r);
+    x.quadraticCurveTo(-hw, top, -hw + r, top);
+    x.closePath();
+  }
+
+  // Retângulo arredondado sem beginPath (o buraco da tela no caminho composto)
+  function roundRectOutline(x, { x: X, y: Y, w: W, h: H, r: R }) {
+    x.moveTo(X + R, Y);
+    x.arcTo(X + W, Y, X + W, Y + H, R);
+    x.arcTo(X + W, Y + H, X, Y + H, R);
+    x.arcTo(X, Y + H, X, Y, R);
+    x.arcTo(X, Y, X + W, Y, R);
+    x.closePath();
+  }
+
+  // Costura: curva (from → ctrl → to) com pontos cruzados; count pontos de half px para cada lado
+  function stitchedCurve(x, from, ctrl, to, count, half) {
+    const point = t => {
+      const u = 1 - t;
+      return [u * u * from[0] + 2 * u * t * ctrl[0] + t * t * to[0], u * u * from[1] + 2 * u * t * ctrl[1] + t * t * to[1]];
+    };
+    const normal = t => {
+      const dx = 2 * (1 - t) * (ctrl[0] - from[0]) + 2 * t * (to[0] - ctrl[0]);
+      const dy = 2 * (1 - t) * (ctrl[1] - from[1]) + 2 * t * (to[1] - ctrl[1]);
+      const len = Math.hypot(dx, dy) || 1;
+      return [-dy / len, dx / len];
+    };
+    x.beginPath();
+    x.moveTo(from[0], from[1]);
+    x.quadraticCurveTo(ctrl[0], ctrl[1], to[0], to[1]);
+    x.stroke();
+    for (let i = 0; i < count; i++) {
+      const t = (i + 0.5) / count;
+      const [px, py] = point(t), [nx, ny] = normal(t);
+      x.beginPath();
+      x.moveTo(px - nx * half, py - ny * half);
+      x.lineTo(px + nx * half, py + ny * half);
+      x.stroke();
+    }
+  }
+
+  // Recorte do corpo sem a tela do peito: o que for pintado depois só aparece no corpo
+  function clipBodyWithoutScreen(x) {
+    x.beginPath();
+    bodyOutline(x);
+    roundRectOutline(x, SCREEN);
+    x.clip('evenodd');
+  }
+
+  // ========================================================
   // ESPAÇO PARA CHAPÉU ALTO
   // ========================================================
   const HEAD_TOP = 216;   // alto da cabeça acima da base do corpo
@@ -617,5 +722,9 @@
     return { key: 'nenhuma', label: 'Sem data especial', outfit: {} };
   }
 
-  root.RoboRoupas = { ITEMS, SLOTS, LENS_X, Spring, Wardrobe, headroomZoom, easter, seasonFor };
+  root.RoboRoupas = {
+    ITEMS, SLOTS, SETS, LENS_X, Spring, Wardrobe, headroomZoom, easter, seasonFor,
+    itemsFor, setsFor, setWorn, toggleSet, outfitOf,
+    shape: { BODY, SCREEN, bodyOutline, roundRectOutline, clipBodyWithoutScreen, stitchedCurve }
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

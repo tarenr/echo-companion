@@ -288,13 +288,21 @@
   }
   // [ritmo-fim]
 
+  // ========================================================
+  // TEMAS: cores e estados de cada personagem
+  // ========================================================
+  // Sem tema, o robô é o do Echo (ciano). A Luna usa o tema lavanda, com os estados dela.
   const ROBO_SPEC = {
     eye: { w: 15, h: 26 },
     shell: ['#f2fdff', '#8fdcf0'],   // casca clara da cabeça e do corpo
     visor: ['#0a2333', '#020b12'],
     ink: '#041622',
     rim: 'rgba(0, 229, 255, 0.35)',
-    tagRim: '#00e5ff'
+    tagRim: '#00e5ff',
+    neck: '#0b2433',
+    hands: ['#7fe3f5', '#00d4ff'],   // preenchimento e contorno
+    blush: [184, 41, 221],
+    particles: { heart: '#b829dd', star: '#00d4ff', spark: '#10b981', zzz: [167, 139, 250] }
   };
 
   const STATES = {
@@ -321,13 +329,45 @@
   // Som avisado pelo gancho onSound a cada troca de estado (só quando o estado muda de fato)
   const STATE_SOUNDS = { finished: 'finish', error: 'error', approval: 'approval', thinking: 'think', listening: 'listen', working: 'work', sleeping: 'sleep' };
 
+  // Luna: as cores dela (lavanda) e os estados que a página dela usa
+  const LUNA_SPEC = {
+    eye: { w: 15, h: 26 },
+    shell: ['#faf5ff', '#e2c6fc'],
+    visor: ['#1e1033', '#0b0614'],
+    ink: '#2e1065',
+    rim: 'rgba(192, 132, 252, 0.55)',
+    tagRim: '#c084fc',
+    neck: '#2a1748',
+    hands: ['#f3e8ff', '#c084fc'],
+    blush: [244, 114, 182],
+    particles: { heart: '#f472b6', star: '#c084fc', spark: '#e879f9', zzz: [216, 180, 254] }
+  };
+  const LUNA_STATES = {
+    idle: { label: 'Pronta', col: '#c084fc', tint: 0, eye: 'pill', badge: null },
+    talking: { label: 'Falando', col: '#c084fc', tint: 0.35, eye: 'pill', badge: null },
+    thinking: { label: 'Pensando', col: '#e879f9', tint: 0.55, eye: 'pill', badge: ['dots', '#e879f9'] },
+    listening: { label: 'Ouvindo', col: '#a855f7', tint: 0.40, eye: 'dot', badge: null },
+    happy: { label: 'Feliz', col: '#f472b6', tint: 0.35, eye: 'happy', badge: null },
+    sleeping: { label: 'Dormindo', col: '#818cf8', tint: 0.15, eye: 'sleep', badge: null }
+  };
+
+  const THEMES = {
+    echo: { id: 'echo', spec: ROBO_SPEC, states: STATES, sounds: STATE_SOUNDS },
+    luna: { id: 'luna', spec: LUNA_SPEC, states: LUNA_STATES, sounds: { thinking: 'love', listening: 'listen', happy: 'pop' } }
+  };
+
   // ========================================================
   // 7. CLASSE DO ROBÔ (motor do Echo + desenho, roupas e reações próprios)
   // ========================================================
   class RoboBot {
-    constructor(canvas) {
+    // theme: THEMES.echo (padrão) ou THEMES.luna
+    constructor(canvas, { theme = THEMES.echo } = {}) {
       this.c = canvas;
       this.x = canvas.getContext('2d');
+      this.theme = theme;
+      this.spec = theme.spec;
+      this.states = theme.states;
+      this.stateSounds = theme.sounds || {};
       this.s = {
         yaw: 0, pitch: 0, roll: 0, tilt: 0,
         open: 1, sx: 1, sy: 1, oy: 0, ox: 0,
@@ -339,15 +379,15 @@
       this.tg = { ...this.s };
       this.tw = [];
       this.lock = {};
-      this.col = [0, 212, 255];
-      this.colT = [0, 212, 255];
+      this.col = hexRgb(this.states.idle.col);
+      this.colT = hexRgb(this.states.idle.col);
       this.colOverride = null;
       this.state = 'idle';
-      this.cfg = STATES.idle;
+      this.cfg = this.states.idle;
       this.eyeOv = null;
       this.ovUntil = 0;
       this.badge = null;
-      this.badgeCol = '#00d4ff';
+      this.badgeCol = this.states.idle.col;
       this.tagHoldUntil = 0;                         // até quando o quadro da cabeça espera (entrada)
       this._bk = 'none';
       this._bt = 0;
@@ -469,14 +509,14 @@
     }
 
     setState(n) {
-      if (!STATES[n]) return;
+      if (!this.states[n]) return;
       const previous = this.state;
       const changed = previous !== n;
       this.state = n;
-      if (changed && STATE_SOUNDS[n]) this.onSound(STATE_SOUNDS[n]);
+      if (changed && this.stateSounds[n]) this.onSound(this.stateSounds[n]);
       // Acordar do modo dormindo faz a entrada
       if (previous === 'sleeping' && n !== 'sleeping') this.entrance();
-      const c = this.cfg = STATES[n];
+      const c = this.cfg = this.states[n];
       this.colT = hexRgb(c.col);
       this.tg.tint = c.tint;
       this.tg.tilt = c.tilt || 0;
@@ -496,6 +536,9 @@
         this.anim('es', [[1.22, 180, E.out]]);
       } else if (n === 'working') {
         this.anim('sy', [[0.95, 120, E.out], [1, 140, E.inOut]]);
+      } else if (n === 'happy') {
+        // Estado da Luna: pulinho de alegria
+        this.anim('oy', [[-0.15, 140, E.out], [0, 260, E.back]]);
       } else {
         this.blink();
       }
@@ -852,16 +895,21 @@
       x.rotate(s.tilt + s.lean + s.sway);
       x.translate(0, -PIVOT);
 
+      // Partes de trás das peças (ex.: cabelo comprido) ficam atrás do corpo e da cabeça
+      this.drawWornBack(n);
       this.drawBody(t);
       this.drawWorn('pescoco', n, t);
       this.drawHead();
       this.drawFace(f, n, t);
-      this.drawTag(t);
-      // Chapéus: deslizam um pouco junto com o rosto, para parecer que a cabeça gira
+      // Peças presas ao robô (anchor 'robo', ex.: cabelo) ficam no lugar da cabeça; chapéus deslizam um
+      // pouco junto com o rosto, para parecer que a cabeça gira
+      this.drawWorn('cabeca', n, t, 'robo');
       x.save();
       x.translate(HAT.x + f.x * 0.3, HAT.y + s.hatY);
-      this.drawWorn('cabeca', n, t);
+      this.drawWorn('cabeca', n, t, 'chapeu');
       x.restore();
+      // O quadro >_ fica por cima das peças da cabeça
+      this.drawTag(t);
       this.drawHands(t);
       this.drawAccessory(t);
       x.restore();
@@ -870,17 +918,34 @@
       x.restore();
     }
 
-    // Peças de um lugar do guarda-roupa, com a transição de entrada e saída
-    drawWorn(slot, n, t) {
+    // Peças de um lugar do guarda-roupa, com a transição de entrada e saída. anchor separa, na cabeça, as
+    // peças presas ao robô ('robo') dos chapéus ('chapeu', o padrão)
+    drawWorn(slot, n, t, anchor) {
       const x = this.x;
       for (const layer of this.wardrobe.layers(slot, n)) {
         if (layer.alpha <= 0.01) continue;
+        if (anchor && (layer.item.anchor || 'chapeu') !== anchor) continue;
         x.save();
         x.globalAlpha *= layer.alpha;
         x.translate(0, layer.dy);
         x.scale(layer.scale, layer.scale);
         layer.item.draw(x, t, layer.a);
         x.restore();
+      }
+    }
+
+    // Partes de trás das peças (item.back), em coordenadas do robô, antes do corpo
+    drawWornBack(n) {
+      const x = this.x, t = (n - this.t0) / 1000;
+      for (const slot of Roupas.SLOTS) {
+        for (const layer of this.wardrobe.layers(slot, n)) {
+          if (!layer.item.back || layer.alpha <= 0.01) continue;
+          x.save();
+          x.globalAlpha *= layer.alpha;
+          x.translate(0, layer.dy);
+          layer.item.back(x, t, layer.a);
+          x.restore();
+        }
       }
     }
 
@@ -907,8 +972,8 @@
     fillShell(path, top, bottom) {
       const x = this.x, s = this.s;
       const g = x.createLinearGradient(0, top, 0, bottom);
-      g.addColorStop(0, ROBO_SPEC.shell[0]);
-      g.addColorStop(1, ROBO_SPEC.shell[1]);
+      g.addColorStop(0, this.spec.shell[0]);
+      g.addColorStop(1, this.spec.shell[1]);
       x.fillStyle = g;
       x.fill(path);
       if (s.tint > 0.01) {
@@ -918,7 +983,7 @@
         x.fillStyle = tg;
         x.fill(path);
       }
-      x.strokeStyle = ROBO_SPEC.rim;
+      x.strokeStyle = this.spec.rim;
       x.lineWidth = 1.6;
       x.stroke(path);
     }
@@ -937,7 +1002,7 @@
     drawBody(t) {
       const x = this.x;
       // Pescoço
-      x.fillStyle = '#0b2433';
+      x.fillStyle = this.spec.neck;
       rr(x, -30, -90, 60, 14, 7);
       x.fill();
       x.strokeStyle = rgba(this.col, 0.55);
@@ -958,7 +1023,7 @@
       x.restore();
 
       // Tela do peito: ">_" ou o símbolo do toque
-      x.fillStyle = ROBO_SPEC.ink;
+      x.fillStyle = this.spec.ink;
       rr(x, -30, -64, 60, 36, 10);
       x.fill();
       x.strokeStyle = rgba(this.col, 0.8);
@@ -991,7 +1056,7 @@
 
     // Visor, olhos, bochechas, boca e óculos a partir do mesmo referencial (faceFrame)
     drawFace(f, n, t) {
-      const x = this.x, s = this.s, P = ROBO_SPEC;
+      const x = this.x, s = this.s, P = this.spec;
       if (!f.visible) return;
       const pts = facePoints(f);
       const at = (p, paint) => {
@@ -1037,7 +1102,7 @@
 
       // Bochechas
       const bl = Math.max(s.blush, 0.32);
-      x.fillStyle = `rgba(184, 41, 221, ${0.45 * bl})`;
+      x.fillStyle = `rgba(${P.blush.join(', ')}, ${0.45 * bl})`;
       pts.cheeks.forEach(p => at(p, () => {
         x.beginPath();
         x.ellipse(0, 0, 11, 5, 0, 0, Math.PI * 2);
@@ -1077,10 +1142,10 @@
       x.translate(TAG.x, TAG.y);
       x.rotate(-0.1);
       x.scale(k, k);
-      x.fillStyle = ROBO_SPEC.ink;
+      x.fillStyle = this.spec.ink;
       rr(x, -TAG.w / 2, -TAG.h / 2, TAG.w, TAG.h, 11);
       x.fill();
-      x.strokeStyle = ROBO_SPEC.tagRim;
+      x.strokeStyle = this.spec.tagRim;
       x.lineWidth = 3;
       x.stroke();
       const col = this.badgeCol;
@@ -1111,8 +1176,8 @@
     // Mãos iguais às do Echo atual: aparecem ao falar e ao dançar; uma delas acena na entrada
     drawHands(t) {
       const x = this.x, s = this.s;
-      x.fillStyle = '#7fe3f5';
-      x.strokeStyle = '#00d4ff';
+      x.fillStyle = this.spec.hands[0];
+      x.strokeStyle = this.spec.hands[1];
       x.lineWidth = 2;
       if (s.hands > 0.05) {
         const hr = R * 0.18 * s.hands;
@@ -1278,21 +1343,21 @@
         x.translate(px, py);
         x.globalAlpha = clamp(a, 0, 1);
         if (p.type === 'heart') {
-          x.fillStyle = '#b829dd';
+          x.fillStyle = this.spec.particles.heart;
           heart(x, sz);
           x.fill();
         } else if (p.type === 'star') {
-          x.fillStyle = '#00d4ff';
+          x.fillStyle = this.spec.particles.star;
           x.rotate(p.rot + p.age * 2);
           star(x, sz, sz * 0.45);
           x.fill();
         } else if (p.type === 'spark') {
-          x.fillStyle = '#10b981';
+          x.fillStyle = this.spec.particles.spark;
           x.rotate(p.rot);
           star(x, sz * 0.8, sz * 0.18);
           x.fill();
         } else if (p.type === 'zzz') {
-          x.fillStyle = 'rgba(167, 139, 250, ' + clamp(a * 0.9, 0, 0.9) + ')';
+          x.fillStyle = rgba(this.spec.particles.zzz, clamp(a * 0.9, 0, 0.9));
           x.font = `bold ${sz * 1.3}px -apple-system, sans-serif`;
           x.textAlign = 'center';
           x.textBaseline = 'middle';
@@ -1654,7 +1719,7 @@
   }
 
   window.RoboMotor = {
-    RoboBot, STATES, EMOTES, FACE, faceFrame, facePoints,
+    RoboBot, STATES, THEMES, EMOTES, FACE, faceFrame, facePoints,
     GestureReader, tiltFromOrientation, ShakeDetector, BeatDetector,
     Sfx, E, createDriver, createFloating, createSensors
   };
