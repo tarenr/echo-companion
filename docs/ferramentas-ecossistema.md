@@ -73,27 +73,27 @@ O Echo possui memória local isolada em SQLite com 3 tabelas:
 
 ## 5. Suíte das 5 Animações 2D do Mascote
 
-O mascote vetorial em HTML5 Canvas possui 5 acessórios reativos sincronizados em tempo real:
+O robô do Echo (HTML5 Canvas, `public/robo-motor.js`; desde 06/10/2026 no lugar da antiga "bolha") possui 5 acessórios de trabalho reativos, sincronizados em tempo real. Eles podem ser usados junto com as peças do guarda-roupa (ver README, "Personagem do Echo").
 
 1. **Lupa / Inspeção (`lupa`)**:
    - **Gatilho**: Disparada automaticamente assim que o Echo inicia uma consulta externa de dados (bancos, tarefas, status de backup ou métricas).
-   - **Visual**: Lupa metálica neon cyan com lente translúcida e arco de reflexo branco, orbitando suavemente em frente aos olhos do mascote.
+   - **Visual**: Lupa metálica neon cyan com lente translúcida e arco de reflexo branco, orbitando suavemente na frente do olho direito, sobre o visor.
 2. **Digitação (`typing`)**:
    - **Gatilho**: Ativada durante o raciocínio do modelo Gemini antes de sintetizar a fala.
-   - **Visual**: Teclado cyber dark com teclas piscantes pulsando em cyan, enquanto as mãos do robô alternam toques verticais rápidos.
+   - **Visual**: Teclado cyber dark com teclas piscantes pulsando em cyan, na frente da parte de baixo do corpo.
 3. **Impressora (`printer`)**:
    - **Gatilho**: Ativada quando o Echo compila e apresenta resumos numéricos consolidados (saldos bancários, faturas ou despesas a pagar).
-   - **Visual**: Mini impressora térmica com led verde emitindo um comprovante de papel com linhas de dados deslizando para cima.
+   - **Visual**: Mini impressora térmica com led verde ao lado do corpo, emitindo um comprovante de papel com linhas de dados deslizando para cima.
 4. **Comemoração (`celebration`)**:
    - **Gatilho**: Disparada ao detectar metas batidas (treino do Gym OS cumprido, tarefas concluídas com sucesso, streak elevado).
-   - **Visual**: O mascote salta alegremente, seus olhos mudam para estrelas douradas e 28 confetes coloridos giram e caem em cascata.
+   - **Visual**: O robô salta, os olhos viram estrelas douradas, 28 confetes coloridos caem em cascata e, em seguida, ele dança por 4 s.
 5. **Xícara de Café (`coffee`)**:
    - **Gatilho**: Modo ocioso prolongado (estágio 1) — ativado após 3 minutos (180s) sem nenhuma fala, toque na tela ou evento de IA.
-   - **Visual**: O mascote segura uma caneca branca e azul com café quente, liberando fios de vapor ondulantes. Interações do usuário desativam a caneca instantaneamente.
+   - **Visual**: Caneca branca e azul ao lado direito do corpo, com fios de vapor ondulantes. Interações do usuário desativam a caneca instantaneamente.
 6. **Modo Dormindo (`sleeping`)**:
    - **Gatilho**: Inatividade profunda (estágio 2 — após 6 minutos / 360s sem interação) ou comando de voz ("boa noite", "vai dormir", "modo soneca").
-   - **Visual**: Olhos com arcos serenos fechados `( ˘ _ ˘ )`, física de respiração suave e profunda (expansão senoidal), partículas flutuantes neon lilás `z Z z` e dimerização suave de brilho da interface (`body.sleep-mode`), ideal para painéis OLED de celular.
-   - **Despertar**: Toque ou clique em qualquer ponto da tela, comando de voz ou notificação em tempo real de agente de IA (Claude, Antigravity, Codex).
+   - **Visual**: Olhos em arcos serenos no visor, boca escondida, respiração lenta, o robô para de flutuar, partículas lilás `z Z z` e brilho da interface reduzido (`body.sleep-mode`), ideal para painéis OLED de celular.
+   - **Despertar**: Toque ou clique em qualquer ponto da tela, comando de voz ou notificação em tempo real de agente de IA (Claude, Antigravity, Codex). Ao acordar, o robô faz a animação de entrada.
 
 ---
 
@@ -104,7 +104,7 @@ Para evitar poluir o visual minimalista do mascote durante a navegação normal,
 - **Modo Padrão (`.mode-full`)**: O mascote ocupa o centro da tela com foco total em suas expressões e gestos.
 - **Modo Informação Lateral (`.mode-info`)**:
   - **Ativação**: Disparado automaticamente sempre que o servidor retorna dados estruturados de ecossistema (`card`).
-  - **Comportamento**: O mascote desliza suavemente para a esquerda (`transform: translateX(-40%)` no canvas), ajusta o olhar fixo para a direita (`mochi.look.x = 0.85`) e o container `#info-panel` se expande com fade-in e slide.
+  - **Comportamento**: O robô, reduzido, vai para a área livre (`placeForCard` em `public/app.js`): à esquerda do cartão com o celular deitado e acima dele em pé. Ele olha para o cartão (`mochi.look`) e o container `#info-panel` se expande com fade-in e slide. Em pé, se o balão de fala aparecer junto, o cartão encolhe e rola para sobrar espaço para o robô entre os dois.
   - **Conteúdo do Card**: Exibe badge temático (`BACKUP ECOSSISTEMA`, `ESTRATÉGIA NERD`, `SALDOS CONSOLIDADOS`, `TELEMETRIA`), título e detalhes principais com tipografia mono neon.
   - **Retorno Automático**: Após a conclusão da resposta por voz, o robô retorna suavemente ao centro e o painel se recolhe.
 
@@ -112,16 +112,15 @@ Para evitar poluir o visual minimalista do mascote durante a navegação normal,
 
 ## 7. Física Facial e Geometria 3D da Boca
 
-A boca do robô é acoplada à matriz de rotação esférica tridimensional da cabeça, garantindo que o rosto se mova organicamente como uma única entidade:
+O rosto do robô é uma peça única: visor, olhos, boca, bochechas e óculos são desenhados a partir do mesmo referencial, então se movem sempre juntos.
 
-1. **Centralização Tridimensional**:
-   - A boca utiliza o ângulo de rotação horizontal (`mouthYaw = s.yaw`), ficando sempre posicionada exatamente no centro entre o olho esquerdo e o olho direito.
-   - Acompanha o pitch e o roll (`mouthPitch = P.eye.p - 0.20 + s.pitch + s.roll`), inclinando-se junto com a postura da cabeça.
-2. **Envelope Rígido de Segurança**:
-   - Para evitar que a boca escape da face em inclinações extremas, suas coordenadas são travadas em um envelope proporcional:
-     * `mx = clamp(mx, -rx * 0.45, rx * 0.45)` (garante mais de 50px de folga até as bordas laterais).
-     * `my = clamp(my, ry * 0.12, ry * 0.55)` (garante posicionamento correto entre os olhos e o queixo).
-   - A renderização é protegida pelo `x.clip(path)` da superelipse corporal, impossibilitando qualquer pixel de ultrapassar o corpo do robô.
+1. **Um só referencial (`faceFrame` em `public/robo-motor.js`)**:
+   - O olhar para os lados (`yaw`) e o giro de comemoração (`roll`) deslizam o rosto num "cilindro" de raio 60: posição `sin(ângulo) × 60` e largura `cos(ângulo)`. No meio do giro o rosto fica de costas e some; ao fim, volta ao mesmo lugar.
+   - O olhar para cima e para baixo (`pitch`, limitado a ±0,3) sobe ou desce o rosto inteiro.
+   - `facePoints` calcula onde cada parte fica a partir desse referencial; nenhuma parte tem conta própria. Na antiga bolha (backup em `docs/legado/`), as bochechas usavam outra conta e não acompanhavam a boca.
+2. **Dentro da cabeça**:
+   - Os limites do referencial mantêm o visor dentro da cabeça em qualquer olhar, e o desenho do rosto é recortado pela forma da cabeça (`x.clip`), impossibilitando qualquer pixel de sair dela.
+   - `tests/robo.test.js` confere, para vários ângulos de olhar e de giro, que as distâncias entre olhos, boca e bochechas ficam constantes e que o rosto não sai da cabeça.
 3. **Alternância Estrita de Estados (`_` vs `o`)**:
    - **Ao falar (`s.mouthOpen > 0.05`)**: elipse preenchida `o` com abertura vertical modulada pelas sílabas da voz neural.
    - **Em repouso (`s.mouthOpen <= 0.05`)**: traço fechado sutil `_` estilo Kaomoji com cantos arredondados (`lineCap: round`).

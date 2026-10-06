@@ -25,13 +25,13 @@ Ele monitora em tempo real:
    - **Cabeçalho Composto Dinâmico:** Exibe instantaneamente no topo `X AGENTES ATIVOS // CLAUDE & ANTIGRAVITY` com borda e brilho pulsante dual neon.
    - **Tema Visual Dual Neon:** O robô adota a classe `.theme-multi-agent` com pulsação sincronizada entre o Azul Ciano (`#00e5ff`) e o Coral Neon (`#ff7a45`), representando visualmente a união dos agentes na mesma tela.
    - **Conclusão Independente:** Quando um agente finaliza sua tarefa e envia evento de parada (`Stop`), o Echo notifica que ele encerrou mantendo o foco no agente que continua em execução sem interromper o painel.
-4. **Braços, Mãos e Poses Kaomoji**:
-   - **Pesquisando (leitura):** Mãos apoiadas `c( • _ • )כ` na cor da IA ativa.
-   - **Implementando (escrita):** Braços na massa `\( ò _ ó )/` na cor da IA ativa.
-   - **Chamando aprovação:** Braços erguidos acenando `\( ? o ? )/` em dourado.
-   - **Comemorando vitória:** Braços comemorando `*\ ( ^ _ ^ ) /*` em esmeralda.
-   - **Falha / Erro:** Braços caídos `¯\_( x _ x )_/¯` em vermelho.
-   - **Regra estrita e física da boca:** A boca varia ESTRITAMENTE entre `_` (fechada/repouso) e `o` (aberta/falando). Possui projeção esférica 3D acoplada aos eixos de rotação da face (yaw, pitch e roll), mantendo-se sempre centrada entre os olhos com perspectiva e envelope de segurança rígido que impede a boca de sair do rosto sob qualquer ângulo de visualização.
+4. **Personagem: robô** (desde 06/10/2026, no lugar da "bolha"; motor em `public/robo-motor.js`, roupas em `public/robo-roupas.js`):
+   - **Aparência:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_`, etiqueta `>_` no alto da cabeça que vira o selo do estado (pontinhos trabalhando, `!` na aprovação, ponto verde ou vermelho no fim), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão.
+   - **Estados e cores:** os mesmos de antes (repouso, trabalhando, multiagente, pensando, aprovação, concluído, erro, ouvindo, dormindo), com os mesmos sons do Echo em cada troca de estado.
+   - **Rosto como peça única:** visor, olhos, boca, bochechas e óculos saem de um só ponto e uma só escala; ao olhar para os lados, para cima, para baixo ou girar, andam juntos.
+   - **Regra estrita da boca:** a boca varia ESTRITAMENTE entre `_` (fechada/repouso) e `o` (aberta/falando); dormindo, some.
+   - **Mãos:** as mãos redondas aparecem ao falar e ao dançar; na entrada, uma delas acena.
+   - Animações, reações ao toque, guarda-roupa e janela flutuante: ver [Personagem do Echo](#-personagem-do-echo-robô). Backup da bolha: `docs/legado/`.
 5. **Design Responsivo Híbrido (Retrato & Paisagem)**:
    - **Em pé (Retrato / Celular na mesa):** O mascote ocupa a parte superior e, ao responder consultas estruturadas de dados (Backups, Telemetria, Bancos, Cartões, Contas, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), desliza suavemente para cima e direciona o olhar para baixo (`mochi.look.y = 0.85`), abrindo o painel de cards neon na metade inferior sem espremer o texto.
    - **Deitado (Paisagem):** O mascote desliza suavemente para a esquerda e fixa o olhar para a direita (`mochi.look.x = 0.85`), mantendo o painel lateral clássico.
@@ -50,6 +50,28 @@ Ele monitora em tempo real:
 13. **Controles legíveis em pé**: em pé, topo e rodapé têm fontes maiores e os botões do rodapé dividem a largura com 44 px de altura (o status da conexão fica numa linha acima). Se a página for montada bem mais larga que a tela de um aparelho de toque (modo "Site para computador"), aparece uma vez um aviso para desativar esse modo.
 14. **Mascote proporcional e balão que não cobre o mascote**: o tamanho do Echo acompanha a área livre da tela (em pé, até 80% da largura e 380 px; deitado, até 42% da largura e 340 px) e o desenho continua nítido em qualquer tamanho. O balão de fala tem altura fixa de 3 linhas: quando o texto é maior, ele sobe acompanhando a fala (pela posição do áudio da voz neural, pela palavra dita pela voz do navegador ou, sem áudio, no ritmo de leitura); a sua fala transcrita mostra sempre as últimas palavras. Com o balão visível, o mascote fica abaixo dele e encolhe se faltar espaço; em tela deitada e baixa, o balão vai para o lado do mascote, que mantém o tamanho. Com um cartão aberto, o mascote reduzido vai para a área livre (acima do cartão em pé, à esquerda dele deitado, com o balão em cima dele); em pé, se o balão aparecer junto com o cartão, o cartão encolhe e rola para sobrar espaço entre os dois.
 
+### 🤖 Personagem do Echo (robô)
+
+O Echo usa o robô do motor compartilhado (`public/robo-motor.js`), o mesmo da página de testes `/robo.html`.
+
+| Animação | Acontece quando… |
+|---|---|
+| Estados, cores e acessórios de trabalho | como antes: lupa ao consultar dados, teclado enquanto o Gemini pensa, impressora em resumos de valores, comemoração ao bater meta, café com 3 min parado, dormir com 6 min parado ou "boa noite" |
+| Entrada (cai, amassa, quica, desliza, acena e volta) | ao abrir o Echo; ao acordar do sono (toque, voz ou evento de agente); ao voltar ao app depois de mais de 30 min fora |
+| Dança (balanço, pulinhos e mãos) | comando de voz "dança", "dançar", "dance" ou "vamos dançar" (com ou sem "Echo"): 10 s, sem consultar o servidor; na comemoração: 4 s |
+| Troca de roupa | quando você escolhe uma peça; no automático, ao abrir e quando vira o dia |
+| Balanço das roupas | o tempo todo (pulos, inclinação, giro, toque e dança) |
+
+**Reações ao toque no robô:** 1 toque achata; 2 toques rápidos pulam e giram; 5 ou mais toques em 2 s deixam o robô bravo (olhos inclinados e vermelho); toque no visor = surpresa; toque na tela do peito mostra outro símbolo (♥, :), !, ?, ♪); toque no chapéu faz o chapéu pular; passar o dedo na cabeça é carinho (olhos felizes, bochechas e corações); **segurar 0,6 s abre a folha Personagem**. Com o robô dormindo, o toque acorda.
+
+**Folha Personagem:** as 11 peças do guarda-roupa (cabeça, rosto e pescoço; uma por lugar, combináveis; tocar de novo tira), "Automático (estação)" ligado por padrão (veste pelas datas da tabela da seção do robô; escolher uma peça à mão desliga), "Tirar tudo" e "Janela flutuante" (aparece só onde o navegador permite). O Echo guarda a escolha no próprio navegador (`echo_personagem`).
+
+**Janela flutuante:** no PC (Chrome/Edge 116+), o robô vai para uma janela pequena sempre na frente, continua tocável e reagindo aos agentes, e volta ao palco quando ela fecha. No Android, vira um vídeo flutuante do robô por cima dos outros apps (só para ver).
+
+**Fica só na página de testes:** dança pelo microfone (o Echo usa o microfone para ouvir você) e giroscópio.
+
+**Sons:** os sons do Echo continuam (os seus `.wav` locais ou os tons); a entrada usa sons próprios do robô, gerados no navegador.
+
 ---
 
 ## 🔒 Segurança e Acesso Externo (Cloudflare Tunnel + PIN)
@@ -61,7 +83,8 @@ O Echo pode ser acessado de **dentro de casa (Wi-Fi)** ou de **qualquer lugar do
 - **Como funciona:**
   - Requisições feitas no próprio computador (`127.0.0.1`, sem passar pelo túnel) são liberadas para que os agentes locais não sofram qualquer atraso.
   - Qualquer requisição vinda pela internet (Cloudflare Tunnel) ou pela rede de casa exige o **PIN de Acesso**, enviado por cabeçalho (`x-echo-pin`), parâmetro `?pin=` ou cookie.
-  - Sem PIN, quem vem de fora só recebe o que as telas de entrada precisam: `/`, `index.html`, `app.js`, `styles.css`, `sw.js`, `manifest.json`, os ícones e os arquivos da Luna (`/luna`, `luna.*`, `manifest-luna.json`, `icon-luna.svg`). Todo o resto de `public/` e todas as rotas `/api/` (inclusive `/api/events`, `/api/sounds`, `/api/stream`, `/api/speak`) respondem `401`.
+  - Sem PIN, quem vem de fora só recebe o que as telas de entrada precisam: `/`, `index.html`, `app.js`, `styles.css`, `sw.js`, `manifest.json`, os ícones, os arquivos do robô (`robo-motor.js` e `robo-roupas.js`, só desenho e código, carregados antes do PIN), os da localização e os da Luna (`/luna`, `luna.*`, `manifest-luna.json`, `icon-luna.svg`). Todo o resto de `public/` e todas as rotas `/api/` (inclusive `/api/events`, `/api/sounds`, `/api/stream`, `/api/speak`) respondem `401`.
+  - **Tela de PIN nas páginas protegidas:** quem abre direto uma página protegida (ex.: `/robo.html`) sem o PIN recebe uma tela de PIN (`src/pinPage.js`) em vez do erro em texto. O PIN vai para `/api/auth/verify`, que grava o cookie, e a página recarrega liberada. Scripts, estilos e API continuam recebendo o `401` em JSON.
   - **Limite de tentativas:** 10 PINs errados diferentes em 15 minutos bloqueiam aquele IP por 15 minutos (`429` com `Retry-After`). Os contadores do Echo e da Luna são separados, enviar sem PIN não conta como erro e repetir o mesmo PIN errado (cookie antigo, reconexão) conta uma vez. Reiniciar o serviço zera os contadores. No Wi-Fi, o celular e o PC saem pelo mesmo IP na internet.
   - O IP informado pelo Cloudflare (`cf-connecting-ip`) só é aceito quando a conexão vem do próprio PC, onde roda o túnel; vindo da rede de casa, vale o endereço real.
   - No celular, você só digita o PIN uma vez: o navegador o guarda no `localStorage` e num cookie `HttpOnly` (com `Secure` quando o acesso vem pelo Cloudflare).
@@ -215,15 +238,15 @@ Mascote companheira desenvolvida especialmente para uso pessoal com inteligênci
 
 ---
 
-## 🤖 Robô // Página de Testes do Segundo Personagem
+## 🤖 Robô // Laboratório do Personagem
 
-Página separada para avaliar o robô que pode, no futuro, substituir a "bolha" do Echo. Não muda nada no Echo.
+Página separada com o mesmo robô do Echo e botões para testar cada animação, mais os recursos que o Echo não usa (dança pelo microfone e giroscópio). Desde 06/10/2026 o robô é o personagem do Echo (ver [Personagem do Echo](#-personagem-do-echo-robô)).
 
-- **Endereço:** `/robo.html` (ex.: `https://echo.tfr-info.com.br/robo.html`). Usa o PIN do Echo: abra depois de entrar no Echo no mesmo navegador.
+- **Endereço:** `/robo.html` (ex.: `https://echo.tfr-info.com.br/robo.html`). Usa o PIN do Echo: se o navegador ainda não tiver o PIN, a página mostra a tela de PIN.
 - **Personagem:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_` (falando, `o`), etiqueta `>_` no alto da cabeça que vira o selo do estado (pontinhos trabalhando, `!` na aprovação, ponto verde ou vermelho no fim), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão. As mãos são as mesmas do Echo e aparecem ao falar.
-- **Rosto como peça única:** visor, olhos, boca e bochechas são desenhados a partir de um só ponto e uma só escala (`faceFrame` em `public/robo.js`). Ao olhar para os lados, para cima, para baixo ou no giro de comemoração, as partes andam juntas. No Echo atual as bochechas usam outra conta e não acompanham a boca.
+- **Rosto como peça única:** visor, olhos, boca e bochechas são desenhados a partir de um só ponto e uma só escala (`faceFrame` em `public/robo-motor.js`). Ao olhar para os lados, para cima, para baixo ou no giro de comemoração, as partes andam juntas. Na antiga bolha, as bochechas usavam outra conta e não acompanhavam a boca.
 - **Botões:** estados (repouso, trabalhando, multiagente, pensando, aprovação, concluído, erro, ouvindo, dormindo), expressões (amor, surpresa, orgulho, feliz), guarda-roupa, acessórios de trabalho (lupa, teclado, impressora, comemoração, café, nenhum), animações (entrada, dançar 10 s, dançar com a música, som), ações (falar, piscar, toque, girar, pular), olhar (esquerda, direita, cima, baixo, centro, para o cartão, seguir o dedo), sensores (sensor de movimento, chacoalhar simulado) e janela flutuante.
-- **Motor:** cópia do motor de animação do Echo (`public/app.js`, classe `Bot`), como já acontece com a Luna; o desenho, as roupas (`public/robo-roupas.js`), as reações e as animações de entrada e dança são próprios. As ideias de guarda-roupa, estações e entrada vêm do Coucou, mas os desenhos e coreografias foram feitos do zero (a aparência e as animações do Mochi são reservadas pela licença do Coucou). No console do navegador, `robo` dá acesso ao personagem para testes.
+- **Motor:** compartilhado com o Echo (`public/robo-motor.js`: robô, rosto, gestos, sensores, ritmo, laço de desenho e janela flutuante); a página (`public/robo.js`) só monta os botões e os testes de microfone e giroscópio. O motor de animação deriva do motor MIT do Coucou; o desenho, as roupas (`public/robo-roupas.js`), as reações e as animações de entrada e dança são próprios. As ideias de guarda-roupa, estações e entrada vêm do Coucou, mas os desenhos e coreografias foram feitos do zero (a aparência e as animações do Mochi são reservadas pela licença do Coucou). No console do navegador, `robo` dá acesso ao personagem para testes.
 
 ### Quando cada animação acontece
 
@@ -278,7 +301,7 @@ Página separada para avaliar o robô que pode, no futuro, substituir a "bolha" 
 - **Sensor de movimento:** o iPhone e as versões recentes do Chrome pedem permissão ao tocar no botão; nos demais, liga direto. Só funciona pelo endereço HTTPS. Sem leitura em 1,5 s (PC ou endereço HTTP), o botão desliga e avisa.
 - **Janela flutuante:** no PC (Chrome/Edge 116+), o robô vai para uma janela pequena sempre na frente, onde continua tocável, e volta à página quando ela fecha. No Android (Chrome 105+), ou se a janela do PC for recusada, vira um vídeo flutuante do robô por cima dos outros apps, só para ver; enquanto isso, um relógio em segundo plano (Worker) continua desenhando. Os dois abrem só com um toque no botão.
 
-- **Testes:** `tests/robo.test.js` confere que as partes do rosto mantêm as mesmas distâncias em qualquer olhar e giro, que o rosto não sai da cabeça, que a tela acesa é pedida de novo no Echo, na Luna e no robô, a Páscoa e a tabela de estações, a mola das roupas, o guarda-roupa e a transição, o recuo para chapéu alto, os óculos sobre os olhos, os gestos, o sensor e o detector de batidas.
+- **Testes:** `tests/robo.test.js` confere que as partes do rosto mantêm as mesmas distâncias em qualquer olhar e giro, que o rosto não sai da cabeça, que a tela acesa é pedida de novo no Echo, na Luna e no robô, a Páscoa e a tabela de estações, a mola das roupas, o guarda-roupa e a transição, o recuo para chapéu alto, os óculos sobre os olhos, os gestos, o sensor e o detector de batidas. `tests/robo-echo.test.js` confere a troca no Echo (scripts, lista pública, cache, sons, entrada ao acordar, dança e o comando de voz) e `tests/pin-page.test.js`, a tela de PIN.
 
 ---
 
@@ -291,9 +314,9 @@ echo-companion/
 │   ├── codex-notify.cmd    # Wrapper para hook do Codex CLI
 │   └── dispatcher.js       # Bridge HTTP com classificação de leitura vs escrita e comandos resumidos
 ├── data/                   # Banco SQLite da memória e sons opcionais em data/sounds/ (fora do git)
-├── docs/                   # Guias: Google Agenda, opções de voz e ferramentas do ecossistema
+├── docs/                   # Guias: Google Agenda, opções de voz e ferramentas do ecossistema; legado/ guarda a antiga bolha
 ├── public/
-│   ├── app.js              # Cliente SSE, física do mascote Echo, áudio neural e PIN auth
+│   ├── app.js              # Cliente SSE, robô do Echo (pelo motor), folha Personagem, áudio neural e PIN auth
 │   ├── index.html          # Interface OLED do Echo com botões de ação e telemetria
 │   ├── manifest.json       # Configuração PWA do Echo
 │   ├── styles.css          # Estilização Cyberpunk Neon do Echo
@@ -303,7 +326,8 @@ echo-companion/
 │   ├── manifest-luna.json  # Manifesto PWA da Luna
 │   ├── icon-luna.svg       # Ícone vetorial da Luna com laço
 │   ├── robo.html           # Página de testes do segundo personagem (robô)
-│   ├── robo.js             # Robô com rosto como peça única, reações, entrada, dança, sensores e botões
+│   ├── robo-motor.js       # Motor do robô (Echo e laboratório): rosto, gestos, sensores, ritmo, laço e janela flutuante
+│   ├── robo.js             # Laboratório do robô: botões, dança pelo microfone e giroscópio
 │   ├── robo-roupas.js      # Guarda-roupa do robô: 11 peças, estações (com a Páscoa) e física das roupas
 │   ├── robo.css            # Estilos da página do robô
 │   └── sw.js               # Service Worker (cache v5.1 só do shell público, auto-update)
@@ -325,10 +349,11 @@ echo-companion/
 │   ├── calendarStore.js    # Armazenamento local criptografado da agenda
 │   ├── approvals.js        # Pedidos do modo celular: prazo, uso único, resumo seguro e texto da notificação
 │   ├── cards.js            # Cartões de dados: título com o número principal e linhas com status
+│   ├── pinPage.js          # Tela de PIN de quem abre uma página protegida sem o PIN
 │   ├── memory.js           # Memória de longo prazo e preferências em SQLite
 │   ├── navigation.js       # Destinos salvos e links do Waze
 │   └── tools.js            # Definição e execução das ferramentas de Function Calling
-├── tests/                  # Testes (node --test): cartões, agenda e navegação, sem banco real
+├── tests/                  # Testes (node --test): cartões, agenda, navegação, robô, Echo com o robô e tela de PIN, sem banco real
 ├── package.json            # Dependências mínimas; `npm test` roda os testes
 ├── server.js               # Hub local (SSE, webhook, telemetria, TTS, briefing, trava de PIN)
 └── README.md               # Documentação técnica e guia de uso
