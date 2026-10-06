@@ -1107,6 +1107,8 @@
   }
 
   async function unlockAudioAndWakeLock() {
+    // A cada toque: recupera a tela acesa se o navegador tiver soltado o pedido
+    if (audioUnlocked) requestWakeLock();
     if (audioToast) {
       audioToast.classList.add('hidden');
       audioToast.style.display = 'none';
@@ -1154,15 +1156,25 @@
     }, { passive: false });
   }
 
+  // Tela acesa: o navegador solta o pedido quando o app sai da frente (outro app, notificações, tela
+  // bloqueada); por isso pede de novo ao voltar e a cada toque, se tiver sido perdido
+  let wakeLockPending = false;
   async function requestWakeLock() {
+    if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' || wakeLockPending) return;
+    if (wakeLock && !wakeLock.released) return;
+    wakeLockPending = true;
     try {
-      if ('wakeLock' in navigator) {
-        wakeLock = await navigator.wakeLock.request('screen');
-      }
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
     } catch (err) {
       console.warn('WakeLock:', err.message);
+    } finally {
+      wakeLockPending = false;
     }
   }
+  document.addEventListener('visibilitychange', () => {
+    if (audioUnlocked) requestWakeLock();
+  });
 
   // ========================================================
   // 7. SÍNTESE DE VOZ COM SINCRONIA DE BOCA E MÃOS

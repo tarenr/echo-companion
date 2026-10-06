@@ -636,7 +636,29 @@
     return headers;
   }
 
+  // Tela acesa: o navegador solta o pedido quando o app sai da frente (outro app, notificações, tela
+  // bloqueada); por isso pede de novo ao voltar e a cada toque, se tiver sido perdido
+  let wakeLock = null;
+  let wakeLockPending = false;
+  async function requestWakeLock() {
+    if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' || wakeLockPending) return;
+    if (wakeLock && !wakeLock.released) return;
+    wakeLockPending = true;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (err) {
+      console.warn('WakeLock:', err.message);
+    } finally {
+      wakeLockPending = false;
+    }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (audioUnlocked) requestWakeLock();
+  });
+
   function unlockAudio() {
+    requestWakeLock();
     if (audioUnlocked) return;
     audioUnlocked = true;
     audioToast.classList.add('hidden');
