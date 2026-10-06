@@ -136,6 +136,8 @@ html, body {
 #luna-canvas {
   width: 280px;
   height: 280px;
+  /* Segurar (folha Personagem) e arrastar (carinho) no robô sem rolar a tela */
+  touch-action: none;
   filter: drop-shadow(0 0 25px rgba(192, 132, 252, 0.35));
 }
 

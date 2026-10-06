@@ -31,7 +31,7 @@ Ele monitora em tempo real:
    - **Rosto como peça única:** visor, olhos, boca, bochechas e óculos saem de um só ponto e uma só escala; ao olhar para os lados, para cima, para baixo ou girar, andam juntos.
    - **Regra estrita da boca:** a boca varia ESTRITAMENTE entre `_` (fechada/repouso) e `o` (aberta/falando); dormindo, some.
    - **Mãos:** as mãos redondas aparecem ao falar e ao dançar; na entrada, uma delas acena.
-   - Animações, reações ao toque, guarda-roupa, janela flutuante e sensor de movimento: ver [Personagem do Echo](#-personagem-do-echo-robô). Backup da bolha: `docs/legado/`.
+   - Animações, reações ao toque, guarda-roupa, janela flutuante e sensor de movimento: ver [Personagem do Echo](#-personagem-do-echo-robô). Backup da bolha: `docs/legado/` (lá também fica o desenho antigo da Luna, `mascote-luna.js`).
 5. **Design Responsivo Híbrido (Retrato & Paisagem)**:
    - **Em pé (Retrato / Celular na mesa):** O mascote ocupa a parte superior e, ao responder consultas estruturadas de dados (Backups, Telemetria, Bancos, Cartões, Contas, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), desliza suavemente para cima e direciona o olhar para baixo (`mochi.look.y = 0.85`), abrindo o painel de cards neon na metade inferior sem espremer o texto.
    - **Deitado (Paisagem):** O mascote desliza suavemente para a esquerda e fixa o olhar para a direita (`mochi.look.x = 0.85`), mantendo o painel lateral clássico.
@@ -253,7 +253,17 @@ Mascote companheira desenvolvida especialmente para uso pessoal com inteligênci
 - **Modo Mãos-Livres Contínuo:** Microfone com escuta contínua ativa por padrão (`ATIVO`), detecção inteligente de final de frase e retorno automático à escuta após a fala com cooldown anti-eco de 1.2s.
 - **Previsão do Tempo em Tempo Real:** Integrado com Open-Meteo para Serra/ES (temperatura, sensação térmica, umidade, vento, máxima, mínima e probabilidade de chuva), respondendo com afeto e precisão às dúvidas do dia a dia.
 - **Tema Visual:** Lilás / Lavanda Neon (`#b794f4`, `#c084fc`, `#805ad5`) com fundo escuro elegante OLED (`#0a0612`).
-- **Laço na Cabeça Animado:** Desenhado no topo da cabeça com física vetorial acoplada à superelipse do corpo, balançando de forma suave e orgânica ao acompanhar a respiração, fala e inclinação da mascote.
+- **Personagem: robô lavanda (desde 06/10/2026):** o mesmo robô do Echo (`public/robo-motor.js`), com o tema `THEMES.luna`. O desenho antigo (mascote com laço) está em `docs/legado/mascote-luna.js`.
+  - **Cores:** casca lavanda, visor roxo-escuro, olhos e aro na cor do estado.
+  - **Estados:** Pronta, Falando (a boca mexe junto com a voz), Pensando (com o quadro `>_` de pontinhos), Ouvindo, Feliz e Dormindo.
+  - **Fantasia:** começa vestida de **boneca de pano** (cabelo ruivo, rosto de boneca e vestido de retalhos). Tirar a fantasia devolve o "Laço" comum.
+  - **Toques:** as mesmas reações ao toque do Echo. Tocar no robô continua dando a saudação. Segurar abre a folha Personagem; segurar e fazer carinho não puxam a saudação.
+  - **Entrada:** ao abrir e ao voltar depois de mais de 30 min fora. Dormindo, o toque acorda.
+  - **Folha Personagem** (`public/robo-personagem.js`, em lavanda):
+    - tem as 11 peças comuns, a fantasia (botão único e peças soltas), "Tirar tudo" e "Sensor de movimento" (desligado por padrão);
+    - não tem janela flutuante nem automático por estação: a roupa é só por escolha;
+    - guarda as escolhas em `luna_personagem`.
+  - **Sem mudança:** voz, PIN, mãos-livres, localização, tela acesa e o ícone.
 - **Voz Neural Oficial:** Microsoft Edge Neural `pt-BR-ThalitaNeural` (voz feminina jovem, dinâmica e natural em português do Brasil).
 - **PWA Dedicado:** Possui manifesto próprio (`manifest-luna.json`) e ícone SVG exclusivo (`icon-luna.svg`) para instalação na tela de início do celular como aplicativo independente.
 - **Backend Exclusivo:** Endpoint `/api/luna/converse` alimentado por Gemini com System Prompt acolhedor, conciso e livre de jargões técnicos ou telemetrias de PC.
@@ -315,7 +325,7 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
     - "Rosto de boneca" (rosto): cílios, sorriso costurado fino e costuras nas bochechas.
     - "Vestido de retalhos" (pescoço): retalhos verde-água, amarelo, rosa com espirais, rosa-claro e cinza, com costuras, gola em V e a tela `>_` à mostra.
     - Tirar essa fantasia devolve o "Laço" comum, o visual dela sem fantasia.
-  - **Separação por dono:** cada página carrega só o arquivo do seu personagem, e as peças têm dono (`owner`), então uma não aparece na lista da outra. A do Echo está na folha Personagem dele.
+  - **Separação por dono:** cada página carrega só o arquivo do seu personagem, e as peças têm dono (`owner`), então uma não aparece na lista da outra. A do Echo está na folha Personagem dele e a da Luna, na dela (ela começa fantasiada).
   - **Funções comuns:** `robo-roupas.js` reúne as funções dos conjuntos (`SETS`, `toggleSet`, `itemsFor`, `outfitOf`) e as medidas do corpo usadas pelo terno e pelo vestido (`shape`).
 - **Desenho do motor:**
   - Peças podem ter parte de trás (`back`), desenhada antes do corpo.
@@ -366,7 +376,7 @@ echo-companion/
 │   ├── manifest.json       # Configuração PWA do Echo
 │   ├── styles.css          # Estilização Cyberpunk Neon do Echo
 │   ├── luna.html           # Interface dedicada da Luna (minimalista, sem telemetrias)
-│   ├── luna.js             # Motor 2D da Luna com laço animado e voz Thalita
+│   ├── luna.js             # Página da Luna: robô lavanda (motor compartilhado), folha Personagem e voz Thalita
 │   ├── luna.css            # Estilos em Lavanda/Lilás Neon da Luna
 │   ├── manifest-luna.json  # Manifesto PWA da Luna
 │   ├── icon-luna.svg       # Ícone vetorial da Luna com laço

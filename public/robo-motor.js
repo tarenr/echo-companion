@@ -1,6 +1,7 @@
-// Robô // motor compartilhado do personagem do Echo
-// Usado pelo Echo (app.js) e pela página de testes (robo.js). O motor de animação (tweens, estados,
-// expressões, acessórios e partículas) deriva do motor MIT do Coucou (https://github.com/Louis-CFM/coucou);
+// Robô // motor compartilhado dos personagens (Echo e Luna)
+// Usado pelo Echo (app.js), pela Luna (luna.js, tema lavanda) e pelas páginas de teste (robo.js). O motor de
+// animação (tweens, estados, expressões, acessórios e partículas) deriva do motor MIT do Coucou
+// (https://github.com/Louis-CFM/coucou);
 // o desenho do robô, as roupas (robo-roupas.js), as reações e as animações de entrada e dança são próprios.
 
 (function () {

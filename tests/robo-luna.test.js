@@ -271,3 +271,25 @@ test('folha Personagem compartilhada: botões por personagem; Luna começa de fa
   assert.equal(sheetA.prefs.auto, false);
   assert.deepEqual([...again.robo.wardrobe.ids()], ['laco'], 'abre com o que ela escolheu da última vez');
 });
+
+test('Luna vira o robô: scripts na página, tema lavanda, folha dela e backup do desenho antigo', () => {
+  const html = read('luna.html');
+  const order = ['robo-roupas.js', 'robo-roupas-luna.js', 'robo-motor.js', 'robo-personagem.js', 'src="luna.js?v='].map(file => html.indexOf(file));
+  assert.ok(order[0] > 0 && order.every((pos, i) => i === 0 || pos > order[i - 1]), 'ordem dos scripts no luna.html');
+  assert.ok(html.includes('robo-personagem.css'), 'estilos da folha');
+  assert.ok(!html.includes('robo-roupas-echo.js'), 'a Luna não carrega a fantasia do Echo');
+
+  const luna = read('luna.js');
+  assert.ok(!/class LunaBot/.test(luna), 'o desenho antigo saiu');
+  assert.match(luna, /new RoboBot\(canvas, \{ theme: THEMES\.luna \}\)/);
+  assert.match(luna, /owner: 'luna'/);
+  assert.match(luna, /storageKey: 'luna_personagem'/);
+  assert.match(luna, /defaults: \{ auto: false, roupa: Roupas\.outfitOf\('bonecaDePano'\), sensor: false \}/, 'começa de boneca de pano');
+  assert.match(luna, /features: \{ auto: false, floating: false, sensor: true \}/, 'sem automático e sem janela flutuante');
+  assert.match(luna, /mochi\.speaking = true;\s*mochi\.setState\('talking'\);/, 'ao falar, a boca mexe e o estado é Falando');
+  assert.match(luna, /else if \(ev === 'segurar'\) \{\s*skipGreeting = true;\s*personagem\.open\(\);/, 'segurar abre a folha sem saudar');
+  assert.match(read('luna.css'), /#luna-canvas \{[^}]*touch-action: none;/, 'segurar e arrastar sem rolar a tela');
+
+  const backup = fs.readFileSync(path.join(__dirname, '..', 'docs', 'legado', 'mascote-luna.js'), 'utf8');
+  assert.match(backup, /class LunaBot/, 'backup do desenho antigo guardado');
+});
