@@ -1,6 +1,15 @@
 // Cartões de dados com resultados simulados dos conectores: sem banco, sem rede.
 const test = require('node:test');
 const assert = require('node:assert/strict');
+
+test('dashboard: falha visível e campos ausentes sem valores inventados', () => {
+  const { buildToolCard } = require('../src/cards');
+  assert.equal(buildToolCard('consultar_dashboard_pc', { ok: false, erro: 'offline' }).title, 'Indisponível');
+  const card = buildToolCard('consultar_dashboard_pc', { ok: true, secao: 'gpu', dados: { name: 'GPU', online: true, temp_c: 50 } });
+  assert.equal(card.rows.find(r => r.label === 'Uso').value, 'indisponível');
+  assert.ok(card.rows.length <= 8);
+  assert.equal(card.reply, undefined);
+});
 const { buildToolCard, buildBriefingCard, forgePendingByProject } = require('../src/cards');
 
 const NOW = new Date(2026, 9, 5, 12, 0, 0); // 05/10/2026

@@ -1,5 +1,19 @@
 # Echo // Estratégia Nerd Companion 🤖
 
+## Consultas ao dashboard NERD OPS
+
+O Echo consulta por GET as APIs do `pc-monitor-dashboard`, em `NERDOPS_URL` (padrão `http://127.0.0.1:5000`), sem novas dependências. A telemetria de CPU/RAM também usa o coletor do dashboard, a cada 3 segundos, substituindo a antiga estimativa local de CPU.
+
+Perguntas reconhecidas diretamente, mesmo sem Gemini: “Qual a temperatura da GPU?”, “Quanto espaço livre tenho no C:?”, “Qual programa está consumindo mais memória?”, “Como ficou a CPU nos últimos 15 minutos?”, “Qual o download da rede?”, “Qual o volume do PC?”, “Qual a ficha do computador?” e “Quanto tenho de cota de IA?”. Outras formulações podem usar a ferramenta `consultar_dashboard_pc` pelo Gemini. O status dos serviços mantém a integração existente.
+
+Seções: resumo, CPU por processador lógico/frequência/núcleos/threads, RAM, GPU (uso, temperatura, VRAM, potência, ventoinha e clocks), discos/espaço livre/IO, rede, mídia/volume, processos e aplicativos, histórico, sistema, serviços e cotas. Histórico aceita 1min, 5min, 15min, 30min e 1h; retorna média, pico e última medição das amostras disponíveis, sem prometer cobertura de todo o período. O histórico de disco é apenas o primeiro disco monitorado. Processos de GPU mostram uso de VRAM, não utilização percentual. Mídia informa o estado de reprodução; o dashboard não fornece o título da música.
+
+Timeout de 2,8 s por consulta HTTP. Amostras atuais com 10 s ou mais são recusadas; histórico e cotas antigas são identificados como desatualizados. GPU e campos ausentes aparecem como indisponíveis, sem valores inventados. Se o dashboard ficar offline, as consultas informam a falha e a telemetria fica sem valores; não há fallback silencioso para a estimativa antiga. Cotas por contagem não permitem calcular percentual restante. Os cartões exibem até oito linhas, com indicação de itens adicionais.
+
+Somente dados necessários são retornados às ferramentas: a ficha omite usuário, hostname, IP e MAC; processos omitem PID/comandos; serviços omitem URLs. Consultas diretas produzem fala e cartão localmente, sem enviar as métricas ao Gemini. Consultas pelo Gemini enviam a seção solicitada ao modelo e seguem o histórico de ferramentas já existente do Echo. A integração não controla apps, volume ou impressão.
+
+Testes: `npm test`, com rede simulada nos testes do conector e consultas. Após atualizar, o processo do Echo precisa ser reiniciado pelo mecanismo usado na instalação para carregar o código novo.
+
 [![GitHub Repository](https://img.shields.io/badge/GitHub-tarenr%2Fecho--companion-blue?logo=github)](https://github.com/tarenr/echo-companion)
 [![License: ISC](https://img.shields.io/badge/License-ISC-green.svg)](https://opensource.org/licenses/ISC)
 

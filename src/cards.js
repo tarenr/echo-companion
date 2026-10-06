@@ -4,6 +4,7 @@
  */
 
 const MAX_ROWS = 8;
+const { presentation } = require('./pcMonitorQueries');
 
 const brlFormat = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -324,6 +325,10 @@ function buildBriefingCard({ servicos, agendadas, forge, emailInfo } = {}) {
 }
 
 const TOOL_CARD_BUILDERS = {
+  consultar_dashboard_pc: r => {
+    const { reply, ...card } = presentation(r);
+    return { ...card, rows: limitRows(card.rows, 'métricas') };
+  },
   consultar_saldos_bancos: bankBalancesCard,
   consultar_cartoes_credito: creditCardsCard,
   consultar_contas_a_pagar: pendingBillsCard,
