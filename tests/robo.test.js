@@ -271,6 +271,43 @@ test('óculos ficam sobre os olhos: lentes no mesmo lugar dos olhos do rosto', (
   assert.equal(-LENS_X, FACE.eyes[0].x);
 });
 
+test('peças só do robô de teste: fantasia de esqueleto entra no guarda-roupa e desenha sem erro', () => {
+  const context = vm.createContext({});
+  vm.runInContext(read('robo-roupas.js'), context);
+  vm.runInContext(read('robo-roupas-teste.js'), context);
+  const { ITEMS, LAB_ITEMS, SUIT_BODY, Wardrobe } = context.RoboRoupas;
+  assert.deepEqual([...LAB_ITEMS], ['sorrisoCosturado', 'ternoEsqueleto']);
+  assert.equal(Object.keys(ITEMS).length, 13, '11 peças + 2 de teste');
+  assert.equal(ITEMS.sorrisoCosturado.slot, 'rosto');
+  assert.equal(ITEMS.ternoEsqueleto.slot, 'pescoco');
+
+  // Todas as peças desenham num contexto de mentira sem erro
+  const noop = () => {};
+  const ctx = new Proxy({}, {
+    get: (target, key) => (key in target ? target[key] : () => ({ addColorStop: noop })),
+    set: (target, key, value) => { target[key] = value; return true; }
+  });
+  for (const [id, it] of Object.entries(ITEMS)) {
+    assert.doesNotThrow(() => it.draw(ctx, 0, it.springs.map(() => 0.2)), id);
+  }
+
+  // O terno usa as mesmas medidas do corpo do motor
+  const motorBody = read('robo-motor.js').match(/const BODY = (\{[^}]+\});/);
+  assert.ok(motorBody, 'BODY no robo-motor.js');
+  assert.deepEqual({ ...SUIT_BODY }, { ...vm.runInNewContext(`(${motorBody[1]})`) });
+
+  const w = new Wardrobe();
+  w.wear('sorrisoCosturado', 0);
+  w.wear('ternoEsqueleto', 0);
+  assert.deepEqual({ ...w.outfit() }, { cabeca: null, rosto: 'sorrisoCosturado', pescoco: 'ternoEsqueleto' }, 'veste as duas juntas');
+
+  // Só a página de testes carrega as peças; o Echo não
+  const lab = read('robo.html');
+  const roupas = lab.indexOf('robo-roupas.js'), teste = lab.indexOf('robo-roupas-teste.js'), robo = lab.indexOf('robo.js?');
+  assert.ok(roupas > 0 && roupas < teste && teste < robo, 'ordem dos scripts na página de testes');
+  assert.ok(!read('index.html').includes('robo-roupas-teste.js'), 'o Echo não carrega as peças de teste');
+});
+
 test('gestos: toque, duplo, bravo, regiões, segurar e carinho', () => {
   const { GestureReader } = loadBlock('gestos', 'GestureReader');
   const tapAt = (g, t, region) => { g.start(t, 100, 100, region); return g.end(t + 60); };

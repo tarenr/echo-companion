@@ -298,6 +298,11 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
 ### Guarda-roupa
 
 - **Peças (11, desenhadas em código):** cabeça — chapéu de festa, gorro com pompom, coroa, chapéu de bruxa, gorro de Papai Noel, orelhas de coelho, laço, abóbora; rosto — óculos escuros, óculos redondos; pescoço — cachecol.
+- **Peças só de teste (desde 06/10/2026):** a fantasia de esqueleto, em duas peças:
+  - **Sorriso costurado (rosto):** curva entre as bochechas com pontos de costura; acompanha o rosto e não combina com óculos.
+  - **Terno de esqueleto (pescoço):** preto listrado, camisa branca em V, gravata de morcego cujas asas balançam, e a tela `>_` do peito à mostra; não combina com o cachecol.
+  - Ficam em `public/robo-roupas-teste.js`, que só esta página carrega: o Echo não mostra essas peças e o automático (estação) não as usa.
+  - Desenho próprio no estilo de fantasia de Halloween, sem braços e sem copiar personagem.
 - **Como usar:** tocar numa peça veste; tocar de novo tira. Uma peça por lugar (outro chapéu troca o atual) e dá para combinar os três lugares. "Tirar tudo" tira as três. Segurar o dedo no robô rola a página até o guarda-roupa. Dá para usar junto com os acessórios de trabalho (ex.: gorro e caneca de café).
 - **Óculos:** ficam no mesmo referencial do rosto, então acompanham os olhos ao olhar e no giro. Chapéus ficam no alto da cabeça, à direita da etiqueta `>_`, e deslizam um pouco junto com o rosto.
 - **Chapéu alto:** o robô recua aos poucos para a peça caber no quadro (até 75% com o chapéu de bruxa).
@@ -351,6 +356,7 @@ echo-companion/
 │   ├── robo-motor.js       # Motor do robô (Echo e laboratório): rosto, gestos, sensores, ritmo, laço e janela flutuante
 │   ├── robo.js             # Laboratório do robô: botões, dança pelo microfone e giroscópio
 │   ├── robo-roupas.js      # Guarda-roupa do robô: 11 peças, estações (com a Páscoa) e física das roupas
+│   ├── robo-roupas-teste.js # Peças só da página de testes (fantasia de esqueleto), antes de irem para o Echo
 │   ├── robo.css            # Estilos da página do robô
 │   └── sw.js               # Service Worker (cache v5.1 só do shell público, auto-update)
 ├── src/
