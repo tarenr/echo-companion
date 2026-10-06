@@ -76,7 +76,7 @@ test('fantasias exclusivas: Echo só vê o esqueleto, Luna só a boneca de pano;
 
   const common = ['festa', 'gorro', 'coroa', 'bruxa', 'noel', 'coelho', 'laco', 'abobora', 'oculosEscuros', 'oculosRedondos', 'cachecol'];
   assert.deepEqual(ids(echo.itemsFor('echo')), [...common, 'sorrisoCosturado', 'ternoEsqueleto']);
-  assert.deepEqual(ids(luna.itemsFor('luna')), [...common, 'cabeloRuivo', 'rostoBoneca', 'vestidoRetalhos']);
+  assert.deepEqual(ids(luna.itemsFor('luna')), [...common, 'cabeloRuivo', 'cabeloPreto', 'cabeloCacheado', 'rostoBoneca', 'vestidoRetalhos']);
 
   // Mesmo com os dois arquivos juntos, o filtro por dono separa
   const both = load({ owners: ['echo', 'luna'] });
@@ -294,30 +294,33 @@ test('Luna vira o robô: scripts na página, tema lavanda, folha dela e backup d
   assert.match(backup, /class LunaBot/, 'backup do desenho antigo guardado');
 });
 
-test('cabelos de teste da Luna: preto e cacheado só no robô de teste; o ruivo continua idêntico', () => {
+test('cabelos da Luna: ruivo, preto e cacheado na Luna de verdade, com o desenho de quando foram aprovados', () => {
   const sandbox = { console };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
   vm.runInContext(read('robo-roupas.js'), sandbox);
   vm.runInContext(read('robo-roupas-luna.js'), sandbox);
-
-  // Assinatura dos comandos de desenho do ruivo, gravada antes de o corte virar a função longHair (06/10/2026)
-  const crypto = require('node:crypto');
-  const log = [];
-  const recorder = new Proxy({}, {
-    get: (t, k) => (k in t ? t[k] : (...args) => {
-      log.push([k, args.map(v => (typeof v === 'number' ? +v.toFixed(4) : typeof v === 'object' ? 'obj' : v))]);
-      return { addColorStop: (...s) => log.push(['stop', s]) };
-    }),
-    set: (t, k, v) => { log.push(['set', k, typeof v === 'object' ? 'obj' : v]); return true; }
-  });
-  const ruivo = sandbox.RoboRoupas.ITEMS.cabeloRuivo;
-  for (const a of [[0, 0], [0.3, -0.2]]) { ruivo.back(recorder, 1.5, a); ruivo.draw(recorder, 1.5, a); }
-  assert.equal(log.length, 244);
-  assert.equal(crypto.createHash('sha256').update(JSON.stringify(log)).digest('hex'), 'd2533bfc59590c5187c4914748b5259b6193babf4aed2eaa4a280a6d08fd1c79', 'ruivo igual ao de antes');
-
-  vm.runInContext(read('robo-roupas-luna-teste.js'), sandbox);
   const { ITEMS, itemsFor, headroomZoom } = sandbox.RoboRoupas;
+
+  // Assinatura dos comandos de desenho de cada cabelo (frente e trás, parado e balançando), gravada em 06/10/2026:
+  // o ruivo antes de o corte virar a função longHair; o preto e o cacheado antes de saírem do arquivo de teste
+  const crypto = require('node:crypto');
+  const signature = id => {
+    const log = [];
+    const recorder = new Proxy({}, {
+      get: (t, k) => (k in t ? t[k] : (...args) => {
+        log.push([k, args.map(v => (typeof v === 'number' ? +v.toFixed(4) : typeof v === 'object' ? 'obj' : v))]);
+        return { addColorStop: (...s) => log.push(['stop', s]) };
+      }),
+      set: (t, k, v) => { log.push(['set', k, typeof v === 'object' ? 'obj' : v]); return true; }
+    });
+    for (const a of [[0, 0], [0.3, -0.2]]) { ITEMS[id].back(recorder, 1.5, a); ITEMS[id].draw(recorder, 1.5, a); }
+    return [log.length, crypto.createHash('sha256').update(JSON.stringify(log)).digest('hex')];
+  };
+  assert.deepEqual(signature('cabeloRuivo'), [244, 'd2533bfc59590c5187c4914748b5259b6193babf4aed2eaa4a280a6d08fd1c79'], 'ruivo igual');
+  assert.deepEqual(signature('cabeloPreto'), [244, 'cd3afd451881167baf9bc71007233ecfcb2dae87e82c09c87c02ac744d736007'], 'preto igual');
+  assert.deepEqual(signature('cabeloCacheado'), [776, 'dd2b7a08b4d171ac2abf30500a5dab137ded333b40b11f0d7f30534d614f09f1'], 'cacheado igual');
+
   for (const id of ['cabeloPreto', 'cabeloCacheado']) {
     const it = ITEMS[id];
     assert.equal(it.owner, 'luna', `${id}: da Luna`);
@@ -327,24 +330,19 @@ test('cabelos de teste da Luna: preto e cacheado só no robô de teste; o ruivo 
     assert.doesNotThrow(() => { it.back(fakeContext(), 0, a); it.draw(fakeContext(), 0, a); }, id);
     assert.ok(headroomZoom(it.top) * (216 + it.top) <= 246 - 12 + 1e-9, `${id}: cabe no quadro`);
   }
-  const ids = [...itemsFor('luna').map(([id]) => id)];
-  assert.ok(ids.includes('cabeloPreto') && ids.includes('cabeloCacheado'));
   assert.ok(![...itemsFor('echo').map(([id]) => id)].includes('cabeloPreto'), 'o Echo não tem esses cabelos');
 
-  // Só a página de testes da Luna carrega; a Luna de verdade, o Echo e a página do Echo não
-  const lab = read('robo-luna.html');
-  const luna = lab.indexOf('robo-roupas-luna.js'), teste = lab.indexOf('robo-roupas-luna-teste.js'), motor = lab.indexOf('robo-motor.js');
-  assert.ok(luna > 0 && luna < teste && teste < motor, 'ordem dos scripts no robo-luna.html');
-  for (const page of ['luna.html', 'index.html', 'robo.html']) {
-    assert.ok(!read(page).includes('robo-roupas-luna-teste.js'), `${page} não carrega as peças de teste`);
-  }
+  // A Luna de verdade e o robô de teste dela carregam o arquivo da Luna; o Echo e a página do Echo não
+  for (const page of ['luna.html', 'robo-luna.html']) assert.ok(read(page).includes('robo-roupas-luna.js'), `${page} carrega as peças da Luna`);
+  for (const page of ['index.html', 'robo.html']) assert.ok(!read(page).includes('robo-roupas-luna.js'), `${page} não carrega as peças da Luna`);
+  assert.ok(!fs.existsSync(path.join(__dirname, '..', 'public', 'robo-roupas-luna-teste.js')), 'o arquivo de teste saiu');
 });
 
 test('cabelo cacheado é curto: nenhum cacho passa da base da cabeça (y = -86)', () => {
   const sandbox = { console };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
-  for (const file of ['robo-roupas.js', 'robo-roupas-luna.js', 'robo-roupas-luna-teste.js']) vm.runInContext(read(file), sandbox);
+  for (const file of ['robo-roupas.js', 'robo-roupas-luna.js']) vm.runInContext(read(file), sandbox);
   const shapes = [];
   const recorder = new Proxy({}, {
     get: (t, k) => (k in t ? t[k] : (...args) => {
