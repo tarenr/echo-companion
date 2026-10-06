@@ -85,3 +85,31 @@ test('comando de voz "dança" reconhecido sem confundir outras frases', () => {
     assert.equal(context.isDanceCommand(phrase), false, phrase);
   }
 });
+
+test('quadro da cabeça só durante ações; some parado e fica escondido na entrada', async () => {
+  const { motor, canvas, clock } = loadMotor();
+  const robo = new motor.RoboBot(canvas);
+  // O selo troca depois de 90 ms (relógio de verdade); a animação usa o relógio de mentira
+  const settle = async (ms = 640) => {
+    await new Promise(r => setTimeout(r, 120));
+    for (let t = 0; t < ms; t += 16) { clock.now += 16; robo.update(); }
+  };
+  assert.equal(robo.tagScale(), 0, 'abre parado e sem quadro');
+  const table = [
+    ['working', true], ['idle', false], ['thinking', true], ['listening', false],
+    ['multi', true], ['finished', false], ['approval', true], ['error', false], ['sleeping', false]
+  ];
+  for (const [state, shows] of table) {
+    robo.setState(state);
+    await settle();
+    if (shows) assert.ok(robo.tagScale() > 0.9, `${state}: quadro aparece (${robo.tagScale().toFixed(2)})`);
+    else assert.equal(robo.tagScale(), 0, `${state}: sem quadro`);
+  }
+
+  // Acordar para trabalhar faz a entrada: o quadro só aparece quando ela acaba (3 s)
+  robo.setState('working');
+  await settle(1500);
+  assert.ok(robo.tagScale() < 0.01, `escondido durante a entrada (${robo.tagScale().toFixed(2)})`);
+  await settle(2000);
+  assert.ok(robo.tagScale() > 0.9, `aparece depois da entrada (${robo.tagScale().toFixed(2)})`);
+});

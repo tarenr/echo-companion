@@ -293,10 +293,11 @@
     working: { label: 'Trabalhando', col: '#00d4ff', tint: 0.65, eye: 'pill', badge: ['dots', '#00d4ff'] },
     multi: { label: 'Multiagente', col: '#00e5ff', tint: 0.85, eye: 'pill', badge: ['dots', '#ff7a45'] },
     thinking: { label: 'Pensando', col: '#b829dd', tint: 0.72, eye: 'pill', badge: ['dots', '#b829dd'] },
+    // Quadro da cabeça (badge) só nos estados de ação; parado, ouvindo, concluído e erro ficam sem ele
     approval: { label: 'Aprovação', col: '#F5A524', tint: 0.78, eye: 'wide', badge: ['bang', '#F5A524'] },
-    finished: { label: 'Concluído', col: '#10b981', tint: 0.35, eye: 'happy', badge: ['dot', '#10b981'] },
-    error: { label: 'Erro', col: '#F4505E', tint: 0.78, eye: 'flat', badge: ['dot', '#F4505E'] },
-    listening: { label: 'Ouvindo', col: '#00d4ff', tint: 0.45, eye: 'dot', badge: ['dots', '#00d4ff'] },
+    finished: { label: 'Concluído', col: '#10b981', tint: 0.35, eye: 'happy', badge: null },
+    error: { label: 'Erro', col: '#F4505E', tint: 0.78, eye: 'flat', badge: null },
+    listening: { label: 'Ouvindo', col: '#00d4ff', tint: 0.45, eye: 'dot', badge: null },
     sleeping: { label: 'Dormindo', col: '#8b5cf6', tint: 0.12, eye: 'sleep', badge: null }
   };
 
@@ -338,6 +339,7 @@
       this.ovUntil = 0;
       this.badge = null;
       this.badgeCol = '#00d4ff';
+      this.tagHoldUntil = 0;                         // até quando o quadro da cabeça espera (entrada)
       this._bk = 'none';
       this._bt = 0;
       this.parts = [];
@@ -445,8 +447,16 @@
         if (tok !== this._bt) return;
         this.badge = b ? b[0] : null;
         this.badgeCol = b ? b[1] : null;
-        if (b) this.anim('badgeS', [[1, 260, E.back]]);
+        if (!b) return;
+        // Durante a entrada o quadro espera ela acabar para aparecer
+        const wait = Math.max(0, this.tagHoldUntil - NOW());
+        this.anim('badgeS', wait ? [[0, wait, E.lin], [1, 260, E.back]] : [[1, 260, E.back]]);
       }, 90);
+    }
+
+    // Tamanho do quadro da cabeça: 0 sem ação (repouso, ouvindo, dormindo, concluído, erro) e durante a entrada
+    tagScale() {
+      return this.badge ? Math.max(0, this.s.badgeS) : 0;
     }
 
     setState(n) {
@@ -552,6 +562,10 @@
       this.s.ox = 0;
       this.motion = { x: 0, y: this.s.oy * R, vx: 0, vy: 0 };
       this.waveSide = 0;
+      // O robô entra sem o quadro da cabeça; se houver ação, ele aparece no fim da entrada (3 s)
+      const hold = 3000;
+      this.tagHoldUntil = NOW() + hold;
+      this.anim('badgeS', this.badge ? [[0, 80, E.inOut], [0, hold - 80, E.lin], [1, 260, E.back]] : [[0, 80, E.inOut]]);
       this.anim('oy', [[0, 520, E.in]]);
       this.onSound('whoosh');
       this.play([
@@ -1045,45 +1059,42 @@
       x.restore();
     }
 
-    // Etiqueta no alto da cabeça: ">_" em repouso; selo do estado nos demais
+    // Quadro no alto da cabeça com o selo do estado: só durante ações; cresce ao aparecer e encolhe ao sumir
     drawTag(t) {
-      const x = this.x, s = this.s;
+      const x = this.x;
+      const k = this.tagScale();
+      if (k <= 0.01) return;
       x.save();
       x.translate(TAG.x, TAG.y);
       x.rotate(-0.1);
+      x.scale(k, k);
       x.fillStyle = ROBO_SPEC.ink;
       rr(x, -TAG.w / 2, -TAG.h / 2, TAG.w, TAG.h, 11);
       x.fill();
       x.strokeStyle = ROBO_SPEC.tagRim;
       x.lineWidth = 3;
       x.stroke();
-
-      if (!this.badge) {
-        this.prompt(0, 0, 19, t, ROBO_SPEC.tagRim);
-      } else {
-        const col = this.badgeCol;
-        x.scale(s.badgeS, s.badgeS);
-        if (this.badge === 'dots') {
-          for (let i = 0; i < 3; i++) {
-            const ph = ((t * 2.4 - i * 0.22) % 1 + 1) % 1;
-            const r = 4.2 * (1 + 0.4 * Math.max(0, Math.sin(ph * Math.PI * 2)));
-            x.fillStyle = col;
-            x.beginPath();
-            x.arc((i - 1) * 15, 0, r, 0, Math.PI * 2);
-            x.fill();
-          }
-        } else if (this.badge === 'bang') {
-          x.fillStyle = col;
-          x.font = '800 26px -apple-system, sans-serif';
-          x.textAlign = 'center';
-          x.textBaseline = 'middle';
-          x.fillText('!', 0, 1);
-        } else {
+      const col = this.badgeCol;
+      if (this.badge === 'dots') {
+        for (let i = 0; i < 3; i++) {
+          const ph = ((t * 2.4 - i * 0.22) % 1 + 1) % 1;
+          const r = 4.2 * (1 + 0.4 * Math.max(0, Math.sin(ph * Math.PI * 2)));
           x.fillStyle = col;
           x.beginPath();
-          x.arc(0, 0, 9, 0, Math.PI * 2);
+          x.arc((i - 1) * 15, 0, r, 0, Math.PI * 2);
           x.fill();
         }
+      } else if (this.badge === 'bang') {
+        x.fillStyle = col;
+        x.font = '800 26px -apple-system, sans-serif';
+        x.textAlign = 'center';
+        x.textBaseline = 'middle';
+        x.fillText('!', 0, 1);
+      } else {
+        x.fillStyle = col;
+        x.beginPath();
+        x.arc(0, 0, 9, 0, Math.PI * 2);
+        x.fill();
       }
       x.restore();
     }

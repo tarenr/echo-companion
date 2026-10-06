@@ -26,7 +26,7 @@ Ele monitora em tempo real:
    - **Tema Visual Dual Neon:** O robô adota a classe `.theme-multi-agent` com pulsação sincronizada entre o Azul Ciano (`#00e5ff`) e o Coral Neon (`#ff7a45`), representando visualmente a união dos agentes na mesma tela.
    - **Conclusão Independente:** Quando um agente finaliza sua tarefa e envia evento de parada (`Stop`), o Echo notifica que ele encerrou mantendo o foco no agente que continua em execução sem interromper o painel.
 4. **Personagem: robô** (desde 06/10/2026, no lugar da "bolha"; motor em `public/robo-motor.js`, roupas em `public/robo-roupas.js`):
-   - **Aparência:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_`, etiqueta `>_` no alto da cabeça que vira o selo do estado (pontinhos trabalhando, `!` na aprovação, ponto verde ou vermelho no fim), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão.
+   - **Aparência:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_`, quadro no alto da cabeça que só aparece durante ações (pontinhos trabalhando ou pensando, `!` na aprovação; some parado, ouvindo, dormindo, no fim e na entrada), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão.
    - **Estados e cores:** os mesmos de antes (repouso, trabalhando, multiagente, pensando, aprovação, concluído, erro, ouvindo, dormindo), com os mesmos sons do Echo em cada troca de estado.
    - **Rosto como peça única:** visor, olhos, boca, bochechas e óculos saem de um só ponto e uma só escala; ao olhar para os lados, para cima, para baixo ou girar, andam juntos.
    - **Regra estrita da boca:** a boca varia ESTRITAMENTE entre `_` (fechada/repouso) e `o` (aberta/falando); dormindo, some.
@@ -61,6 +61,16 @@ O Echo usa o robô do motor compartilhado (`public/robo-motor.js`), o mesmo da p
 | Dança (balanço, pulinhos e mãos) | comando de voz "dança", "dançar", "dance" ou "vamos dançar" (com ou sem "Echo"): 10 s, sem consultar o servidor; na comemoração: 4 s |
 | Troca de roupa | quando você escolhe uma peça; no automático, ao abrir e quando vira o dia |
 | Balanço das roupas | o tempo todo (pulos, inclinação, giro, toque e dança) |
+
+**Quadro da cabeça:** só aparece quando o robô está fazendo alguma ação; cresce ao aparecer e encolhe ao sumir.
+
+| Estado | Quadro |
+|---|---|
+| Trabalhando, Multiagente | aparece, com pontinhos |
+| Pensando | aparece, com pontinhos roxos |
+| Aprovação | aparece, com `!` |
+| Repouso, Ouvindo, Dormindo, Concluído, Erro | some (os olhos e a cor já mostram o estado) |
+| Entrada (abrir, acordar, voltar ao app) | o robô entra sem o quadro; se houver ação, ele aparece quando a entrada acaba |
 
 **Reações ao toque no robô:** 1 toque achata; 2 toques rápidos pulam e giram; 5 ou mais toques em 2 s deixam o robô bravo (olhos inclinados e vermelho); toque no visor = surpresa; toque na tela do peito mostra outro símbolo (♥, :), !, ?, ♪); toque no chapéu faz o chapéu pular; passar o dedo na cabeça é carinho (olhos felizes, bochechas e corações); **segurar 0,6 s abre a folha Personagem**. Com o robô dormindo, o toque acorda.
 
@@ -243,7 +253,7 @@ Mascote companheira desenvolvida especialmente para uso pessoal com inteligênci
 Página separada com o mesmo robô do Echo e botões para testar cada animação, mais os recursos que o Echo não usa (dança pelo microfone e giroscópio). Desde 06/10/2026 o robô é o personagem do Echo (ver [Personagem do Echo](#-personagem-do-echo-robô)).
 
 - **Endereço:** `/robo.html` (ex.: `https://echo.tfr-info.com.br/robo.html`). Usa o PIN do Echo: se o navegador ainda não tiver o PIN, a página mostra a tela de PIN.
-- **Personagem:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_` (falando, `o`), etiqueta `>_` no alto da cabeça que vira o selo do estado (pontinhos trabalhando, `!` na aprovação, ponto verde ou vermelho no fim), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão. As mãos são as mesmas do Echo e aparecem ao falar.
+- **Personagem:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_` (falando, `o`), quadro no alto da cabeça que só aparece durante ações (pontinhos trabalhando ou pensando, `!` na aprovação; some parado, ouvindo, dormindo, no fim e na entrada), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão. As mãos são as mesmas do Echo e aparecem ao falar.
 - **Rosto como peça única:** visor, olhos, boca e bochechas são desenhados a partir de um só ponto e uma só escala (`faceFrame` em `public/robo-motor.js`). Ao olhar para os lados, para cima, para baixo ou no giro de comemoração, as partes andam juntas. Na antiga bolha, as bochechas usavam outra conta e não acompanhavam a boca.
 - **Botões:** estados (repouso, trabalhando, multiagente, pensando, aprovação, concluído, erro, ouvindo, dormindo), expressões (amor, surpresa, orgulho, feliz), guarda-roupa, acessórios de trabalho (lupa, teclado, impressora, comemoração, café, nenhum), animações (entrada, dançar 10 s, dançar com a música, som), ações (falar, piscar, toque, girar, pular), olhar (esquerda, direita, cima, baixo, centro, para o cartão, seguir o dedo), sensores (sensor de movimento, chacoalhar simulado) e janela flutuante.
 - **Motor:** compartilhado com o Echo (`public/robo-motor.js`: robô, rosto, gestos, sensores, ritmo, laço de desenho e janela flutuante); a página (`public/robo.js`) só monta os botões e os testes de microfone e giroscópio. O motor de animação deriva do motor MIT do Coucou; o desenho, as roupas (`public/robo-roupas.js`), as reações e as animações de entrada e dança são próprios. As ideias de guarda-roupa, estações e entrada vêm do Coucou, mas os desenhos e coreografias foram feitos do zero (a aparência e as animações do Mochi são reservadas pela licença do Coucou). No console do navegador, `robo` dá acesso ao personagem para testes.
