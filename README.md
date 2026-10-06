@@ -216,3 +216,7 @@ echo-companion/
 - **URL Cloudflare:** `https://echo.tfr-info.com.br`
 - **Categoria:** Assistente / Monitoramento
 
+
+## Localização entre Echo e Luna
+
+Compartilhamento opt-in do GPS enquanto cada aplicativo estiver aberto e visível. Pergunte onde o outro mascote está; a resposta distingue posição recente e última conhecida, informa precisão e permite abrir o mapa. Sem histórico de trajetos, com revogação e armazenamento criptografado. GPS/mapa não exigem API Google; rua/bairro/cidade são opcionais via Geocoding. Veja [ativação, privacidade e testes](docs/localizacao-compartilhada.md).

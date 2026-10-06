@@ -1487,6 +1487,7 @@
 
       const navigationUrl = showNavigationAction(data?.action);
       showCalendarActions(data);
+      sharedLocation.show(data);
       // Responde falando com voz oficial neural, mexendo a boca e mãos
       await speak(reply);
       // O botão continua disponível se Android bloquear a abertura sem gesto.
@@ -1925,6 +1926,7 @@
   resetInactivity();
 
   setupSpeechRecognition();
+  const sharedLocation = window.createEchoLocation({ scope: 'echo', getHeaders: getAuthHeaders, speak });
   connectSSE();
   initializeCalendar().catch(() => {});
 })();

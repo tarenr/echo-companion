@@ -769,6 +769,7 @@
       });
 
       const data = await res.json();
+      sharedLocation.show(data);
       const reply = data.reply || "Desculpe, não consegui entender direitinho. Pode repetir?";
 
       transcriptionText.textContent = reply;
@@ -902,6 +903,8 @@
       pauseRecognition();
     }
   });
+
+  const sharedLocation = window.createEchoLocation({ scope: 'luna', getHeaders: getAuthHeaders, speak });
 
   // Autenticação por PIN
   async function checkAuth() {

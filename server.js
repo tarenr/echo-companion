@@ -66,7 +66,7 @@ const localEnvPath = path.resolve(__dirname, '.env');
 if (fs.existsSync(localEnvPath)) {
   try {
     const localEnv = fs.readFileSync(localEnvPath, 'utf8');
-    for (const key of ['ECHO_PIN', 'LUNA_PIN', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET', 'GOOGLE_CALENDAR_REDIRECT_URI', 'GOOGLE_CALENDAR_ENCRYPTION_KEY']) {
+    for (const key of ['ECHO_PIN', 'LUNA_PIN', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET', 'GOOGLE_CALENDAR_REDIRECT_URI', 'GOOGLE_CALENDAR_ENCRYPTION_KEY', 'LOCATION_ENCRYPTION_KEY', 'LOCATION_GOOGLE_GEOCODING_KEY']) {
       const m = localEnv.match(new RegExp(`^${key}=(.*)$`, 'm'));
       if (m && m[1].trim() && !process.env[key]) {
         process.env[key] = m[1].trim().replace(/^['"]|['"]$/g, '');
@@ -179,6 +179,15 @@ const calendarAuth = new CalendarAuth();
 const calendarService = new CalendarService({ auth: calendarAuth, api: new GoogleCalendar(calendarAuth) });
 const calendarRoutes = createCalendarRoutes({ auth: calendarAuth, service: calendarService, requirePin });
 app.use('/api/calendar', calendarRoutes.router);
+
+const { LocationService, createLocationRoutes } = require('./src/location');
+const locationService = new LocationService({ memory });
+const locationRoutes = createLocationRoutes({ service: locationService, requirePin, requireLunaPin });
+app.use('/api/location', locationRoutes.router);
+// Expiração física da última posição, sem histórico nem coordenadas nos logs.
+setInterval(() => { if (locationService.store.configured) { try { locationService.read(); } catch (_) {} } }, 60000).unref();
+
+
 
 function requireLunaPin(req, res, next) {
   if (isAuthorizedLuna(req)) {
@@ -653,7 +662,7 @@ app.post('/api/briefing', requirePin, async (req, res) => {
 });
 
 // Endpoint de Conversação / Resposta Inteligente do Echo com Gemini Function Calling & Memória
-app.post('/api/converse', requirePin, calendarRoutes.converse, navigation.createNavigationMiddleware(memory), async (req, res) => {
+app.post('/api/converse', requirePin, locationRoutes.converse('echo'), calendarRoutes.converse, navigation.createNavigationMiddleware(memory), async (req, res) => {
   const { message } = req.body || {};
   if (!message) return res.status(400).json({ error: 'Mensagem vazia' });
 
@@ -1018,7 +1027,7 @@ REGRAS OBRIGATÓRIAS:
 });
 
 // Endpoint exclusivo de Conversação da Luna (Assistente pessoal inteligente, carinhosa e dedicada)
-app.post('/api/luna/converse', requireLunaPin, async (req, res) => {
+app.post('/api/luna/converse', requireLunaPin, locationRoutes.converse('luna'), async (req, res) => {
   const { message } = req.body || {};
   if (!message) return res.status(400).json({ error: 'Mensagem vazia' });
 

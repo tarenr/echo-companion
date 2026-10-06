@@ -1,9 +1,11 @@
-const CACHE_NAME = 'echo-companion-v5.3';
+const CACHE_NAME = 'echo-companion-v6.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
   '/app.js',
+  '/location.js',
+  '/location.css',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
