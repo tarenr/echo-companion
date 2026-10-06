@@ -96,7 +96,7 @@
   // ========================================================
   // O robô substituiu a "bolha" em 06/10/2026 (backup em docs/legado/). Ele avisa os sons pelo gancho
   // onSound: os da entrada (whoosh, boing, chime) são sons próprios do robô; os demais tocam no Snd do Echo.
-  const { RoboBot, GestureReader, Sfx: RobotSfx, createDriver, createFloating } = window.RoboMotor;
+  const { RoboBot, GestureReader, Sfx: RobotSfx, createDriver, createFloating, createSensors } = window.RoboMotor;
   const Roupas = window.RoboRoupas;
   const ROBOT_OWN_SOUNDS = ['whoosh', 'boing', 'chime'];
   RobotSfx.on = true;
@@ -359,7 +359,7 @@
   // Escolhas do personagem guardadas só neste navegador (roupa e modo automático)
   const CHARACTER_KEY = 'echo_personagem';
   const characterPrefs = (() => {
-    const base = { auto: true, roupa: {} };
+    const base = { auto: true, roupa: {}, sensor: false };
     try {
       return Object.assign(base, JSON.parse(localStorage.getItem(CHARACTER_KEY) || '{}'));
     } catch (_) {
@@ -388,6 +388,72 @@
   });
   characterFloat.hidden = !('documentPictureInPicture' in window || document.pictureInPictureEnabled);
 
+  // [sensor-echo-inicio]
+  // Regras do sensor no Echo: dormindo, inclinar não faz nada e chacoalhar acorda; com cartão aberto, o robô
+  // continua olhando para o cartão (só o corpo inclina)
+  function sensorAction(kind, { sleeping, cardOpen }) {
+    if (kind === 'tilt') return sleeping ? 'nada' : cardOpen ? 'inclinar' : 'olhar-e-inclinar';
+    return sleeping ? 'acordar' : 'tonto';
+  }
+  // [sensor-echo-fim]
+
+  // Sensor de movimento (folha Personagem): desligado por padrão; o Echo lembra se ficou ligado
+  const characterSensor = document.getElementById('character-sensor');
+  characterSensor.hidden = typeof DeviceOrientationEvent === 'undefined';
+  const sensorContext = () => ({ sleeping: mochi.state === 'sleeping', cardOpen: echoWrapper.classList.contains('mode-info') });
+  const sensors = createSensors({
+    onTilt: (v) => {
+      const action = sensorAction('tilt', sensorContext());
+      if (action === 'nada') return;
+      mochi.tg.lean = v.lean;
+      if (action === 'olhar-e-inclinar') {
+        mochi.look.x = v.lookX;
+        mochi.look.y = v.lookY;
+      }
+    },
+    onShake: () => {
+      if (sensorAction('shake', sensorContext()) === 'acordar') wakeUp();
+      else mochi.dizzy();
+      resetInactivity();
+    },
+    onStop: () => { mochi.tg.lean = 0; },
+    onNoData: () => {
+      characterPrefs.sensor = false;
+      saveCharacterPrefs();
+      characterNote.textContent = 'Nenhuma leitura do sensor: este aparelho não tem sensor ou o endereço não é HTTPS.';
+      characterNote.hidden = false;
+      renderCharacterSheet();
+    }
+  });
+  async function toggleSensor() {
+    characterNote.hidden = true;
+    if (sensors.on) {
+      sensors.stop();
+      characterPrefs.sensor = false;
+    } else {
+      try {
+        await sensors.start();
+        characterPrefs.sensor = true;
+      } catch (err) {
+        characterPrefs.sensor = false;
+        characterNote.textContent = err.message;
+        characterNote.hidden = false;
+      }
+    }
+    saveCharacterPrefs();
+    renderCharacterSheet();
+  }
+  characterSensor.addEventListener('click', toggleSensor);
+  // Ligado da última vez: liga ao abrir; se o navegador pedir um toque antes, liga no primeiro toque
+  function resumeSensor() {
+    if (!characterPrefs.sensor || sensors.on) return;
+    sensors.start().then(renderCharacterSheet).catch(() => {
+      window.addEventListener('pointerdown', () => {
+        if (characterPrefs.sensor && !sensors.on) sensors.start().then(renderCharacterSheet).catch(() => {});
+      }, { once: true, passive: true });
+    });
+  }
+
   const itemButtons = Object.entries(Roupas.ITEMS).map(([id, item]) => {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -415,6 +481,8 @@
       ? `Automático: ${Roupas.seasonFor(new Date()).label}${worn ? ` → ${worn}` : ''}`
       : (worn || 'Sem roupa');
     characterFloat.textContent = floating.active ? 'Fechar janela flutuante' : 'Janela flutuante';
+    characterSensor.classList.toggle('active', sensors.on);
+    characterSensor.setAttribute('aria-pressed', String(sensors.on));
   }
 
   let wardrobeDay = '';
@@ -431,6 +499,7 @@
     if (characterPrefs.auto && dayKey(new Date()) !== wardrobeDay) applyWardrobe();
   }, 60000);
   applyWardrobe();
+  resumeSensor();
 
   function openCharacterSheet() {
     renderCharacterSheet();

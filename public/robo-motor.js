@@ -97,6 +97,15 @@
   const TAG = { x: -61, y: -206, w: 58, h: 40 };
   const HAT = { x: 18, y: HEAD.cy - HEAD.hh + 2 };   // base dos chapéus: alto da cabeça, à direita da etiqueta
 
+  // Escala para o canto mais alto (quadro da cabeça ou canto da cabeça) caber no quadro quando o robô inclina
+  // em torno do meio do corpo (PIVOT). Sem inclinação dá 1.
+  function tiltZoom(rot) {
+    const r = Math.min(Math.abs(rot), 0.6);
+    const corner = { dx: -(TAG.x - TAG.w / 2), dy: PIVOT - (TAG.y - TAG.h / 2) };   // canto de cima do quadro
+    const top = -PIVOT + corner.dy * Math.cos(r) + corner.dx * Math.sin(r);
+    return Math.min(1, (GROUND - 12) / top);
+  }
+
   // [rosto-inicio]
   // ========================================================
   // 3. ROSTO COMO PEÇA ÚNICA
@@ -773,11 +782,11 @@
       const colTarget = this.colOverride && n < this.colOverride.until ? this.colOverride.col : this.colT;
       this.col = mix(this.col, colTarget, 1 - Math.pow(0.002, dt));
 
-      // Chapéu alto: recua aos poucos até a peça caber no quadro
-      this.fz += (Roupas.headroomZoom(this.wardrobe.headroom()) - this.fz) * kGen;
+      // Chapéu alto ou robô muito inclinado (celular inclinado + tonto/dança): recua aos poucos até caber
+      const rot = s.tilt + s.lean + s.sway;
+      this.fz += (Math.min(Roupas.headroomZoom(this.wardrobe.headroom()), tiltZoom(rot)) - this.fz) * kGen;
 
       // Física das roupas: as partes moles ficam para trás quando a cabeça acelera
-      const rot = s.tilt + s.lean + s.sway;
       const hx = s.ox * R + Math.sin(rot) * (PIVOT - HAT.y);
       const hy = s.oy * R + (HAT.y) * (s.sy - 1);
       if (dt > 0.001) {
@@ -1573,9 +1582,80 @@
     };
   }
 
+  // ========================================================
+  // 11. SENSOR DE MOVIMENTO (inclinar e chacoalhar)
+  // ========================================================
+  // onTilt(v): inclinação já convertida ({ lookX, lookY, lean }); onShake(): chacoalhou; onStop(): desligou;
+  // onNoData(): ligou, mas nenhuma leitura chegou (aparelho sem sensor ou endereço sem HTTPS).
+  // O iPhone e as versões recentes do Chrome pedem permissão: start() deve ser chamado num toque.
+  function createSensors({ onTilt, onShake, onStop = () => {}, onNoData = () => {}, noDataMs = 1500 }) {
+    const state = { on: false, gotData: false, timer: 0 };
+    const shake = new ShakeDetector();
+
+    function onOrientation(e) {
+      if (e.beta === null && e.gamma === null) return;
+      state.gotData = true;
+      onTilt(tiltFromOrientation(e.beta, e.gamma));
+    }
+
+    function onMotion(e) {
+      const t = NOW();
+      const acc = e.acceleration;
+      let shook = false;
+      if (acc && acc.x !== null && acc.x !== undefined) {
+        state.gotData = true;
+        shook = shake.push(t, acc.x, acc.y, acc.z);
+      } else if (e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null && e.accelerationIncludingGravity.x !== undefined) {
+        const g = e.accelerationIncludingGravity;
+        state.gotData = true;
+        shook = shake.push(t, Math.abs(Math.hypot(g.x, g.y, g.z) - 9.81), 0, 0);
+      }
+      if (shook) onShake();
+    }
+
+    function stop() {
+      clearTimeout(state.timer);
+      window.removeEventListener('deviceorientation', onOrientation);
+      window.removeEventListener('devicemotion', onMotion);
+      const wasOn = state.on;
+      state.on = false;
+      if (wasOn) onStop();
+    }
+
+    async function start() {
+      if (state.on) return;
+      if (typeof DeviceOrientationEvent === 'undefined') throw new Error('Este aparelho não tem sensor de movimento.');
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const answer = await DeviceOrientationEvent.requestPermission().catch(() => 'denied');
+        if (answer !== 'granted') throw new Error('Permissão do sensor negada.');
+      }
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        await DeviceMotionEvent.requestPermission().catch(() => 'denied');
+      }
+      window.addEventListener('deviceorientation', onOrientation);
+      window.addEventListener('devicemotion', onMotion);
+      state.on = true;
+      state.gotData = false;
+      clearTimeout(state.timer);
+      // Sem leitura no prazo: desliga e avisa
+      state.timer = setTimeout(() => {
+        if (state.on && !state.gotData) {
+          stop();
+          onNoData();
+        }
+      }, noDataMs);
+    }
+
+    return {
+      start,
+      stop,
+      get on() { return state.on; }
+    };
+  }
+
   window.RoboMotor = {
     RoboBot, STATES, EMOTES, FACE, faceFrame, facePoints,
     GestureReader, tiltFromOrientation, ShakeDetector, BeatDetector,
-    Sfx, E, createDriver, createFloating
+    Sfx, E, createDriver, createFloating, createSensors
   };
 })();

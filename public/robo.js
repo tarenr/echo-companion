@@ -6,7 +6,7 @@
   'use strict';
 
   const Roupas = window.RoboRoupas;
-  const { RoboBot, STATES, EMOTES, GestureReader, tiltFromOrientation, ShakeDetector, BeatDetector, Sfx, E, createDriver, createFloating } = window.RoboMotor;
+  const { RoboBot, STATES, EMOTES, GestureReader, BeatDetector, Sfx, E, createDriver, createFloating, createSensors } = window.RoboMotor;
   const NOW = () => performance.now();
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -142,59 +142,20 @@
     robo.setDancing(false, 'musica');
   }
 
-  // Sensor de movimento: inclinar e chacoalhar (Android direto; iPhone pede permissão)
-  const sensors = { on: false, gotData: false };
-  const shake = new ShakeDetector();
-  function onOrientation(e) {
-    if (e.beta === null && e.gamma === null) return;
-    sensors.gotData = true;
-    const v = tiltFromOrientation(e.beta, e.gamma);
-    robo.look.x = v.lookX;
-    robo.look.y = v.lookY;
-    robo.tg.lean = v.lean;
-  }
-  function onMotion(e) {
-    const t = performance.now();
-    const acc = e.acceleration;
-    let shook;
-    if (acc && acc.x !== null) {
-      sensors.gotData = true;
-      shook = shake.push(t, acc.x, acc.y, acc.z);
-    } else if (e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null) {
-      const g = e.accelerationIncludingGravity;
-      sensors.gotData = true;
-      shook = shake.push(t, Math.abs(Math.hypot(g.x, g.y, g.z) - 9.81), 0, 0);
+  // Sensor de movimento do motor: inclinar faz olhar e inclinar; chacoalhar deixa tonto
+  const sensors = createSensors({
+    onTilt: (v) => {
+      robo.look.x = v.lookX;
+      robo.look.y = v.lookY;
+      robo.tg.lean = v.lean;
+    },
+    onShake: () => robo.dizzy(),
+    onStop: () => { robo.tg.lean = 0; },
+    onNoData: () => {
+      setNote('sensores', 'Nenhuma leitura do sensor: este aparelho não tem sensor ou o endereço não é HTTPS.');
+      refreshUI();
     }
-    if (shook) robo.dizzy();
-  }
-  async function startSensors() {
-    if (typeof DeviceOrientationEvent === 'undefined') throw new Error('Este aparelho não tem sensor de movimento.');
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-      const answer = await DeviceOrientationEvent.requestPermission().catch(() => 'denied');
-      if (answer !== 'granted') throw new Error('Permissão do sensor negada.');
-    }
-    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-      await DeviceMotionEvent.requestPermission().catch(() => 'denied');
-    }
-    window.addEventListener('deviceorientation', onOrientation);
-    window.addEventListener('devicemotion', onMotion);
-    sensors.on = true;
-    sensors.gotData = false;
-    // Sem leitura em 1,5 s: o aparelho não tem sensor ou o endereço não é HTTPS
-    setTimeout(() => {
-      if (sensors.on && !sensors.gotData) {
-        stopSensors();
-        setNote('sensores', 'Nenhuma leitura do sensor: este aparelho não tem sensor ou o endereço não é HTTPS.');
-        refreshUI();
-      }
-    }, 1500);
-  }
-  function stopSensors() {
-    window.removeEventListener('deviceorientation', onOrientation);
-    window.removeEventListener('devicemotion', onMotion);
-    sensors.on = false;
-    robo.tg.lean = 0;
-  }
+  });
 
   // Janela flutuante do motor: no PC o robô vai para uma janela pequena (tocável); no Android, vídeo
   // flutuante. Quando ela fecha, o canvas volta ao palco.
@@ -321,10 +282,10 @@
       isActive: id => id === 'sensor' && sensors.on,
       run: async id => {
         if (id === 'chacoalhar') robo.dizzy();
-        else if (sensors.on) stopSensors();
+        else if (sensors.on) sensors.stop();
         else {
           setNote('sensores', 'Incline o celular para o robô olhar; chacoalhe para ele ficar tonto.');
-          await startSensors();
+          await sensors.start();
         }
       }
     },

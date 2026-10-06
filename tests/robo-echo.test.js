@@ -113,3 +113,88 @@ test('quadro da cabeça só durante ações; some parado e fica escondido na ent
   await settle(2000);
   assert.ok(robo.tagScale() > 0.9, `aparece depois da entrada (${robo.tagScale().toFixed(2)})`);
 });
+
+test('sensor do motor: inclinar, chacoalhar, desligar, sem leitura e permissão negada', async () => {
+  const clock = { now: 1000 };
+  const listeners = {};
+  const sandbox = {
+    performance: { now: () => clock.now }, devicePixelRatio: 1, setTimeout, clearTimeout, console,
+    Path2D: class { moveTo() {} lineTo() {} quadraticCurveTo() {} closePath() {} },
+    DeviceOrientationEvent: function () {}, DeviceMotionEvent: function () {},
+    addEventListener: (type, fn) => { listeners[type] = fn; },
+    removeEventListener: (type, fn) => { if (listeners[type] === fn) delete listeners[type]; }
+  };
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(read('public/robo-roupas.js'), sandbox);
+  vm.runInContext(read('public/robo-motor.js'), sandbox);
+  const { createSensors } = sandbox.RoboMotor;
+
+  const calls = { tilt: [], shake: 0, stop: 0, noData: 0 };
+  const sensors = createSensors({
+    onTilt: v => calls.tilt.push(v), onShake: () => { calls.shake++; },
+    onStop: () => { calls.stop++; }, onNoData: () => { calls.noData++; }, noDataMs: 40
+  });
+  await sensors.start();
+  assert.equal(sensors.on, true);
+  listeners.deviceorientation({ beta: 45, gamma: 35 });
+  assert.equal(calls.tilt[0].lookX, 1, 'inclinado para a direita olha para a direita');
+  assert.ok(Math.abs(calls.tilt[0].lean - 0.16) < 1e-9);
+  listeners.devicemotion({ acceleration: { x: 20, y: 0, z: 0 } });
+  clock.now += 300;
+  listeners.devicemotion({ acceleration: { x: -19, y: 0, z: 0 } });
+  assert.equal(calls.shake, 1, 'duas sacudidas = tonto');
+  await new Promise(r => setTimeout(r, 60));
+  assert.equal(sensors.on, true, 'com leitura, continua ligado depois do prazo');
+  sensors.stop();
+  assert.equal(sensors.on, false);
+  assert.equal(calls.stop, 1);
+  assert.ok(!listeners.deviceorientation && !listeners.devicemotion, 'parou de ouvir o sensor');
+
+  await sensors.start();
+  await new Promise(r => setTimeout(r, 60));
+  assert.equal(calls.noData, 1, 'sem leitura no prazo, avisa');
+  assert.equal(sensors.on, false, 'e desliga');
+
+  sandbox.DeviceOrientationEvent.requestPermission = async () => 'denied';
+  await assert.rejects(sensors.start(), /Permissão do sensor negada/);
+  assert.equal(sensors.on, false);
+});
+
+test('sensor no Echo: dormindo, chacoalhar acorda; com cartão, o robô segue olhando para ele', () => {
+  const app = read('public/app.js');
+  const start = app.indexOf('// [sensor-echo-inicio]'), end = app.indexOf('// [sensor-echo-fim]');
+  assert.ok(start > 0 && end > start, 'marcadores das regras no app.js');
+  const context = vm.createContext({});
+  vm.runInContext(`${app.slice(start, end)}\nthis.sensorAction = sensorAction;`, context);
+  const { sensorAction } = context;
+  assert.equal(sensorAction('tilt', { sleeping: false, cardOpen: false }), 'olhar-e-inclinar');
+  assert.equal(sensorAction('tilt', { sleeping: false, cardOpen: true }), 'inclinar', 'com cartão só inclina');
+  assert.equal(sensorAction('tilt', { sleeping: true, cardOpen: false }), 'nada', 'dormindo não se mexe');
+  assert.equal(sensorAction('shake', { sleeping: false, cardOpen: false }), 'tonto');
+  assert.equal(sensorAction('shake', { sleeping: true, cardOpen: false }), 'acordar');
+
+  const html = read('public/index.html');
+  assert.ok(html.includes('id="character-sensor"'), 'botão na folha Personagem');
+  assert.ok(app.includes("sensor: false }"), 'desligado por padrão');
+});
+
+test('robô muito inclinado recua para o quadro da cabeça não sair pelo alto', () => {
+  const { motor, canvas, clock } = loadMotor();
+  const robo = new motor.RoboBot(canvas);
+  const run = (ms) => { for (let t = 0; t < ms; t += 16) { clock.now += 16; robo.update(); } };
+  run(1000);
+  assert.ok(Math.abs(robo.fz - 1) < 1e-3, 'reto: tamanho normal');
+  robo.tg.tilt = 0.16;   // tonto
+  robo.tg.lean = 0.16;   // celular inclinado
+  run(2000);
+  assert.ok(robo.fz < 0.97, `inclinado: recua (${robo.fz.toFixed(3)})`);
+  // Canto de cima do quadro da cabeça, já inclinado e recuado, fica dentro do quadro de 280
+  const r = robo.s.tilt + robo.s.lean + robo.s.sway;
+  const top = 246 - (100 + 126 * Math.cos(r) + 90 * Math.sin(r)) * robo.fz;
+  assert.ok(top >= 8, `topo do quadro a ${top.toFixed(1)} px do alto`);
+  robo.tg.tilt = 0;
+  robo.tg.lean = 0;
+  run(3000);
+  assert.ok(robo.fz > 0.995, `volta ao normal (${robo.fz.toFixed(3)})`);
+});

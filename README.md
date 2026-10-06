@@ -31,7 +31,7 @@ Ele monitora em tempo real:
    - **Rosto como peça única:** visor, olhos, boca, bochechas e óculos saem de um só ponto e uma só escala; ao olhar para os lados, para cima, para baixo ou girar, andam juntos.
    - **Regra estrita da boca:** a boca varia ESTRITAMENTE entre `_` (fechada/repouso) e `o` (aberta/falando); dormindo, some.
    - **Mãos:** as mãos redondas aparecem ao falar e ao dançar; na entrada, uma delas acena.
-   - Animações, reações ao toque, guarda-roupa e janela flutuante: ver [Personagem do Echo](#-personagem-do-echo-robô). Backup da bolha: `docs/legado/`.
+   - Animações, reações ao toque, guarda-roupa, janela flutuante e sensor de movimento: ver [Personagem do Echo](#-personagem-do-echo-robô). Backup da bolha: `docs/legado/`.
 5. **Design Responsivo Híbrido (Retrato & Paisagem)**:
    - **Em pé (Retrato / Celular na mesa):** O mascote ocupa a parte superior e, ao responder consultas estruturadas de dados (Backups, Telemetria, Bancos, Cartões, Contas, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), desliza suavemente para cima e direciona o olhar para baixo (`mochi.look.y = 0.85`), abrindo o painel de cards neon na metade inferior sem espremer o texto.
    - **Deitado (Paisagem):** O mascote desliza suavemente para a esquerda e fixa o olhar para a direita (`mochi.look.x = 0.85`), mantendo o painel lateral clássico.
@@ -61,6 +61,8 @@ O Echo usa o robô do motor compartilhado (`public/robo-motor.js`), o mesmo da p
 | Dança (balanço, pulinhos e mãos) | comando de voz "dança", "dançar", "dance" ou "vamos dançar" (com ou sem "Echo"): 10 s, sem consultar o servidor; na comemoração: 4 s |
 | Troca de roupa | quando você escolhe uma peça; no automático, ao abrir e quando vira o dia |
 | Balanço das roupas | o tempo todo (pulos, inclinação, giro, toque e dança) |
+| Inclinar (olha e se inclina para o lado mais baixo) | "Sensor de movimento" ligado e o celular inclinado |
+| Tonto (olhos em espiral por 2 s) | celular chacoalhado, com o sensor ligado |
 
 **Quadro da cabeça:** só aparece quando o robô está fazendo alguma ação; cresce ao aparecer e encolhe ao sumir.
 
@@ -74,11 +76,21 @@ O Echo usa o robô do motor compartilhado (`public/robo-motor.js`), o mesmo da p
 
 **Reações ao toque no robô:** 1 toque achata; 2 toques rápidos pulam e giram; 5 ou mais toques em 2 s deixam o robô bravo (olhos inclinados e vermelho); toque no visor = surpresa; toque na tela do peito mostra outro símbolo (♥, :), !, ?, ♪); toque no chapéu faz o chapéu pular; passar o dedo na cabeça é carinho (olhos felizes, bochechas e corações); **segurar 0,6 s abre a folha Personagem**. Com o robô dormindo, o toque acorda.
 
-**Folha Personagem:** as 11 peças do guarda-roupa (cabeça, rosto e pescoço; uma por lugar, combináveis; tocar de novo tira), "Automático (estação)" ligado por padrão (veste pelas datas da tabela da seção do robô; escolher uma peça à mão desliga), "Tirar tudo" e "Janela flutuante" (aparece só onde o navegador permite). O Echo guarda a escolha no próprio navegador (`echo_personagem`).
+**Folha Personagem:** as 11 peças do guarda-roupa (cabeça, rosto e pescoço; uma por lugar, combináveis; tocar de novo tira), "Automático (estação)" ligado por padrão (veste pelas datas da tabela da seção do robô; escolher uma peça à mão desliga), "Tirar tudo", "Janela flutuante" (aparece só onde o navegador permite) e "Sensor de movimento" (desligado por padrão; aparece só onde o navegador tem sensor). O Echo guarda a escolha no próprio navegador (`echo_personagem`).
+
+**Sensor de movimento:** liga e desliga na folha Personagem. O Echo lembra a escolha: ao reabrir com o sensor ligado, ele volta sozinho ou, se o navegador exigir um toque (iPhone, Chrome recente), no primeiro toque na tela. Útil fora de casa; no suporte, deixe desligado.
+
+| Situação | Inclinar o celular | Chacoalhar |
+|---|---|---|
+| Normal | olha e se inclina para o lado mais baixo | fica tonto |
+| Cartão aberto | só o corpo inclina; continua olhando para o cartão | fica tonto |
+| Dormindo | nada | acorda (com a entrada) |
+
+Muito inclinado (celular inclinado e tonto ao mesmo tempo), o robô recua um pouco para o quadro da cabeça não sair pelo alto. Sem leitura do sensor em 1,5 s (PC ou endereço HTTP), o botão desliga e avisa; só funciona pelo endereço HTTPS.
 
 **Janela flutuante:** no PC (Chrome/Edge 116+), o robô vai para uma janela pequena sempre na frente, continua tocável e reagindo aos agentes, e volta ao palco quando ela fecha. No Android, vira um vídeo flutuante do robô por cima dos outros apps (só para ver).
 
-**Fica só na página de testes:** dança pelo microfone (o Echo usa o microfone para ouvir você) e giroscópio.
+**Fica só na página de testes:** dança pelo microfone (o Echo usa o microfone para ouvir você).
 
 **Sons:** os sons do Echo continuam (os seus `.wav` locais ou os tons); a entrada usa sons próprios do robô, gerados no navegador.
 
@@ -250,7 +262,7 @@ Mascote companheira desenvolvida especialmente para uso pessoal com inteligênci
 
 ## 🤖 Robô // Laboratório do Personagem
 
-Página separada com o mesmo robô do Echo e botões para testar cada animação, mais os recursos que o Echo não usa (dança pelo microfone e giroscópio). Desde 06/10/2026 o robô é o personagem do Echo (ver [Personagem do Echo](#-personagem-do-echo-robô)).
+Página separada com o mesmo robô do Echo e botões para testar cada animação, mais a dança pelo microfone (que o Echo não usa) e o giroscópio (o mesmo sensor do Echo, vindo do motor). Desde 06/10/2026 o robô é o personagem do Echo (ver [Personagem do Echo](#-personagem-do-echo-robô)).
 
 - **Endereço:** `/robo.html` (ex.: `https://echo.tfr-info.com.br/robo.html`). Usa o PIN do Echo: se o navegador ainda não tiver o PIN, a página mostra a tela de PIN.
 - **Personagem:** cabeça clara arredondada, visor escuro com olhos luminosos na cor do estado, boca `_` (falando, `o`), quadro no alto da cabeça que só aparece durante ações (pontinhos trabalhando ou pensando, `!` na aprovação; some parado, ouvindo, dormindo, no fim e na entrada), pescoço, corpo com tela `>_` no peito e brilho de flutuação no chão. As mãos são as mesmas do Echo e aparecem ao falar.
