@@ -96,8 +96,7 @@
   // ========================================================
   // O robô substituiu a "bolha" em 06/10/2026 (backup em docs/legado/). Ele avisa os sons pelo gancho
   // onSound: os da entrada (whoosh, boing, chime) são sons próprios do robô; os demais tocam no Snd do Echo.
-  const { RoboBot, GestureReader, Sfx: RobotSfx, createDriver, createFloating, createSensors } = window.RoboMotor;
-  const Roupas = window.RoboRoupas;
+  const { RoboBot, GestureReader, Sfx: RobotSfx, createDriver } = window.RoboMotor;
   const ROBOT_OWN_SOUNDS = ['whoosh', 'boing', 'chime'];
   RobotSfx.on = true;
 
@@ -345,49 +344,8 @@
   driver.start('quadros');
 
   // ========================================================
-  // 5B. PERSONAGEM: GUARDA-ROUPA, ENTRADA E JANELA FLUTUANTE
+  // 5B. PERSONAGEM: FOLHA (robo-personagem.js), SENSOR, ENTRADA E JANELA FLUTUANTE
   // ========================================================
-  const characterSheet = document.getElementById('character-sheet');
-  const characterItems = document.getElementById('character-items');
-  const characterStatus = document.getElementById('character-status');
-  const characterNote = document.getElementById('character-note');
-  const characterAuto = document.getElementById('character-auto');
-  const characterClear = document.getElementById('character-clear');
-  const characterFloat = document.getElementById('character-float');
-  const characterClose = document.getElementById('character-close');
-
-  // Escolhas do personagem guardadas só neste navegador (roupa e modo automático)
-  const CHARACTER_KEY = 'echo_personagem';
-  const characterPrefs = (() => {
-    const base = { auto: true, roupa: {}, sensor: false };
-    try {
-      return Object.assign(base, JSON.parse(localStorage.getItem(CHARACTER_KEY) || '{}'));
-    } catch (_) {
-      return base;
-    }
-  })();
-  function saveCharacterPrefs() {
-    try {
-      localStorage.setItem(CHARACTER_KEY, JSON.stringify(characterPrefs));
-    } catch (_) {
-      // Sem armazenamento (aba anônima): vale até fechar o Echo
-    }
-  }
-
-  // Janela flutuante: no PC o robô vai para uma janela pequena sempre na frente (tocável); no Android,
-  // vídeo flutuante. Quando ela fecha, o robô volta ao palco.
-  const floating = createFloating({
-    canvas: echoCanvas,
-    robo: mochi,
-    driver,
-    home: (canvas) => {
-      echoWrapper.append(canvas);
-      scheduleLayout();
-    },
-    onChange: () => renderCharacterSheet()
-  });
-  characterFloat.hidden = !('documentPictureInPicture' in window || document.pictureInPictureEnabled);
-
   // [sensor-echo-inicio]
   // Regras do sensor no Echo: dormindo, inclinar não faz nada e chacoalhar acorda; com cartão aberto, o robô
   // continua olhando para o cartão (só o corpo inclina)
@@ -396,149 +354,47 @@
     return sleeping ? 'acordar' : 'tonto';
   }
   // [sensor-echo-fim]
-
-  // Sensor de movimento (folha Personagem): desligado por padrão; o Echo lembra se ficou ligado
-  const characterSensor = document.getElementById('character-sensor');
-  characterSensor.hidden = typeof DeviceOrientationEvent === 'undefined';
   const sensorContext = () => ({ sleeping: mochi.state === 'sleeping', cardOpen: echoWrapper.classList.contains('mode-info') });
-  const sensors = createSensors({
-    onTilt: (v) => {
-      const action = sensorAction('tilt', sensorContext());
-      if (action === 'nada') return;
-      mochi.tg.lean = v.lean;
-      if (action === 'olhar-e-inclinar') {
-        mochi.look.x = v.lookX;
-        mochi.look.y = v.lookY;
+
+  // Folha Personagem (abre ao segurar o robô): peças comuns, fantasia de esqueleto, automático, tirar tudo,
+  // janela flutuante e sensor. Escolhas guardadas só neste navegador (echo_personagem).
+  const personagem = window.RoboPersonagem.create({
+    robo: mochi,
+    owner: 'echo',
+    storageKey: 'echo_personagem',
+    defaults: { auto: true, roupa: {}, sensor: false },
+    features: { auto: true, floating: true, sensor: true },
+    // Janela flutuante: quando ela fecha, o robô volta ao palco
+    floating: {
+      canvas: echoCanvas,
+      driver,
+      home: (canvas) => {
+        echoWrapper.append(canvas);
+        scheduleLayout();
       }
     },
-    onShake: () => {
-      if (sensorAction('shake', sensorContext()) === 'acordar') wakeUp();
-      else mochi.dizzy();
-      resetInactivity();
-    },
-    onStop: () => { mochi.tg.lean = 0; },
-    onNoData: () => {
-      characterPrefs.sensor = false;
-      saveCharacterPrefs();
-      characterNote.textContent = 'Nenhuma leitura do sensor: este aparelho não tem sensor ou o endereço não é HTTPS.';
-      characterNote.hidden = false;
-      renderCharacterSheet();
+    sensor: {
+      onTilt: (v) => {
+        const action = sensorAction('tilt', sensorContext());
+        if (action === 'nada') return;
+        mochi.tg.lean = v.lean;
+        if (action === 'olhar-e-inclinar') {
+          mochi.look.x = v.lookX;
+          mochi.look.y = v.lookY;
+        }
+      },
+      onShake: () => {
+        if (sensorAction('shake', sensorContext()) === 'acordar') wakeUp();
+        else mochi.dizzy();
+        resetInactivity();
+      },
+      onStop: () => { mochi.tg.lean = 0; }
     }
   });
-  async function toggleSensor() {
-    characterNote.hidden = true;
-    if (sensors.on) {
-      sensors.stop();
-      characterPrefs.sensor = false;
-    } else {
-      try {
-        await sensors.start();
-        characterPrefs.sensor = true;
-      } catch (err) {
-        characterPrefs.sensor = false;
-        characterNote.textContent = err.message;
-        characterNote.hidden = false;
-      }
-    }
-    saveCharacterPrefs();
-    renderCharacterSheet();
-  }
-  characterSensor.addEventListener('click', toggleSensor);
-  // Ligado da última vez: liga ao abrir; se o navegador pedir um toque antes, liga no primeiro toque
-  function resumeSensor() {
-    if (!characterPrefs.sensor || sensors.on) return;
-    sensors.start().then(renderCharacterSheet).catch(() => {
-      window.addEventListener('pointerdown', () => {
-        if (characterPrefs.sensor && !sensors.on) sensors.start().then(renderCharacterSheet).catch(() => {});
-      }, { once: true, passive: true });
-    });
-  }
-
-  const itemButtons = Object.entries(Roupas.ITEMS).map(([id, item]) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'character-item';
-    btn.textContent = item.label;
-    btn.dataset.id = id;
-    btn.addEventListener('click', () => {
-      // Escolher à mão desliga o automático
-      characterPrefs.auto = false;
-      mochi.wardrobe.toggle(id, performance.now());
-      characterPrefs.roupa = mochi.wardrobe.outfit();
-      saveCharacterPrefs();
-      renderCharacterSheet();
-    });
-    return btn;
-  });
-  characterItems.replaceChildren(...itemButtons);
-
-  function renderCharacterSheet() {
-    for (const btn of itemButtons) btn.classList.toggle('active', mochi.wardrobe.has(btn.dataset.id));
-    characterAuto.classList.toggle('active', characterPrefs.auto);
-    characterAuto.setAttribute('aria-pressed', String(characterPrefs.auto));
-    const worn = mochi.wardrobe.ids().map(id => Roupas.ITEMS[id].label).join(', ');
-    characterStatus.textContent = characterPrefs.auto
-      ? `Automático: ${Roupas.seasonFor(new Date()).label}${worn ? ` → ${worn}` : ''}`
-      : (worn || 'Sem roupa');
-    characterFloat.textContent = floating.active ? 'Fechar janela flutuante' : 'Janela flutuante';
-    characterSensor.classList.toggle('active', sensors.on);
-    characterSensor.setAttribute('aria-pressed', String(sensors.on));
-  }
-
-  let wardrobeDay = '';
-  const dayKey = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-  function applyWardrobe() {
-    const now = performance.now();
-    if (characterPrefs.auto) mochi.wardrobe.set(Roupas.seasonFor(new Date()).outfit, now);
-    else mochi.wardrobe.set(characterPrefs.roupa || {}, now);
-    wardrobeDay = dayKey(new Date());
-    renderCharacterSheet();
-  }
-  // Automático: troca sozinho quando vira o dia
-  setInterval(() => {
-    if (characterPrefs.auto && dayKey(new Date()) !== wardrobeDay) applyWardrobe();
-  }, 60000);
-  applyWardrobe();
-  resumeSensor();
-
+  const floating = personagem.floating;
   function openCharacterSheet() {
-    renderCharacterSheet();
-    characterNote.hidden = true;
-    characterSheet.classList.remove('hidden');
+    personagem.open();
   }
-  function closeCharacterSheet() {
-    characterSheet.classList.add('hidden');
-  }
-  characterClose.addEventListener('click', closeCharacterSheet);
-  characterSheet.addEventListener('click', (e) => {
-    if (e.target === characterSheet) closeCharacterSheet();
-  });
-  characterAuto.addEventListener('click', () => {
-    characterPrefs.auto = !characterPrefs.auto;
-    if (!characterPrefs.auto) characterPrefs.roupa = mochi.wardrobe.outfit();
-    saveCharacterPrefs();
-    applyWardrobe();
-  });
-  characterClear.addEventListener('click', () => {
-    characterPrefs.auto = false;
-    mochi.wardrobe.clear(performance.now());
-    characterPrefs.roupa = mochi.wardrobe.outfit();
-    saveCharacterPrefs();
-    renderCharacterSheet();
-  });
-  characterFloat.addEventListener('click', async () => {
-    try {
-      if (floating.active) floating.close();
-      else {
-        await floating.open();
-        closeCharacterSheet();
-      }
-    } catch (err) {
-      characterNote.textContent = err.message;
-      characterNote.hidden = false;
-    }
-    renderCharacterSheet();
-  });
 
   // Entrada: ao abrir o Echo e ao voltar depois de mais de 30 min fora (ao acordar, o próprio motor faz)
   let hiddenAt = document.visibilityState === 'hidden' ? Date.now() : 0;

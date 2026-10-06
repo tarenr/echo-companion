@@ -320,8 +320,10 @@ const PUBLIC_STATIC_PATHS = new Set([
   '/', '/index.html', '/app.js', '/styles.css', '/sw.js', '/manifest.json',
   '/icon-192.png', '/icon-512.png', '/icon.svg',
   '/location.js', '/location.css', '/luna', '/luna.html', '/luna.js', '/luna.css', '/manifest-luna.json', '/icon-luna.svg',
-  // Personagem do Echo: a tela inicial (com a tela de PIN) já carrega o robô; só desenho e código
-  '/robo-motor.js', '/robo-roupas.js'
+  // Personagens (Echo e Luna): as telas iniciais (com a tela de PIN) já carregam o robô, as roupas e a folha
+  // Personagem; só desenho e código
+  '/robo-motor.js', '/robo-roupas.js', '/robo-roupas-echo.js', '/robo-roupas-luna.js',
+  '/robo-personagem.js', '/robo-personagem.css'
 ]);
 
 // Quem abre uma página protegida sem o PIN recebe a tela de PIN (em vez do erro em texto)

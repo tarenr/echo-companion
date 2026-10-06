@@ -76,7 +76,7 @@ O Echo usa o robô do motor compartilhado (`public/robo-motor.js`), o mesmo da p
 
 **Reações ao toque no robô:** 1 toque achata; 2 toques rápidos pulam e giram; 5 ou mais toques em 2 s deixam o robô bravo (olhos inclinados e vermelho); toque no visor = surpresa; toque na tela do peito mostra outro símbolo (♥, :), !, ?, ♪); toque no chapéu faz o chapéu pular; passar o dedo na cabeça é carinho (olhos felizes, bochechas e corações); **segurar 0,6 s abre a folha Personagem**. Com o robô dormindo, o toque acorda.
 
-**Folha Personagem:** as 11 peças do guarda-roupa (cabeça, rosto e pescoço; uma por lugar, combináveis; tocar de novo tira), "Automático (estação)" ligado por padrão (veste pelas datas da tabela da seção do robô; escolher uma peça à mão desliga), "Tirar tudo", "Janela flutuante" (aparece só onde o navegador permite) e "Sensor de movimento" (desligado por padrão; aparece só onde o navegador tem sensor). O Echo guarda a escolha no próprio navegador (`echo_personagem`).
+**Folha Personagem** (montada por `public/robo-personagem.js`, compartilhada com a Luna): "Fantasia de esqueleto" em primeiro (veste ou tira o sorriso costurado e o terno juntos; só por escolha), as 11 peças comuns e as duas da fantasia soltas (cabeça, rosto e pescoço; uma por lugar, combináveis; tocar de novo tira), "Automático (estação)" ligado por padrão (veste pelas datas da tabela da seção do robô; escolher uma peça à mão desliga), "Tirar tudo", "Janela flutuante" (aparece só onde o navegador permite) e "Sensor de movimento" (desligado por padrão; aparece só onde o navegador tem sensor). O Echo guarda a escolha no próprio navegador (`echo_personagem`).
 
 **Sensor de movimento:** liga e desliga na folha Personagem. O Echo lembra a escolha: ao reabrir com o sensor ligado, ele volta sozinho ou, se o navegador exigir um toque (iPhone, Chrome recente), no primeiro toque na tela. Útil fora de casa; no suporte, deixe desligado.
 
@@ -105,7 +105,7 @@ O Echo pode ser acessado de **dentro de casa (Wi-Fi)** ou de **qualquer lugar do
 - **Como funciona:**
   - Requisições feitas no próprio computador (`127.0.0.1`, sem passar pelo túnel) são liberadas para que os agentes locais não sofram qualquer atraso.
   - Qualquer requisição vinda pela internet (Cloudflare Tunnel) ou pela rede de casa exige o **PIN de Acesso**, enviado por cabeçalho (`x-echo-pin`), parâmetro `?pin=` ou cookie.
-  - Sem PIN, quem vem de fora só recebe o que as telas de entrada precisam: `/`, `index.html`, `app.js`, `styles.css`, `sw.js`, `manifest.json`, os ícones, os arquivos do robô (`robo-motor.js` e `robo-roupas.js`, só desenho e código, carregados antes do PIN), os da localização e os da Luna (`/luna`, `luna.*`, `manifest-luna.json`, `icon-luna.svg`). Todo o resto de `public/` e todas as rotas `/api/` (inclusive `/api/events`, `/api/sounds`, `/api/stream`, `/api/speak`) respondem `401`.
+  - Sem PIN, quem vem de fora só recebe o que as telas de entrada precisam: `/`, `index.html`, `app.js`, `styles.css`, `sw.js`, `manifest.json`, os ícones, os arquivos do robô (`robo-motor.js`, `robo-roupas.js`, `robo-roupas-echo.js`, `robo-roupas-luna.js`, `robo-personagem.js` e `robo-personagem.css`, só desenho e código, carregados antes do PIN), os da localização e os da Luna (`/luna`, `luna.*`, `manifest-luna.json`, `icon-luna.svg`). Todo o resto de `public/` e todas as rotas `/api/` (inclusive `/api/events`, `/api/sounds`, `/api/stream`, `/api/speak`) respondem `401`.
   - **Tela de PIN nas páginas protegidas:** quem abre direto uma página protegida (ex.: `/robo.html`) sem o PIN recebe uma tela de PIN (`src/pinPage.js`) em vez do erro em texto. O PIN vai para `/api/auth/verify`, que grava o cookie, e a página recarrega liberada. Scripts, estilos e API continuam recebendo o `401` em JSON.
   - **Limite de tentativas:** 10 PINs errados diferentes em 15 minutos bloqueiam aquele IP por 15 minutos (`429` com `Retry-After`). Os contadores do Echo e da Luna são separados, enviar sem PIN não conta como erro e repetir o mesmo PIN errado (cookie antigo, reconexão) conta uma vez. Reiniciar o serviço zera os contadores. No Wi-Fi, o celular e o PC saem pelo mesmo IP na internet.
   - O IP informado pelo Cloudflare (`cf-connecting-ip`) só é aceito quando a conexão vem do próprio PC, onde roda o túnel; vindo da rede de casa, vale o endereço real.
@@ -315,7 +315,7 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
     - "Rosto de boneca" (rosto): cílios, sorriso costurado fino e costuras nas bochechas.
     - "Vestido de retalhos" (pescoço): retalhos verde-água, amarelo, rosa com espirais, rosa-claro e cinza, com costuras, gola em V e a tela `>_` à mostra.
     - Tirar essa fantasia devolve o "Laço" comum, o visual dela sem fantasia.
-  - **Separação por dono:** cada página carrega só o arquivo do seu personagem, e as peças têm dono (`owner`), então uma não aparece na lista da outra. Por enquanto as fantasias estão só nas páginas de teste.
+  - **Separação por dono:** cada página carrega só o arquivo do seu personagem, e as peças têm dono (`owner`), então uma não aparece na lista da outra. A do Echo está na folha Personagem dele.
   - **Funções comuns:** `robo-roupas.js` reúne as funções dos conjuntos (`SETS`, `toggleSet`, `itemsFor`, `outfitOf`) e as medidas do corpo usadas pelo terno e pelo vestido (`shape`).
 - **Desenho do motor:**
   - Peças podem ter parte de trás (`back`), desenhada antes do corpo.
@@ -361,7 +361,7 @@ echo-companion/
 ├── data/                   # Banco SQLite da memória e sons opcionais em data/sounds/ (fora do git)
 ├── docs/                   # Guias: Google Agenda, opções de voz e ferramentas do ecossistema; legado/ guarda a antiga bolha
 ├── public/
-│   ├── app.js              # Cliente SSE, robô do Echo (pelo motor), folha Personagem, áudio neural e PIN auth
+│   ├── app.js              # Cliente SSE, robô do Echo (pelo motor), regras do sensor, áudio neural e PIN auth
 │   ├── index.html          # Interface OLED do Echo com botões de ação e telemetria
 │   ├── manifest.json       # Configuração PWA do Echo
 │   ├── styles.css          # Estilização Cyberpunk Neon do Echo
@@ -377,6 +377,8 @@ echo-companion/
 │   ├── robo-roupas.js      # Guarda-roupa do robô: 11 peças, estações (com a Páscoa) e física das roupas
 │   ├── robo-roupas-echo.js # Peças exclusivas do Echo: fantasia de esqueleto
 │   ├── robo-roupas-luna.js # Peças exclusivas da Luna: fantasia de boneca de pano
+│   ├── robo-personagem.js  # Folha Personagem compartilhada (Echo e Luna): guarda-roupa, fantasia, automático, janela flutuante, sensor
+│   ├── robo-personagem.css # Estilos da folha Personagem (ciano no Echo, lavanda na Luna)
 │   ├── robo.css            # Estilos das páginas de teste (ciano; lavanda na da Luna)
 │   └── sw.js               # Service Worker (cache v5.1 só do shell público, auto-update)
 ├── src/

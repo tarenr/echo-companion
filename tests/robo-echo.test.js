@@ -24,18 +24,22 @@ function loadMotor() {
   return { motor: sandbox.RoboMotor, canvas, clock };
 }
 
-test('o Echo carrega o robô: roupas e motor antes do app.js, públicos no servidor e no cache do app', () => {
+test('o Echo carrega o robô: roupas, fantasia, motor e folha antes do app.js, públicos no servidor e no cache do app', () => {
   const html = read('public/index.html');
-  const roupas = html.indexOf('robo-roupas.js'), motor = html.indexOf('robo-motor.js'), appTag = html.indexOf('app.js?v=');
-  assert.ok(roupas > 0 && roupas < motor && motor < appTag, 'ordem dos scripts no index.html');
+  const order = ['robo-roupas.js', 'robo-roupas-echo.js', 'robo-motor.js', 'robo-personagem.js', 'app.js?v='].map(file => html.indexOf(file));
+  assert.ok(order[0] > 0 && order.every((pos, i) => i === 0 || pos > order[i - 1]), 'ordem dos scripts no index.html');
+  assert.ok(html.includes('robo-personagem.css'), 'estilos da folha');
+  assert.ok(!html.includes('robo-roupas-luna.js'), 'o Echo não carrega a fantasia da Luna');
+  assert.ok(!html.includes('id="character-sheet"'), 'a folha não fica mais no HTML (o módulo monta)');
 
+  const files = ['/robo-motor.js', '/robo-roupas.js', '/robo-roupas-echo.js', '/robo-roupas-luna.js', '/robo-personagem.js', '/robo-personagem.css'];
   const server = read('server.js');
   const publicList = server.slice(server.indexOf('const PUBLIC_STATIC_PATHS'), server.indexOf(']);', server.indexOf('const PUBLIC_STATIC_PATHS')));
-  for (const file of ['/robo-motor.js', '/robo-roupas.js']) assert.ok(publicList.includes(`'${file}'`), `${file} público (a tela de PIN do Echo precisa dele)`);
+  for (const file of files) assert.ok(publicList.includes(`'${file}'`), `${file} público (as telas de PIN do Echo e da Luna precisam dele)`);
 
   const sw = read('public/sw.js');
   const cached = sw.slice(sw.indexOf('const STATIC_ASSETS'), sw.indexOf('];'));
-  for (const file of ['/robo-motor.js', '/robo-roupas.js']) assert.ok(cached.includes(`'${file}'`), `${file} no cache do app`);
+  for (const file of files) assert.ok(cached.includes(`'${file}'`), `${file} no cache do app`);
 
   const app = read('public/app.js');
   assert.ok(!app.includes('class Bot'), 'a bolha saiu do app.js');
@@ -174,8 +178,8 @@ test('sensor no Echo: dormindo, chacoalhar acorda; com cartão, o robô segue ol
   assert.equal(sensorAction('shake', { sleeping: false, cardOpen: false }), 'tonto');
   assert.equal(sensorAction('shake', { sleeping: true, cardOpen: false }), 'acordar');
 
-  const html = read('public/index.html');
-  assert.ok(html.includes('id="character-sensor"'), 'botão na folha Personagem');
+  assert.ok(read('public/robo-personagem.js').includes("'character-sensor'"), 'botão na folha Personagem');
+  assert.match(app, /features: \{ auto: true, floating: true, sensor: true \}/, 'o Echo mostra o sensor na folha');
   assert.ok(app.includes("sensor: false }"), 'desligado por padrão');
 });
 

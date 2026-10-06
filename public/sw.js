@@ -1,4 +1,4 @@
-const CACHE_NAME = 'echo-companion-v7.3';
+const CACHE_NAME = 'echo-companion-v7.4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -7,7 +7,11 @@ const STATIC_ASSETS = [
   '/location.js',
   '/location.css',
   '/robo-roupas.js',
+  '/robo-roupas-echo.js',
+  '/robo-roupas-luna.js',
   '/robo-motor.js',
+  '/robo-personagem.js',
+  '/robo-personagem.css',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',

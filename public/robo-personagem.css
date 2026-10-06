@@ -1,0 +1,129 @@
+/* ========================================================
+   PERSONAGEM: folha do guarda-roupa (abre ao segurar o robô), compartilhada por Echo e Luna
+   Montada pelo robo-personagem.js. Cores do Echo por padrão; a Luna usa lavanda (data-personagem="luna").
+   ======================================================== */
+.character-sheet {
+  --personagem-cor: #00E5FF;
+  --personagem-rgb: 0, 229, 255;
+  --personagem-fundo: #07121f;
+  --personagem-botao: rgba(4, 22, 34, 0.75);
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(1, 4, 10, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.character-sheet[data-personagem="luna"] {
+  --personagem-cor: #c084fc;
+  --personagem-rgb: 192, 132, 252;
+  --personagem-fundo: #140a24;
+  --personagem-botao: rgba(30, 16, 51, 0.8);
+}
+
+.character-sheet.hidden {
+  display: none;
+}
+
+.character-card {
+  width: min(100%, 520px);
+  max-height: 85vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem 1.1rem;
+  background: var(--personagem-fundo);
+  border: 1px solid rgba(var(--personagem-rgb), 0.45);
+  border-radius: 18px;
+  box-shadow: 0 0 30px rgba(var(--personagem-rgb), 0.2);
+}
+
+.character-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Selo "PERSONAGEM" (o mesmo visual do selo âmbar do Echo) */
+.character-title {
+  align-self: flex-start;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  text-transform: uppercase;
+}
+
+.character-close {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.character-status {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.character-items,
+.character-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0.45rem;
+}
+
+.character-actions {
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(var(--personagem-rgb), 0.15);
+}
+
+.character-item {
+  min-height: 44px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(var(--personagem-rgb), 0.25);
+  border-radius: 12px;
+  background: var(--personagem-botao);
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.character-item.active {
+  border-color: var(--personagem-cor);
+  background: rgba(var(--personagem-rgb), 0.16);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(var(--personagem-rgb), 0.3);
+}
+
+/* Fantasia: primeiro botão do guarda-roupa, ocupa a linha toda */
+.character-item.character-set {
+  grid-column: 1 / -1;
+  font-weight: 700;
+}
+
+.character-item[hidden],
+.character-note[hidden] {
+  display: none;
+}
+
+.character-note {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}

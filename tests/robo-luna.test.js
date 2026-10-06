@@ -169,3 +169,105 @@ test('páginas de teste: cada uma carrega só as peças do seu personagem', () =
   assert.match(lab, /only: 'echo',\s*id: 'acessorios'/);
   assert.match(lab, /IS_ECHO \? \[\['auto', 'Automático \(estação\)'\]\] : \[\]/);
 });
+
+// DOM de mentira, só o que a folha Personagem usa
+class FakeElement {
+  constructor(tag) {
+    this.tagName = tag.toUpperCase();
+    this.children = [];
+    this.dataset = {};
+    this.attrs = {};
+    this.listeners = {};
+    this.hidden = false;
+    this.textContent = '';
+    this.className = '';
+    const el = this;
+    this.classList = {
+      add: c => { if (!el.classList.contains(c)) el.className = `${el.className} ${c}`.trim(); },
+      remove: c => { el.className = el.className.split(' ').filter(x => x && x !== c).join(' '); },
+      toggle: (c, on) => (on ? el.classList.add(c) : el.classList.remove(c)),
+      contains: c => el.className.split(' ').includes(c)
+    };
+  }
+  setAttribute(k, v) { this.attrs[k] = String(v); }
+  append(...nodes) { this.children.push(...nodes); }
+  replaceChildren(...nodes) { this.children = nodes; }
+  addEventListener(type, fn) { (this.listeners[type] = this.listeners[type] || []).push(fn); }
+  click() { return Promise.all((this.listeners.click || []).map(fn => fn({ target: this }))); }
+}
+
+function loadSheet(owner, stored) {
+  const storage = new Map(stored ? [[`${owner}_personagem`, JSON.stringify(stored)]] : []);
+  const sandbox = {
+    performance: { now: () => 1000 }, setInterval: () => 0, console,
+    localStorage: { getItem: k => (storage.has(k) ? storage.get(k) : null), setItem: (k, v) => storage.set(k, v) },
+    document: { createElement: tag => new FakeElement(tag), body: new FakeElement('body') }
+  };
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(read('robo-roupas.js'), sandbox);
+  vm.runInContext(read(`robo-roupas-${owner}.js`), sandbox);
+  sandbox.RoboMotor = {
+    createFloating: () => ({ active: null, open: async () => {}, close: () => {} }),
+    createSensors: () => ({ on: false, start: async () => {}, stop: () => {} })
+  };
+  vm.runInContext(read('robo-personagem.js'), sandbox);
+  const Roupas = sandbox.RoboRoupas;
+  const robo = { wardrobe: new Roupas.Wardrobe() };
+  return { sandbox, Roupas, robo, storage };
+}
+const labels = el => el.children.map(b => b.textContent);
+const find = (sheet, cls) => {
+  const card = sheet.children[0];
+  return card.children.find(c => c.className.split(' ').includes(cls));
+};
+
+test('folha Personagem compartilhada: botões por personagem; Luna começa de fantasia e volta ao laço', async () => {
+  // Echo: tudo como antes, mais a fantasia de esqueleto em primeiro
+  const echo = loadSheet('echo');
+  const sheetE = echo.sandbox.RoboPersonagem.create({
+    robo: echo.robo, owner: 'echo', storageKey: 'echo_personagem',
+    defaults: { auto: true, roupa: {}, sensor: false },
+    features: { auto: true, floating: true, sensor: true },
+    floating: { canvas: {}, driver: {}, home: () => {} },
+    sensor: { onTilt() {}, onShake() {}, onStop() {} }
+  });
+  const itemsE = labels(find(sheetE.element, 'character-items'));
+  assert.equal(itemsE[0], 'Fantasia de esqueleto');
+  assert.equal(itemsE.length, 1 + 13, 'fantasia + 11 comuns + 2 do Echo');
+  assert.ok(!itemsE.includes('Cabelo ruivo'), 'sem peças da Luna');
+  assert.deepEqual(labels(find(sheetE.element, 'character-actions')), ['Automático (estação)', 'Tirar tudo', 'Janela flutuante', 'Sensor de movimento']);
+  assert.equal(sheetE.prefs.auto, true, 'Echo continua no automático');
+
+  // Luna: sem automático e sem janela flutuante; começa vestida de boneca de pano
+  const luna = loadSheet('luna');
+  const sheetL = luna.sandbox.RoboPersonagem.create({
+    robo: luna.robo, owner: 'luna', storageKey: 'luna_personagem',
+    defaults: { auto: false, roupa: luna.Roupas.outfitOf('bonecaDePano'), sensor: false },
+    features: { auto: false, floating: false, sensor: true },
+    sensor: { onTilt() {}, onShake() {}, onStop() {} }
+  });
+  const itemsL = find(sheetL.element, 'character-items');
+  assert.equal(itemsL.children[0].textContent, 'Fantasia de boneca de pano');
+  assert.ok(!labels(itemsL).includes('Terno de esqueleto'), 'sem peças do Echo');
+  assert.deepEqual(labels(find(sheetL.element, 'character-actions')), ['Tirar tudo', 'Sensor de movimento']);
+  assert.equal(sheetL.element.dataset.personagem, 'luna', 'cores lavanda na folha');
+  assert.deepEqual([...luna.robo.wardrobe.ids()], ['cabeloRuivo', 'rostoBoneca', 'vestidoRetalhos'], 'começa fantasiada');
+  assert.ok(itemsL.children[0].classList.contains('active'), 'fantasia marcada como ativa');
+
+  await itemsL.children[0].click();
+  assert.deepEqual([...luna.robo.wardrobe.ids()], ['laco'], 'tirou a fantasia: volta o laço');
+  assert.deepEqual(JSON.parse(luna.storage.get('luna_personagem')).roupa, { cabeca: 'laco', rosto: null, pescoco: null }, 'lembra a escolha');
+  assert.ok(!itemsL.children[0].classList.contains('active'));
+
+  // Um automático guardado por engano não vale para a Luna
+  const again = loadSheet('luna', { auto: true, roupa: { cabeca: 'laco' } });
+  const sheetA = again.sandbox.RoboPersonagem.create({
+    robo: again.robo, owner: 'luna', storageKey: 'luna_personagem',
+    defaults: { auto: false, roupa: again.Roupas.outfitOf('bonecaDePano'), sensor: false },
+    features: { auto: false, floating: false, sensor: true },
+    sensor: { onTilt() {}, onShake() {}, onStop() {} }
+  });
+  assert.equal(sheetA.prefs.auto, false);
+  assert.deepEqual([...again.robo.wardrobe.ids()], ['laco'], 'abre com o que ela escolheu da última vez');
+});
