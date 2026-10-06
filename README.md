@@ -394,4 +394,4 @@ echo-companion/
 
 ## Localização entre Echo e Luna
 
-Compartilhamento opt-in do GPS enquanto cada aplicativo estiver aberto e visível. Pergunte onde o outro mascote está; a resposta distingue posição recente e última conhecida, informa precisão e permite abrir o mapa. Sem histórico de trajetos, com revogação e armazenamento criptografado. GPS/mapa não exigem API Google; rua/bairro/cidade são opcionais via Geocoding. Veja [ativação, privacidade e testes](docs/localizacao-compartilhada.md).
+Compartilhamento opt-in do GPS enquanto cada aplicativo estiver aberto e visível. Pergunte onde o outro mascote está; a resposta distingue posição recente e última conhecida, informa precisão e permite abrir o mapa. Sem histórico de trajetos, com revogação e armazenamento criptografado. GPS/mapa não exigem API Google. A resposta traz o endereço completo (rua, número, bairro, cidade, UF e CEP, aproximado) pelo OpenStreetMap, gratuito e sem chave: as coordenadas vão para lá só ao consultar. Com `LOCATION_GOOGLE_GEOCODING_KEY`, usa o Google; `LOCATION_GEOCODING=off` desliga o endereço. Veja [ativação, privacidade e testes](docs/localizacao-compartilhada.md).

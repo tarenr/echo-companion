@@ -40,13 +40,35 @@ Posições expiram logicamente em 24 horas e são removidas ao ler o estado ou p
 
 Autenticação usa o PIN correspondente, sessão por dispositivo e `X-Location-Csrf` nas operações. Respostas não são cacheadas. Coordenadas não são enviadas ao Gemini, histórico de conversas nem SSE. Qualquer pessoa que conhecer o PIN do mascote terá o acesso correspondente: mantenha os PINs privados. A revogação não retira coordenadas que alguém já recebeu anteriormente.
 
-## Endereços opcionais pelo Google
+## Endereço completo (OpenStreetMap, ou Google com chave)
 
-Sem `LOCATION_GOOGLE_GEOCODING_KEY`, nenhuma API Google é chamada. A posição, o mapa e a proximidade dos destinos cadastrados funcionam sem essa chave.
+Desde 06/10/2026 a resposta traz o endereço completo da posição: rua, número, bairro, cidade, UF e CEP.
 
-Para falar rua/bairro/cidade fora dos destinos, configure uma chave restrita à **Geocoding API**, API ativada e faturamento apropriado no Google Cloud. A implementação não ativa faturamento nem configura conta Google automaticamente. Consulte [uso e cobrança](https://developers.google.com/maps/documentation/geocoding/usage-and-billing) antes de habilitar; não há promessa de gratuidade. A chave fica somente no servidor.
+- Exemplo: "Luna está perto de Avenida Paulista, 1578 – Morro dos Ingleses, São Paulo – SP, CEP 01310-200 (endereço aproximado)."
+- Perto de um destino cadastrado: "perto de Casa (Rua …, CEP …)".
+- O número é o endereço cadastrado mais próximo no mapa, por isso "aproximado". Em ruas sem número no mapa, sai só rua, bairro e cidade.
+- O Echo também fala esse texto, incluindo o CEP.
 
-Com a chave configurada, as coordenadas consultadas são enviadas ao Google somente mediante pergunta/botão de consulta, quando não identificadas como local conhecido. Não há geocodificação periódica nem armazenamento dos endereços retornados. Há limite global de uma consulta por dez segundos e timeout de seis segundos; falha ou limite mantêm a posição disponível no mapa, sem inventar endereço. A tela avisa sobre esse envio; a chave configura o consentimento administrativo para o serviço opcional. Configure cotas no Google Cloud conforme seu orçamento.
+| Configuração | Quem recebe as coordenadas ao consultar | Custo |
+|---|---|---|
+| Padrão (sem `LOCATION_GOOGLE_GEOCODING_KEY`) | OpenStreetMap (Nominatim, Fundação OpenStreetMap, Reino Unido) | gratuito, sem chave |
+| `LOCATION_GOOGLE_GEOCODING_KEY` preenchida | Google (Geocoding API) | exige faturamento no Google Cloud; veja [uso e cobrança](https://developers.google.com/maps/documentation/geocoding/usage-and-billing) |
+| `LOCATION_GEOCODING=off` | ninguém: a resposta fica sem endereço, como antes | nenhum |
+
+**Quando as coordenadas saem do servidor:**
+- Só ao perguntar ou tocar em consultar.
+- Não há geocodificação periódica, e nada vai para disco.
+
+**Limites e falhas:**
+- Uma consulta a cada 10 s, com tempo máximo de 6 s.
+- Só o último endereço fica na memória do servidor, para repetir a resposta na mesma posição sem esperar o limite.
+- Se o serviço falhar ou o limite bloquear, a posição continua disponível no mapa, sem endereço inventado.
+
+**Avisos:**
+- O OpenStreetMap exige identificação do app: o Echo envia `echo-companion/1.0`.
+- O cartão mostra "endereço © OpenStreetMap" quando o endereço vem de lá.
+- O painel Localização avisa para qual serviço as coordenadas vão.
+- A chave do Google, se usada, fica só no servidor.
 
 ## Rotas e validação
 

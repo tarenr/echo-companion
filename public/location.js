@@ -23,7 +23,9 @@
       button.classList.toggle('sharing', !!state.sharing && !!state.owner);
       button.title = state.sharing ? (state.owner ? 'Localização compartilhada neste celular' : 'Outro celular compartilha esta localização') : 'Ativar localização compartilhada';
       status.textContent = !state.configured ? 'Localização não configurada no servidor.' : !state.sharing ? 'Compartilhamento desligado.' : !state.owner ? 'Outro celular é o transmissor deste mascote.' : !visible() ? 'Atualizações pausadas: aplicativo fora da frente.' : watch !== null ? 'Compartilhamento ativo enquanto esta tela estiver visível.' : 'Compartilhamento ativado; aguardando GPS.';
-      addressNotice.textContent = state.geocoding ? 'Ao consultar um endereço, as coordenadas são enviadas ao Google Maps.' : 'Sem API de endereços: locais cadastrados e posição no mapa continuam disponíveis.';
+      addressNotice.textContent = state.geocoding === 'google' ? 'Ao consultar um endereço, as coordenadas são enviadas ao Google Maps.'
+        : state.geocoding ? 'Ao consultar um endereço, as coordenadas são enviadas ao OpenStreetMap.'
+        : 'Sem API de endereços: locais cadastrados e posição no mapa continuam disponíveis.';
       start.textContent = state.sharing && !state.owner ? 'Usar este celular no lugar do outro' : state.owner ? 'Atualizar GPS deste celular' : 'Compartilhar minha localização';
       start.disabled = busy || !state.configured; stop.disabled = busy; stop.hidden = !state.sharing; query.disabled = busy || !state.configured;
     }

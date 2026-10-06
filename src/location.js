@@ -36,7 +36,7 @@ class LocationService {
   status(scope, device) {
     identity(scope); const entry = this.read()[scope];
     return { configured: this.store.configured, sharing: !!entry?.device, owner: entry?.device === device,
-      updatedAt: entry?.position?.capturedAt || null, geocoding: !!this.geocoder.key };
+      updatedAt: entry?.position?.capturedAt || null, geocoding: this.geocoder.provider || false };
   }
   start(scope, device, replace) {
     identity(scope); const data = this.read(), entry = data[scope];
@@ -68,17 +68,21 @@ class LocationService {
     const p = entry.position;
     if (!p) return answer(`${name} está com compartilhamento ativado, mas não há posição disponível nas últimas 24 horas.`);
     const device = entry.device, capturedAt = p.capturedAt;
-    let place = null;
+    let near = null;
     if (p.accuracy <= 100 && this.memory) {
       try {
         const saved = JSON.parse(await this.memory.getPreference('navigation_saved_destinations') || '{}');
         const nearby = Object.entries({ casa: 'Casa', trabalho1: 'DHL', trabalho2: 'Jayme' }).map(([id, label]) => {
           const point = geohashPoint(saved[id]?.link); return point ? { label, meters: distance(p, point) } : null;
         }).filter(Boolean).sort((a, b) => a.meters - b.meters);
-        if (nearby[0] && nearby[0].meters + p.accuracy <= 250) place = `perto de ${nearby[0].label}`;
+        if (nearby[0] && nearby[0].meters + p.accuracy <= 250) near = nearby[0].label;
       } catch (_) { /* Não inventa local quando o cadastro não pode ser lido. */ }
     }
-    if (!place) { const address = await this.geocoder.address(p); if (address) place = `na região de ${address}`; }
+    // Endereço completo também perto de um local cadastrado: "perto de Casa (Rua …, CEP …)"
+    const address = await this.geocoder.address(p);
+    const place = near ? (address ? `perto de ${near} (${address})` : `perto de ${near}`)
+      : address ? `perto de ${address} (endereço aproximado)` : null;
+    const credit = address && this.geocoder.provider === 'osm' ? ' · endereço © OpenStreetMap' : '';
     // Revogação ou nova posição durante a consulta invalida a resposta antiga.
     const latest = this.read()[scope];
     if (latest?.device !== device || latest?.position?.capturedAt !== capturedAt) return answer('O compartilhamento mudou durante a consulta. Pergunte novamente.');
@@ -87,7 +91,7 @@ class LocationService {
     const detail = place || 'em uma posição disponível no mapa';
     const reply = `${fresh ? `${name} está` : `A última localização conhecida de ${name} era`} ${detail}. Atualizada ${age < 60000 ? 'há menos de um minuto' : `há ${Math.floor(age / 60000)} minutos`}, com precisão aproximada de ${Math.ceil(p.accuracy)} metros.`;
     return { ...answer(reply), location: { latitude: p.latitude, longitude: p.longitude, accuracy: p.accuracy, capturedAt, fresh },
-      card: { badge: fresh ? 'LOCALIZAÇÃO RECENTE' : 'ÚLTIMA LOCALIZAÇÃO', title: `${name}: ${detail}`, detail1: `Atualização: ${time}`, detail2: `Precisão aproximada: ${Math.ceil(p.accuracy)} m` },
+      card: { badge: fresh ? 'LOCALIZAÇÃO RECENTE' : 'ÚLTIMA LOCALIZAÇÃO', title: `${name}: ${detail}`, detail1: `Atualização: ${time}`, detail2: `Precisão aproximada: ${Math.ceil(p.accuracy)} m${credit}` },
       mapUrl: `https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}` };
   }
 }
