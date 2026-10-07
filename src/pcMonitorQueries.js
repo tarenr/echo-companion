@@ -27,7 +27,59 @@ function parseQuery(message) {
   return null;
 }
 
-function presentation(result) {
+function quotaBaseLabel(label) {
+  const text = String(label || '').toLowerCase();
+  if (/weekly|7.?day|7d|semanal/.test(text)) return /all models/.test(text) ? 'cota semanal de todos os modelos' : /sonnet/.test(text) ? 'cota semanal do Sonnet' : 'cota semanal';
+  if (/5.?hour|5h|cinco horas/.test(text)) return 'cota de cinco horas';
+  if (/current session|sessao atual|sessão atual/.test(text)) return 'cota da sessão atual';
+  if (/included usage/.test(text)) return 'cota incluída no plano';
+  if (/monthly|mensal/.test(text)) return 'cota mensal';
+  if (/daily|diaria|diária/.test(text)) return 'cota diária';
+  if (/^uso$|^usage$/.test(text)) return 'registro de uso';
+  return label || 'cota';
+}
+function quotaLabel(label, group) {
+  const base = quotaBaseLabel(label);
+  if (!group) return base;
+  const translated = ({ 'gemini models': 'modelos Gemini', 'claude and gpt models': 'modelos Claude e GPT', 'all models': 'todos os modelos' })[String(group).toLowerCase()] || group;
+  return `${base} para ${translated}`;
+}
+function renewalSpeech(timestamp, now) {
+  if (!number(timestamp) || timestamp <= 0 || Number.isNaN(new Date(timestamp).getTime())) return 'O horário de renovação não foi informado.';
+  if (timestamp <= now) return 'O horário informado para renovação já passou; aguarde uma atualização do dashboard.';
+  const zone = { timeZone: 'America/Sao_Paulo' };
+  const day = value => new Intl.DateTimeFormat('en-CA', { ...zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(value);
+  const target = day(timestamp);
+  const when = target === day(now) ? 'hoje' : target === day(now + 86400000) ? 'amanhã' : `em ${new Intl.DateTimeFormat('pt-BR', { ...zone, day: 'numeric', month: 'long', year: 'numeric' }).format(timestamp)}`;
+  const time = new Intl.DateTimeFormat('pt-BR', { ...zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(timestamp).replace(':', 'h');
+  return `Essa cota renova ${when}, às ${time}, no horário de Brasília.`;
+}
+function quotaSpeech(providers, summary, now) {
+  if (!providers.length) return 'Não há nenhum provedor disponível para essa consulta no dashboard.';
+  return providers.map(p => {
+    const warnings = [];
+    if (p.stale) warnings.push('Os dados estão desatualizados; estes são os últimos valores registrados.');
+    if (p.backoff) warnings.push('As consultas estão em espera, então o saldo pode ter mudado.');
+    if (p.status && p.status !== 'ok') warnings.push(p.status === 'needsAuth' ? 'É preciso autenticar esse provedor novamente.' : 'O provedor está indisponível para atualização.');
+    let windows = p.windows || [];
+    if (summary && windows.length) {
+      const percentages = p.count_only ? [] : windows.filter(w => number(w.restante_pct));
+      windows = [percentages.length ? percentages.reduce((a, b) => a.restante_pct <= b.restante_pct ? a : b) : windows[0]];
+    }
+    const details = windows.map(w => {
+      const label = quotaLabel(w.label, w.group);
+      let balance;
+      if (p.count_only || !number(w.restante_pct)) balance = number(w.count) ? `Há ${fmt(w.count)} usos registrados na ${label}, mas esse dado não permite calcular quanto resta.` : `O saldo da ${label} está indisponível.`;
+      else if (w.restante_pct === 100) balance = `Você ainda tem toda a ${label} disponível; nenhum consumo foi registrado nessa janela.`;
+      else if (w.restante_pct === 0) balance = `A ${label} está esgotada: 100% foi consumido e não resta saldo nessa janela.`;
+      else balance = `Na ${label}, você já usou ${fmt(100 - w.restante_pct, '%')} e ainda tem ${fmt(w.restante_pct, '%')} disponível.${w.restante_pct <= 10 ? ' Ela está quase esgotada.' : w.restante_pct <= 25 ? ' O saldo está baixo.' : ''}`;
+      return `${balance} ${renewalSpeech(w.resets_at, now)}`;
+    });
+    return `${p.label}. ${warnings.join(' ')} ${details.length ? details.join(' ') : 'Não há dados de cotas disponíveis.'}`.replace(/\s+/g, ' ').trim();
+  }).join(' ') + (summary ? ' Pergunte por um provedor para conhecer todas as suas janelas de uso.' : '');
+}
+
+function presentation(result, now = Date.now()) {
   if (!result?.ok) return { badge: 'NERD OPS', title: 'Indisponível', rows: [{ label: 'Consulta', value: result?.erro || 'Dashboard indisponível', status: 'error' }], reply: result?.erro || 'Não consegui consultar o dashboard agora.' };
   const d = result.dados;
   const rows = [];
@@ -79,14 +131,14 @@ function presentation(result) {
           const remaining = p.count_only || !number(w.restante_pct)
             ? number(w.count) ? `${w.count} usos (sem percentual)` : 'percentual indisponível'
             : `${fmt(w.restante_pct, '%')} restante`;
-          add(`${p.label} • ${w.label}`, `${remaining} • ${reset ? `renova em ${reset} (Brasília)` : 'renovação não informada'}${p.stale ? ' • desatualizado' : ''}${p.backoff ? ' • consultas em espera' : ''}${p.status !== 'ok' ? ` • ${p.status}` : ''}`, p.stale || p.backoff || p.status !== 'ok' ? 'warn' : undefined);
+          add(`${p.label} • ${quotaLabel(w.label, w.group)}`, `${remaining} • ${reset ? `renova em ${reset} (Brasília)` : 'renovação não informada'}${p.stale ? ' • desatualizado' : ''}${p.backoff ? ' • consultas em espera' : ''}${p.status !== 'ok' ? ` • ${p.status}` : ''}`, p.stale || p.backoff || p.status !== 'ok' ? 'warn' : undefined);
         });
       });
       if (!rows.length) add('Cotas', 'nenhum provedor disponível'); break;
   }
   if (result.foco) rows.sort((a, b) => Number(b.label === result.foco) - Number(a.label === result.foco));
   const warning = result.desatualizado ? ' Dados desatualizados.' : '';
-  return { badge: `NERD OPS • ${result.secao.toUpperCase()}`, title, rows, reply: `${title}: ${rows.slice(0, 2).map(r => `${r.label}, ${r.value}`).join('; ')}.${warning}` };
+  return { badge: `NERD OPS • ${result.secao.toUpperCase()}`, title, rows, reply: result.secao === 'cotas' ? quotaSpeech(d.provedores, false, now) : `${title}: ${rows.slice(0, 2).map(r => `${r.label}, ${r.value}`).join('; ')}.${warning}` };
 }
 
 async function answerQuery(message, monitor) {
@@ -95,8 +147,7 @@ async function answerQuery(message, monitor) {
   const result = await monitor.query(args);
   const view = presentation(result);
   if (result.ok && args.secao === 'cotas' && !args.provedor && result.dados.provedores.length) {
-    const summaries = result.dados.provedores.map(p => view.rows.find(r => r.label === p.label || r.label.startsWith(`${p.label} • `))).filter(Boolean);
-    view.reply = `COTAS: ${summaries.map(r => `${r.label}, ${r.value}`).join('; ')}. Consulte um provedor para ouvir suas outras janelas.`;
+    view.reply = quotaSpeech(result.dados.provedores, true, Date.now());
   }
   if (args.secao === 'cotas' && /\btokens?\b/i.test(message)) view.reply = `O dashboard informa cotas, sem quantidade exata de tokens. ${view.reply}`;
   // Para perguntas específicas, prioriza a linha que contém o dado solicitado.

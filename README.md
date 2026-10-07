@@ -476,8 +476,18 @@ O Echo consulta o NERD OPS (`GET /api/ai-quota-status`) ao ouvir perguntas como
 ou “Quando renova o Gemini?”. A consulta tem prioridade sobre saudações no início da frase.
 Também reconhece OpenCode, Antigravity, GLM e Grok, quando disponíveis no dashboard.
 
-A consulta geral resume uma janela por provedor; pergunte pelo provedor para ouvir outras
-janelas. Os nomes exibidos são os fornecidos pelo dashboard (Gemini pode aparecer como Antigravity).
+A consulta geral destaca a janela com menor percentual disponível de cada provedor;
+pergunte pelo provedor para ouvir todas as suas janelas. A fala traduz nomes como
+“Weekly limit” (cota semanal) e “Current session” (sessão atual), explica consumo e saldo,
+e avisa quando a janela está esgotada, quase esgotada (até 10% restante) ou baixa
+(mais de 10% e até 25%). Esses limiares são avisos do Echo, não regras de bloqueio do provedor.
+A renovação é falada como hoje, amanhã ou data completa no horário de Brasília;
+horários que já passaram pedem atualização, sem afirmar que o saldo já foi restaurado.
+Percentuais referem-se à janela informada, não a quantidades exatas de tokens.
+Janelas de grupos diferentes são identificadas na fala e no cartão: no Antigravity,
+as cotas dos modelos Gemini são distintas das cotas dos modelos Claude e GPT.
+Grupos desconhecidos preservam o nome fornecido pelo dashboard.
+Os nomes dos provedores são os fornecidos pelo dashboard (Gemini pode aparecer como Antigravity).
 A resposta mostra a porcentagem restante de cada janela e a data de renovação no horário
 de Brasília. O dashboard informa cotas, não quantidades exatas de tokens. Provedores que
 exibem somente contagens continuam sem percentual; horários ausentes, snapshots antigos,

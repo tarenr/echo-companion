@@ -47,8 +47,8 @@ test('cotas filtram provedor, mostram renovação em Brasília e não inventam t
   const answer = await answerQuery('Bom dia, quantos tokens tenho no Codex?', monitor);
   assert.equal(answer.result.dados.provedores.length, 1);
   assert.match(answer.reply, /sem quantidade exata de tokens/);
-  assert.match(answer.reply, /75% restante/);
-  assert.match(answer.reply, /07\/10.*18:30.*Brasília/);
+  assert.match(answer.reply, /usou 25%.*75% disponível/);
+  assert.match(answer.rows[0].value, /07\/10.*18:30.*Brasília/);
   assert.ok(calls.every(c => c.options.method === 'GET' && c.url.endsWith('/api/ai-quota-status')));
   const overview = await answerQuery('Quais cotas de IA estão disponíveis?', monitor);
   assert.match(overview.reply, /Claude/);
@@ -76,6 +76,67 @@ function mock(routes = {}) {
   } });
   return { monitor, calls };
 }
+
+test('fala explica todas as janelas em português e distingue saldo cheio, baixo e esgotado', () => {
+  const now = Date.UTC(2026, 9, 7, 18);
+  const result = { ok: true, secao: 'cotas', dados: { provedores: [{ label: 'Antigravity', status: 'ok', windows: [
+    { label: '5-hour Limit', restante_pct: 100, resets_at: now + 3600000 },
+    { label: 'Weekly Limit', restante_pct: 4.7, resets_at: now + 86400000 },
+    { label: 'Current session', restante_pct: 0 },
+    { label: 'Included usage', restante_pct: 20 }
+  ] }] } };
+  const view = presentation(result, now);
+  assert.match(view.reply, /toda a cota de cinco horas disponível/);
+  assert.match(view.reply, /cota semanal.*usou 95,3%.*4,7% disponível.*quase esgotada/);
+  assert.match(view.reply, /sessão atual está esgotada/);
+  assert.match(view.reply, /cota incluída no plano.*saldo está baixo/);
+  assert.match(view.reply, /hoje, às 16h00/);
+  assert.match(view.reply, /amanhã, às 15h00/);
+  assert.doesNotMatch(view.reply, /Weekly|Current session|Included usage|5-hour/);
+  assert.equal(view.rows[1].label, 'Antigravity • cota semanal');
+});
+
+test('renovação usa dias de Brasília e não promete renovar em horário passado', () => {
+  const now = Date.UTC(2026, 11, 31, 23, 30);
+  const reply = resets => presentation({ ok: true, secao: 'cotas', dados: { provedores: [{ label: 'Codex', status: 'ok', windows: [{ label: 'Weekly limit', restante_pct: 50, resets_at: resets }] }] } }, now).reply;
+  assert.match(reply(Date.UTC(2027, 0, 1, 2)), /hoje, às 23h00/);
+  assert.match(reply(Date.UTC(2027, 0, 1, 4)), /amanhã, às 01h00/);
+  assert.match(reply(Date.UTC(2027, 0, 3, 4)), /3 de janeiro de 2027/);
+  assert.match(reply(now - 1000), /já passou/);
+  assert.match(reply(null), /não foi informado/);
+});
+
+test('janelas iguais de grupos diferentes permanecem distintas na fala e nos cartões', async () => {
+  const { monitor } = mock({ '/api/ai-quota-status': { ok: true, dados: { provedores: [{ id: 'gemini', label: 'Antigravity', status: 'ok', windows: [
+    { label: 'Weekly Limit', group: 'Gemini Models', used: 0.953, secret: 'privado' },
+    { label: 'Weekly Limit', group: 'Claude and GPT models', used: 0.512 },
+    { label: 'Monthly Limit', group: 'Outro grupo', used: 0.1 }
+  ] }] } } });
+  const answer = await answerQuery('Qual a cota do anti-gravity?', monitor);
+  assert.equal(answer.result.dados.provedores[0].windows[0].group, 'Gemini Models');
+  assert.equal(answer.result.dados.provedores[0].windows[0].secret, undefined);
+  assert.match(answer.reply, /semanal para modelos Gemini.*4,7% disponível/);
+  assert.match(answer.reply, /semanal para modelos Claude e GPT.*48,8% disponível/);
+  assert.match(answer.reply, /mensal para Outro grupo/);
+  assert.equal(answer.rows[0].label, 'Antigravity • cota semanal para modelos Gemini');
+  assert.equal(answer.rows[1].label, 'Antigravity • cota semanal para modelos Claude e GPT');
+  const summary = await answerQuery('Quais cotas de IA estão disponíveis?', monitor);
+  assert.match(summary.reply, /semanal para modelos Gemini.*quase esgotada/);
+  assert.doesNotMatch(summary.reply, /Claude e GPT/);
+});
+
+test('resumo destaca a janela mais limitada e preserva avisos sem inferir saldo de contagens', async () => {
+  const { monitor } = mock({ '/api/ai-quota-status': { ok: true, dados: { provedores: [
+    { id: 'claude', label: 'Claude', status: 'ok', stale: true, windows: [{ label: 'Current session', used: 0 }, { label: 'Weekly (all models)', used: 1 }] },
+    { id: 'opencode', label: 'OpenCode', status: 'needsAuth', count_only: true, backoff: true, windows: [{ label: 'Usage', count: 6 }] }
+  ] } } });
+  const answer = await answerQuery('Quais cotas de IA estão disponíveis?', monitor);
+  assert.match(answer.reply, /desatualizados.*últimos valores/);
+  assert.match(answer.reply, /semanal de todos os modelos está esgotada/);
+  assert.doesNotMatch(answer.reply, /toda a cota da sessão/);
+  assert.match(answer.reply, /autenticar.*6 usos registrados.*não permite calcular quanto resta/);
+  assert.match(answer.reply, /consultas estão em espera/);
+});
 test('consultas atuais: GET, seção específica e espaço livre derivado', async () => {
   const { monitor, calls } = mock();
   for (const secao of ['cpu', 'ram', 'gpu', 'discos', 'rede', 'midia', 'resumo']) assert.equal((await monitor.query({ secao })).ok, true);
