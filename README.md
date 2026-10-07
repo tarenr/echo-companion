@@ -2,6 +2,18 @@
 
 ## Consultas ao dashboard NERD OPS
 
+### Recuperação de voz e conexão
+
+A geração Edge TTS tem limite total de 12 segundos, incluindo conexão e áudio.
+A alternativa OpenAI tem limite de 8 segundos. No celular, o pedido de áudio e seu
+corpo têm limite de 22 segundos; se falhar, o Echo usa a voz nativa do dispositivo.
+Conversas e briefing têm limite de 30 segundos, e a consulta inicial da agenda, 5 segundos.
+Falhas liberam o processamento para uma nova pergunta. A reprodução tem proteção
+contra ausência de eventos finais (15 a 180 segundos, conforme o tamanho do texto),
+liberando a animação e retomando a escuta automática. Uma reprodução que não inicia em
+5 segundos também tenta a voz nativa. Testes de recuperação: `node --test tests/speech-recovery.test.js`.
+Após atualizar o servidor, recarregue a página do celular para carregar o JavaScript atual.
+
 O Echo consulta por GET as APIs do `pc-monitor-dashboard`, em `NERDOPS_URL` (padrão `http://127.0.0.1:5000`), sem novas dependências. A telemetria de CPU/RAM também usa o coletor do dashboard, a cada 3 segundos, substituindo a antiga estimativa local de CPU.
 
 Perguntas reconhecidas diretamente, mesmo sem Gemini: “Qual a temperatura da GPU?”, “Quanto espaço livre tenho no C:?”, “Qual programa está consumindo mais memória?”, “Como ficou a CPU nos últimos 15 minutos?”, “Qual o download da rede?”, “Qual o volume do PC?”, “Qual a ficha do computador?” e “Quanto tenho de cota de IA?”. Outras formulações podem usar a ferramenta `consultar_dashboard_pc` pelo Gemini. O status dos serviços mantém a integração existente.

@@ -857,34 +857,52 @@ app.post('/api/speak', requireAnyPin, async (req, res) => {
   // 1. Motor Primário: Microsoft Edge Neural TTS em streaming
   try {
     const tts = new MsEdgeTTS();
-    await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-    const { audioStream } = tts.toStream(text, { rate: '+6%' });
-
-    const chunks = [];
-    audioStream.on('data', chunk => chunks.push(chunk));
-    audioStream.on('end', () => {
-      try { tts.close(); } catch (e) {}
-      const audioBuffer = Buffer.concat(chunks);
-      res.set({
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.length,
-        'Cache-Control': 'no-cache'
-      });
-      res.send(audioBuffer);
+    const audioBuffer = await collectSpeech(tts, voiceName, text, res);
+    if (!audioBuffer || res.destroyed) return;
+    res.set({
+      'Content-Type': 'audio/mpeg',
+      'Content-Length': audioBuffer.length,
+      'Cache-Control': 'no-cache'
     });
-    audioStream.on('error', (err) => {
-      console.warn('Erro no stream Edge TTS:', err.message);
-      try { tts.close(); } catch (e) {}
-      generateOpenAISpeech(text, res);
-    });
+    res.send(audioBuffer);
     return;
   } catch (err) {
     console.warn('Falha ao instanciar Edge TTS, tentando OpenAI fallback:', err.message);
   }
 
   // 3. Fallback 2: OpenAI TTS (se houver chave e créditos)
-  generateOpenAISpeech(text, res);
+  if (!res.destroyed && !res.headersSent) await generateOpenAISpeech(text, res);
 });
+
+// Limita toda a operação Edge: conexão, metadados e recebimento do áudio.
+function collectSpeech(tts, voiceName, text, res, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let stream;
+    const chunks = [];
+    const finish = (error, audio) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      res.removeListener('close', onClose);
+      if (stream) { stream.removeListener('data', onData); stream.removeListener('end', onEnd); }
+      try { tts.close(); } catch (_) {}
+      if (error) reject(error); else resolve(audio);
+    };
+    const onClose = () => finish(null, null);
+    const onData = chunk => chunks.push(chunk);
+    const onEnd = () => chunks.length ? finish(null, Buffer.concat(chunks)) : finish(new Error('Edge TTS retornou áudio vazio'));
+    const timer = setTimeout(() => finish(new Error('Edge TTS excedeu o prazo de geração')), timeoutMs);
+    res.once('close', onClose);
+    Promise.resolve().then(() => tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3)).then(() => {
+      if (settled) { try { tts.close(); } catch (_) {} return; }
+      stream = tts.toStream(text, { rate: '+6%' }).audioStream;
+      stream.on('data', onData);
+      stream.once('end', onEnd);
+      stream.on('error', error => finish(error));
+    }).catch(error => finish(error));
+  });
+}
 
 async function generateOpenAISpeech(text, res) {
   if (!OPENAI_API_KEY) {
@@ -893,6 +911,7 @@ async function generateOpenAISpeech(text, res) {
   try {
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
+      signal: AbortSignal.timeout(8000),
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
@@ -914,9 +933,9 @@ async function generateOpenAISpeech(text, res) {
       'Content-Type': 'audio/mpeg',
       'Content-Length': audioBuffer.length
     });
-    res.send(audioBuffer);
+    if (!res.destroyed && !res.headersSent) res.send(audioBuffer);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (!res.destroyed && !res.headersSent) res.status(503).json({ error: 'Geração de voz indisponível. Use a voz do dispositivo.' });
   }
 }
 

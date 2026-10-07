@@ -189,8 +189,7 @@
   }
 
   async function initializeCalendar() {
-    const res = await fetch('/api/calendar/status', { headers: getAuthHeaders(), credentials: 'same-origin' });
-    const data = await res.json();
+    const { response: res, body: data } = await requestWithTimeout('/api/calendar/status', { headers: getAuthHeaders(), credentials: 'same-origin' }, 5000, response => response.json());
     if (!res.ok || !data.ok) throw new Error(data.reply || 'Desbloqueie o Echo antes de abrir sua agenda.');
     calendarCsrf = data.csrf;
     calendarStatus = data;
@@ -725,8 +724,32 @@
 
   function stopSpeakingAnim() {
     mochi.speaking = false;
+    if (mochi.state === 'thinking') mochi.setState('idle');
     clearInterval(speechTimer);
     speechTimer = null;
+  }
+
+  async function requestWithTimeout(url, options, timeoutMs, readBody) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      const body = readBody ? await readBody(response) : null;
+      return { response, body };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  let speechRecoveryTimer = null;
+  function armSpeechRecovery(text, cancel) {
+    clearTimeout(speechRecoveryTimer);
+    speechRecoveryTimer = setTimeout(() => {
+      cancel();
+      stopSpeakingAnim();
+      mochi.setState('idle');
+      resumeListeningIfHandsFree();
+    }, Math.min(180000, Math.max(15000, text.length * 150)));
   }
 
   async function speak(text) {
@@ -734,6 +757,7 @@
     
     // Pausa reconhecimento temporariamente para o Echo não ouvir a própria voz
     pauseRecognition();
+    clearTimeout(speechRecoveryTimer);
 
     if (currentAudio) {
       currentAudio.pause();
@@ -748,17 +772,17 @@
 
     // 1. Tenta áudio de alta qualidade do servidor (Edge TTS oficial pt-BR-AntonioNeural)
     try {
-      const response = await fetch('/api/speak', {
+      const { response, body: blob } = await requestWithTimeout('/api/speak', {
         method: 'POST',
         headers: getAuthHeaders(),
         credentials: 'same-origin',
         body: JSON.stringify({ text })
-      });
+      }, 22000, response => response.ok && (response.headers.get('content-type') || '').includes('audio') ? response.blob() : null);
 
       if (response.ok) {
         const contentType = response.headers.get('content-type') || '';
         if (contentType.includes('audio')) {
-          const blob = await response.blob();
+          if (!blob?.size) throw new Error('Áudio vazio');
           const audioUrl = URL.createObjectURL(blob);
           currentAudio = new Audio(audioUrl);
           // Balão com o mesmo texto sobe acompanhando este áudio
@@ -770,18 +794,38 @@
           };
 
           currentAudio.onended = () => {
+            clearTimeout(speechRecoveryTimer);
             stopSpeakingAnim();
             currentAudio = null;
             URL.revokeObjectURL(audioUrl);
             resumeListeningIfHandsFree();
           };
           currentAudio.onerror = () => {
+            clearTimeout(speechRecoveryTimer);
             stopSpeakingAnim();
             currentAudio = null;
+            URL.revokeObjectURL(audioUrl);
             resumeListeningIfHandsFree();
           };
 
-          await currentAudio.play();
+          const audio = currentAudio;
+          let playTimer;
+          try {
+            await Promise.race([audio.play(), new Promise((_, reject) => { playTimer = setTimeout(() => reject(new Error('Reprodução não iniciou')), 5000); })]);
+          } catch (error) {
+            audio.onended = audio.onerror = audio.onplay = null;
+            audio.pause();
+            currentAudio = null;
+            URL.revokeObjectURL(audioUrl);
+            stopSpeakingAnim();
+            throw error;
+          } finally { clearTimeout(playTimer); }
+          armSpeechRecovery(text, () => {
+            audio.onended = audio.onerror = audio.onplay = null;
+            audio.pause();
+            if (currentAudio === audio) currentAudio = null;
+            URL.revokeObjectURL(audioUrl);
+          });
           playedServerAudio = true;
           return;
         }
@@ -809,14 +853,17 @@
         // Voz do navegador: o balão segue a palavra que está sendo falada
         utter.onboundary = (event) => bubbleFollowChar(event.charIndex, text);
         utter.onend = () => {
+          clearTimeout(speechRecoveryTimer);
           stopSpeakingAnim();
           resumeListeningIfHandsFree();
         };
         utter.onerror = () => {
+          clearTimeout(speechRecoveryTimer);
           stopSpeakingAnim();
           resumeListeningIfHandsFree();
         };
 
+        armSpeechRecovery(text, () => window.speechSynthesis.cancel());
         window.speechSynthesis.speak(utter);
         return;
       } catch (synthErr) {
@@ -1058,13 +1105,12 @@
 
     try {
       if (!calendarCsrf) await initializeCalendar().catch(() => {});
-      const res = await fetch('/api/converse', {
+      const { response: res, body: data } = await requestWithTimeout('/api/converse', {
         method: 'POST',
         headers: getAuthHeaders(),
         credentials: 'same-origin',
         body: JSON.stringify({ message: text, calendarConfirmation })
-      });
-      const data = await res.json();
+      }, 30000, response => response.json());
       if (!res.ok || data?.ok === false) {
         if (data?.source === 'google-calendar') {
           await initializeCalendar().catch(() => {});
@@ -1182,12 +1228,11 @@
     showBubble('"Executando Briefing do Sistema..."', 'static');
 
     try {
-      const res = await fetch('/api/briefing', {
+      const { response: res, body: data } = await requestWithTimeout('/api/briefing', {
         method: 'POST',
         headers: getAuthHeaders(),
         credentials: 'same-origin'
-      });
-      const data = await res.json();
+      }, 30000, response => response.json());
       const reply = data?.reply || "Briefing concluído com sucesso, Mestre!";
 
       if (data?.accessory && data.accessory !== 'none') {
