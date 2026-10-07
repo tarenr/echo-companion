@@ -3,6 +3,32 @@ const assert = require('node:assert/strict');
 const { createMonitor } = require('../src/connectors/pcMonitor');
 const { parseQuery, answerQuery, presentation } = require('../src/pcMonitorQueries');
 const stats = { sampled_at: 200, cpu: { percent: 25, per_cpu: [20, 30], freq_ghz: 3 }, ram: { percent: 40, used_gb: 8, total_gb: 20 }, gpu: { online: true, temp_c: 52, load_pct: 12 }, disks: [{ device: 'C:\\', total_gb: 500, used_gb: 200 }], network: { up_mb_s: 2, down_mb_s: 4 }, media: { status: 'playing' }, volume: { level: 30, muted: false } };
+test('variações de nomes usam o mesmo provedor na fala e na ferramenta', async () => {
+  const providers = [
+    { id: 'gemini', label: 'Antigravity', status: 'ok', windows: [{ label: '5h', used: 0.3 }] },
+    { id: 'opencode', label: 'OpenCode Go', status: 'ok', windows: [] },
+    { id: 'glm', label: 'GLM', status: 'needsAuth', windows: [] },
+    { id: 'codex', label: 'Codex', status: 'ok', windows: [] }
+  ];
+  const { monitor } = mock({ '/api/ai-quota-status': { ok: true, dados: { provedores: providers } } });
+  for (const [aliases, canonical, id] of [
+    [['antigravity', 'anti gravity', 'anti-gravity', 'Anti–Gravity', 'antigravidade', 'anti gravidade', 'ANTI-GRÁVIDADE'], 'antigravity', 'gemini'],
+    [['opencode', 'open code', 'open-code'], 'opencode', 'opencode'],
+    [['glm', 'g l m', 'g-l-m'], 'glm', 'glm'],
+    [['Codex'], 'codex', 'codex'], [['Gemini'], 'gemini', 'gemini']
+  ]) {
+    for (const alias of aliases) {
+      const question = `Bom dia, qual a cota do ${alias}?`;
+      assert.deepEqual(parseQuery(question), { secao: 'cotas', provedor: canonical });
+      const direct = await answerQuery(question, monitor);
+      const tool = await monitor.query({ secao: 'cotas', provedor: alias });
+      assert.deepEqual(direct.result.dados.provedores.map(p => p.id), [id]);
+      assert.deepEqual(tool.dados.provedores.map(p => p.id), [id]);
+    }
+  }
+  for (const message of ['Abra o anti-gravity', 'Qual a cota de gravidade?', 'Qual o limite do código aberto?']) assert.equal(parseQuery(message), null);
+  assert.equal((await monitor.query({ secao: 'cotas', provedor: 'desconhecido' })).dados.provedores.length, 0);
+});
 test('perguntas naturais de cotas reconhecem provedores e preservam outros assuntos', () => {
   for (const [message, provider] of [
     ['Bom dia, quantos tokens tenho no Codex?', 'codex'],

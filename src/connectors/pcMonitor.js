@@ -3,6 +3,23 @@ const WINDOWS = ['1min', '5min', '15min', '30min', '1h'];
 const SECTIONS = ['resumo', 'cpu', 'ram', 'gpu', 'discos', 'rede', 'midia', 'processos', 'historico', 'sistema', 'servicos', 'cotas'];
 const finite = v => typeof v === 'number' && Number.isFinite(v);
 const pick = (o, keys) => Object.fromEntries(keys.filter(k => o?.[k] !== undefined).map(k => [k, o[k]]));
+const normalizeName = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+// Variações explícitas: não adivinhar o provedor por semelhança com palavras comuns.
+const PROVIDER_NAMES = [
+  ['antigravity', /\banti[\s\-\u2010-\u2015]*(?:gravity|gravidade)\b/],
+  ['opencode', /\bopen[\s\-\u2010-\u2015]*code\b/],
+  ['glm', /\bg[\s\-\u2010-\u2015]*l[\s\-\u2010-\u2015]*m\b/],
+  ...['codex', 'claude', 'gemini', 'cursor', 'grok'].map(name => [name, new RegExp(`\\b${name}\\b`)])
+];
+function recognizeProvider(value) {
+  const text = normalizeName(value);
+  return PROVIDER_NAMES.find(([, pattern]) => pattern.test(text))?.[0];
+}
+function matchesProvider(provider, filter) {
+  const canonical = recognizeProvider(filter);
+  if (canonical) return [provider.id, provider.label].some(value => recognizeProvider(value) === canonical);
+  return normalizeName(`${provider.id} ${provider.label}`).includes(normalizeName(filter));
+}
 
 function createMonitor({ fetchImpl = global.fetch, now = Date.now, baseUrl = process.env.NERDOPS_URL || 'http://127.0.0.1:5000', timeoutMs = 2800 } = {}) {
   async function get(route) {
@@ -53,7 +70,7 @@ function createMonitor({ fetchImpl = global.fetch, now = Date.now, baseUrl = pro
         dados = { projetos: (s.projetos || []).map(p => ({ nome: p.nome, servicos: (p.servicos || []).map(v => pick(v, ['nome', 'tipo', 'status', 'last_checked_at'])) })) };
       } else {
         const s = await get('/api/ai-quota-status');
-        dados = { provedores: (s.dados?.provedores || []).filter(p => !provedor || `${p.id} ${p.label}`.toLowerCase().includes(String(provedor).toLowerCase())).map(p => ({ ...pick(p, ['id', 'label', 'status', 'age_s', 'stale', 'count_only', 'backoff']), windows: (p.windows || []).map(w => ({ ...pick(w, ['label', 'count', 'resets_at', 'derived']), restante_pct: finite(w.used) && w.used >= 0 && w.used <= 1 ? +((1 - w.used) * 100).toFixed(1) : null })) })) };
+        dados = { provedores: (s.dados?.provedores || []).filter(p => !provedor || matchesProvider(p, provedor)).map(p => ({ ...pick(p, ['id', 'label', 'status', 'age_s', 'stale', 'count_only', 'backoff']), windows: (p.windows || []).map(w => ({ ...pick(w, ['label', 'count', 'resets_at', 'derived']), restante_pct: finite(w.used) && w.used >= 0 && w.used <= 1 ? +((1 - w.used) * 100).toFixed(1) : null })) })) };
       }
       return { ok: true, fonte: 'nerdops', secao, idade_s: age === null ? null : Math.round(age), desatualizado: age !== null && age >= 10, dados };
     } catch (_) {
@@ -62,4 +79,4 @@ function createMonitor({ fetchImpl = global.fetch, now = Date.now, baseUrl = pro
   }
   return { query };
 }
-module.exports = { createMonitor, query: createMonitor().query };
+module.exports = { createMonitor, recognizeProvider, query: createMonitor().query };

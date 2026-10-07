@@ -2,6 +2,14 @@
 
 ## Consultas ao dashboard NERD OPS
 
+Nas consultas de cotas, “antigravity”, “anti gravity”, “anti-gravity”,
+“antigravidade” e “anti gravidade” identificam o mesmo provedor. Também são aceitos
+“open code”/“open-code” para OpenCode e “g l m”/“g-l-m” para GLM, sem distinção
+de maiúsculas ou acentos. A normalização vale tanto para perguntas diretas quanto
+para filtros enviados pela ferramenta da IA. Exemplo: “Qual a cota do anti-gravity?”.
+Nomes que a transcrição trocar por outras palavras ainda precisam ser corrigidos;
+o Echo não escolhe um provedor por aproximação fonética.
+
 ### Recuperação de voz e conexão
 
 A geração Edge TTS tem limite total de 12 segundos, incluindo conexão e áudio.

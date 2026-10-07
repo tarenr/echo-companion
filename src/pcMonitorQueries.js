@@ -1,3 +1,4 @@
+const { recognizeProvider } = require('./connectors/pcMonitor');
 const number = v => typeof v === 'number' && Number.isFinite(v);
 const fmt = (v, unit = '') => number(v) ? `${v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}${unit}` : 'indisponível';
 
@@ -6,7 +7,7 @@ function parseQuery(message) {
   // Ações não são consultas; não consumir comandos de volume, mídia ou programas.
   if (/\b(imprima|imprimir|abra|abrir|feche|fechar|aumente|aumentar|diminua|diminuir|pause|pausar|toque|reinicie)\b/.test(t)) return null;
   const pc = /\b(cpu|ram|gpu|vram|processador|placa de video|memoria|disco|ssd|hd|computador|pc|telemetria|rede|upload|download)\b/.test(t);
-  const provider = /\b(codex|claude|gemini|antigravity|cursor|opencode|glm|grok)\b/.exec(t)?.[1];
+  const provider = recognizeProvider(t);
   if (/\b(cotas?|quotas?|tokens?|limites?|saldo|resta|restam|restante|restantes|renova|renovam|renovacao|reset|reseta|resetam|disponivel|disponiveis)\b/.test(t) && (provider || /\b(ia|ias|ai|provedores|inteligencia artificial)\b/.test(t))) {
     return { secao: 'cotas', provedor: provider };
   }
