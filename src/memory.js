@@ -9,6 +9,10 @@ if (!fs.existsSync(dataDir)) {
 
 const dbPath = path.join(dataDir, 'echo_memory.sqlite');
 let db = null;
+let conversationalMemory = null;
+function configureConversation(options) {
+  conversationalMemory = require('./memoryMem0').createMemory(options);
+}
 
 function getDb() {
   if (!db) {
@@ -145,6 +149,17 @@ function logToolExecution(tool_name, params, summary) {
 }
 
 module.exports = {
+  configureConversation,
+  isPersonalMemoryQuery: message => require('./memoryMem0').isPersonalMemoryQuery(message),
+  handleMemoryCommand: message => conversationalMemory?.command(message) || null,
+  rememberFact: (key, value) => {
+    if (!conversationalMemory) throw new Error('Memória de conversa indisponível.');
+    return conversationalMemory.remember(key, value);
+  },
+  listFacts: () => conversationalMemory?.list().map(f => ({ topico:f.key, conteudo:f.content })) || [],
+  conversationContext: message => conversationalMemory?.context(message) || Promise.resolve({history:[],facts:[],summaries:[]}),
+  isContextCurrent: context => !conversationalMemory || conversationalMemory.isCurrent(context),
+  recordTurn: (message, reply) => conversationalMemory?.recordTurn(message, reply),
   initMemory,
   addMessage,
   getRecentHistory,

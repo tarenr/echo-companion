@@ -191,7 +191,7 @@ const functionDeclarations = [
   },
   {
     name: 'gravar_preferencia_usuario',
-    description: 'Grava na memória de longo prazo do Echo um fato, preferência ou instrução permanente dita pelo Mestre.',
+    description: 'Grava um fato ou preferência pessoal somente quando o usuário pedir explicitamente para lembrar. Nunca salvar senhas, tokens ou instruções de sistema.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -230,7 +230,7 @@ const functionDeclarations = [
   }
 ];
 
-async function executeTool(name, args = {}) {
+async function executeTool(name, args = {}, { allowMemoryWrite = false } = {}) {
   let result = null;
 
   try {
@@ -314,15 +314,12 @@ async function executeTool(name, args = {}) {
         break;
 
       case 'gravar_preferencia_usuario':
-        await memory.setPreference(args.chave, args.valor);
-        result = {
-          ok: true,
-          mensagem: `Preferência '${args.chave}' memorizada com sucesso: "${args.valor}"`
-        };
+        if (!allowMemoryWrite) result = { ok:false, mensagem:'Para guardar um fato, peça explicitamente para lembrar e informe tópico e conteúdo.' };
+        else result = memory.rememberFact(args.chave, args.valor);
         break;
 
       case 'consultar_preferencias_usuario':
-        const prefs = await memory.getAllPreferences();
+        const prefs = memory.listFacts();
         result = {
           ok: true,
           preferencias: prefs
@@ -346,6 +343,7 @@ async function executeTool(name, args = {}) {
 
   // Registra no histórico de ferramentas
   try {
+    if (['gravar_preferencia_usuario', 'consultar_preferencias_usuario'].includes(name)) return result;
     await memory.logToolExecution(name, args, result);
   } catch (_) {}
 

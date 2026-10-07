@@ -1,5 +1,56 @@
 # Echo // Estratégia Nerd Companion 🤖
 
+## Memória de conversa com Mem0
+
+O Echo mantém fatos pessoais explícitos, histórico de sessões e resumos em
+`data/echo_mem0_state.sqlite`. O índice semântico do Mem0 3.3.1 fica em
+`data/echo_mem0_vectors.sqlite`. Os arquivos são locais e não entram no Git.
+O SQLite anterior (`echo_memory.sqlite`), suas preferências técnicas e destinos
+de navegação são preservados. Eles não são importados automaticamente como fatos
+pessoais nem incluídos indiscriminadamente no contexto da IA.
+
+Comandos disponíveis, por voz ou texto:
+
+- “Lembre bebida preferida: café” ou “Lembre bebida preferida é café”.
+- “Corrija bebida preferida para chá”.
+- “O que você lembra sobre mim?” ou “Consulte memória sobre bebida”.
+- “Esqueça bebida preferida”.
+
+O tópico identifica o fato; salvar novamente o mesmo tópico substitui seu conteúdo.
+Pedidos sem tópico e conteúdo recebem orientação. Senhas, chaves e tokens não são
+aceitos como fatos. Respostas do assistente e resumos nunca viram fatos permanentes
+automaticamente. Os comandos de memória funcionam localmente mesmo sem cota de IA.
+
+O Mem0 usa Gemini para embeddings de 768 dimensões (`gemini-embedding-001`), com
+`infer: false`: indexa exatamente o fato ensinado, sem extrair afirmações novas.
+A chave é a já usada pelo servidor. Resumos usam `gemini-flash-lite-latest`, também
+usado nas conversas do Echo, configurável por `ECHO_MEMORY_TEXT_MODEL`. O SDK Google tem
+timeout de 10 segundos; a busca na conversa espera até 1,8 segundo e pode usar busca
+lexical local. Falhas de indexação ficam pendentes e são tentadas novamente a cada
+minuto e após reinício, sem perder o fato. Essa alternativa local cobre palavras
+semelhantes; buscas por significado dependem dos embeddings. Não há servidor Mem0
+Cloud, e telemetria e avisos promocionais do SDK estão desativados. Atualizações do
+SDK exigem repetir os testes, pois essa configuração usa pontos internos da versão fixada.
+
+Uma sessão nova começa após 30 minutos de inatividade. O contexto inclui até quatro
+trocas recentes, cinco fatos relevantes e dois resumos, com limites de tamanho.
+Resumos incrementais são feitos em segundo plano a cada 12 trocas elegíveis, com
+timeout total de 11 segundos. O resumo preserva assuntos e decisões, mas pode conter erros;
+o Echo não o trata como confirmação de um fato pessoal. Conteúdo enviado ao Gemini
+para embeddings, resumos e respostas consome cotas do provedor.
+
+Ao corrigir ou esquecer um fato, o Echo invalida o contexto anterior, inclusive
+resumos e respostas ainda em preparação. A remoção do índice é retomada se falhar;
+resultados antigos são rejeitados pela versão do fato. Isso impede que o fato volte
+nas respostas. Não significa apagar fisicamente todo o histórico e os backups,
+que permanecem locais; mensagens anteriores à mudança deixam de ser usadas como contexto.
+
+Antes da implantação foi feito backup consistente em
+`data/echo_memory.before-mem0.<timestamp>.sqlite`. Para desativar o acesso Mem0/Gemini,
+inicie o servidor com `ECHO_MEM0_DISABLED=true`; fatos e busca lexical continuam
+locais. A recuperação conserva o banco original e o backup; nenhuma tabela antiga
+é removida. Testes: `node --test tests/memory-mem0.test.js` e `npm test`.
+
 ## Consultas ao dashboard NERD OPS
 
 Nas consultas de cotas, “antigravity”, “anti gravity”, “anti-gravity”,
