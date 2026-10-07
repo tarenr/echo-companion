@@ -6,8 +6,9 @@ function parseQuery(message) {
   // Ações não são consultas; não consumir comandos de volume, mídia ou programas.
   if (/\b(imprima|imprimir|abra|abrir|feche|fechar|aumente|aumentar|diminua|diminuir|pause|pausar|toque|reinicie)\b/.test(t)) return null;
   const pc = /\b(cpu|ram|gpu|vram|processador|placa de video|memoria|disco|ssd|hd|computador|pc|telemetria|rede|upload|download)\b/.test(t);
-  if (/\b(cota|cotas|quota|quotas)\b/.test(t) && /\b(ia|ai|codex|claude|gemini|antigravity|provedores)\b/.test(t)) {
-    return { secao: 'cotas', provedor: /\b(codex|claude|gemini|antigravity)\b/.exec(t)?.[1] };
+  const provider = /\b(codex|claude|gemini|antigravity|cursor|opencode|glm|grok)\b/.exec(t)?.[1];
+  if (/\b(cotas?|quotas?|tokens?|limites?|saldo|resta|restam|restante|restantes|renova|renovam|renovacao|reset|reseta|resetam|disponivel|disponiveis)\b/.test(t) && (provider || /\b(ia|ias|ai|provedores|inteligencia artificial)\b/.test(t))) {
+    return { secao: 'cotas', provedor: provider };
   }
   if (pc && /historico|ultimos?\s+\d+|ultima hora/.test(t)) {
     const minutes = /\b(\d+)\s*(?:min|minutos)\b/.exec(t)?.[1];
@@ -70,7 +71,15 @@ function presentation(result) {
     case 'cotas':
       d.provedores.forEach(p => {
         if (!p.windows.length) add(p.label, p.status || 'indisponível', 'warn');
-        p.windows.forEach(w => add(`${p.label} • ${w.label}`, `${number(w.count) ? `${w.count} usos (sem percentual)` : `${fmt(w.restante_pct, '%')} restante`}${p.stale ? ' • desatualizado' : ''}${p.backoff ? ' • consultas em espera' : ''}${p.status !== 'ok' ? ` • ${p.status}` : ''}`, p.stale || p.backoff || p.status !== 'ok' ? 'warn' : undefined));
+        p.windows.forEach(w => {
+          const reset = number(w.resets_at) && w.resets_at > 0 && !Number.isNaN(new Date(w.resets_at).getTime())
+            ? new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(w.resets_at)
+            : null;
+          const remaining = p.count_only || !number(w.restante_pct)
+            ? number(w.count) ? `${w.count} usos (sem percentual)` : 'percentual indisponível'
+            : `${fmt(w.restante_pct, '%')} restante`;
+          add(`${p.label} • ${w.label}`, `${remaining} • ${reset ? `renova em ${reset} (Brasília)` : 'renovação não informada'}${p.stale ? ' • desatualizado' : ''}${p.backoff ? ' • consultas em espera' : ''}${p.status !== 'ok' ? ` • ${p.status}` : ''}`, p.stale || p.backoff || p.status !== 'ok' ? 'warn' : undefined);
+        });
       });
       if (!rows.length) add('Cotas', 'nenhum provedor disponível'); break;
   }
@@ -84,6 +93,11 @@ async function answerQuery(message, monitor) {
   if (!args) return null;
   const result = await monitor.query(args);
   const view = presentation(result);
+  if (result.ok && args.secao === 'cotas' && !args.provedor && result.dados.provedores.length) {
+    const summaries = result.dados.provedores.map(p => view.rows.find(r => r.label === p.label || r.label.startsWith(`${p.label} • `))).filter(Boolean);
+    view.reply = `COTAS: ${summaries.map(r => `${r.label}, ${r.value}`).join('; ')}. Consulte um provedor para ouvir suas outras janelas.`;
+  }
+  if (args.secao === 'cotas' && /\btokens?\b/i.test(message)) view.reply = `O dashboard informa cotas, sem quantidade exata de tokens. ${view.reply}`;
   // Para perguntas específicas, prioriza a linha que contém o dado solicitado.
   const normalized = String(message).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const focus = /temperatura/.test(normalized) ? 'Temperatura' : /ventoinha/.test(normalized) ? 'Ventoinha' : /potencia/.test(normalized) ? 'Potência' : /decoder/.test(normalized) ? 'Decoder' : /encoder/.test(normalized) ? 'Encoder' : /clock.*memoria/.test(normalized) ? 'Clock memória' : /clock/.test(normalized) ? 'Clock GPU' : /vram.*total/.test(normalized) ? 'VRAM total' : /vram/.test(normalized) ? 'VRAM' : /frequencia/.test(normalized) ? 'Frequência' : /tempo ligado|uptime/.test(normalized) ? 'Ligado há' : /volume/.test(normalized) ? 'Volume' : /download/.test(normalized) ? 'Download' : /upload/.test(normalized) ? 'Upload' : /nucleos/.test(normalized) ? 'Núcleos' : /threads/.test(normalized) ? 'Threads' : /livre|disponivel/.test(normalized) && args.secao === 'ram' ? 'Disponível' : result.secao === 'historico' ? args.recurso.toUpperCase() : null;

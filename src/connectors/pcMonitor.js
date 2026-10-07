@@ -53,7 +53,7 @@ function createMonitor({ fetchImpl = global.fetch, now = Date.now, baseUrl = pro
         dados = { projetos: (s.projetos || []).map(p => ({ nome: p.nome, servicos: (p.servicos || []).map(v => pick(v, ['nome', 'tipo', 'status', 'last_checked_at'])) })) };
       } else {
         const s = await get('/api/ai-quota-status');
-        dados = { provedores: (s.dados?.provedores || []).filter(p => !provedor || `${p.id} ${p.label}`.toLowerCase().includes(String(provedor).toLowerCase())).map(p => ({ ...pick(p, ['id', 'label', 'status', 'age_s', 'stale', 'count_only', 'backoff']), windows: (p.windows || []).map(w => ({ ...pick(w, ['label', 'count', 'resets_at', 'derived']), restante_pct: finite(w.used) ? +((1 - w.used) * 100).toFixed(1) : null })) })) };
+        dados = { provedores: (s.dados?.provedores || []).filter(p => !provedor || `${p.id} ${p.label}`.toLowerCase().includes(String(provedor).toLowerCase())).map(p => ({ ...pick(p, ['id', 'label', 'status', 'age_s', 'stale', 'count_only', 'backoff']), windows: (p.windows || []).map(w => ({ ...pick(w, ['label', 'count', 'resets_at', 'derived']), restante_pct: finite(w.used) && w.used >= 0 && w.used <= 1 ? +((1 - w.used) * 100).toFixed(1) : null })) })) };
       }
       return { ok: true, fonte: 'nerdops', secao, idade_s: age === null ? null : Math.round(age), desatualizado: age !== null && age >= 10, dados };
     } catch (_) {

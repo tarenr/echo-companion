@@ -3,6 +3,44 @@ const assert = require('node:assert/strict');
 const { createMonitor } = require('../src/connectors/pcMonitor');
 const { parseQuery, answerQuery, presentation } = require('../src/pcMonitorQueries');
 const stats = { sampled_at: 200, cpu: { percent: 25, per_cpu: [20, 30], freq_ghz: 3 }, ram: { percent: 40, used_gb: 8, total_gb: 20 }, gpu: { online: true, temp_c: 52, load_pct: 12 }, disks: [{ device: 'C:\\', total_gb: 500, used_gb: 200 }], network: { up_mb_s: 2, down_mb_s: 4 }, media: { status: 'playing' }, volume: { level: 30, muted: false } };
+test('perguntas naturais de cotas reconhecem provedores e preservam outros assuntos', () => {
+  for (const [message, provider] of [
+    ['Bom dia, quantos tokens tenho no Codex?', 'codex'],
+    ['Qual meu limite do Claude?', 'claude'], ['Quanto resta no Cursor?', 'cursor'],
+    ['Quando renova o Gemini?', 'gemini'], ['Qual o saldo do OpenCode?', 'opencode'],
+    ['Quais cotas de IA estão disponíveis?', undefined]
+  ]) assert.deepEqual(parseQuery(message), { secao: 'cotas', provedor: provider });
+  for (const message of ['Qual meu saldo bancário?', 'Qual o limite do cartão?', 'Abra o Cursor', 'Explique tokens em programação']) assert.equal(parseQuery(message), null);
+});
+
+test('cotas filtram provedor, mostram renovação em Brasília e não inventam tokens', async () => {
+  const { monitor, calls } = mock({ '/api/ai-quota-status': { ok: true, dados: { provedores: [
+    { id: 'claude', label: 'Claude', status: 'ok', windows: [] },
+    { id: 'codex', label: 'Codex', status: 'ok', windows: [{ label: '5h', used: 0.25, resets_at: Date.UTC(2026, 9, 7, 21, 30) }] }
+  ] } } });
+  const answer = await answerQuery('Bom dia, quantos tokens tenho no Codex?', monitor);
+  assert.equal(answer.result.dados.provedores.length, 1);
+  assert.match(answer.reply, /sem quantidade exata de tokens/);
+  assert.match(answer.reply, /75% restante/);
+  assert.match(answer.reply, /07\/10.*18:30.*Brasília/);
+  assert.ok(calls.every(c => c.options.method === 'GET' && c.url.endsWith('/api/ai-quota-status')));
+  const overview = await answerQuery('Quais cotas de IA estão disponíveis?', monitor);
+  assert.match(overview.reply, /Claude/);
+  assert.match(overview.reply, /Codex/);
+});
+
+test('dados ausentes, contagens, autenticação e percentuais inválidos são explícitos', async () => {
+  const { monitor } = mock({ '/api/ai-quota-status': { ok: true, dados: { provedores: [
+    { id: 'cursor', label: 'Cursor', status: 'needsAuth', windows: [] },
+    { id: 'opencode', label: 'OpenCode', status: 'ok', count_only: true, backoff: true, windows: [{ label: 'Uso', count: 4, used: 0.1, resets_at: 0 }] },
+    { id: 'codex', label: 'Codex', status: 'ok', windows: [{ label: '5h', used: null }, { label: '7d', used: 25 }] }
+  ] } } });
+  const rows = presentation(await monitor.query({ secao: 'cotas' })).rows;
+  assert.match(rows[0].value, /needsAuth/);
+  assert.match(rows[1].value, /4 usos \(sem percentual\).*renovação não informada.*em espera/);
+  for (const row of rows.slice(2)) assert.match(row.value, /percentual indisponível.*renovação não informada/);
+  assert.match((await answerQuery('Qual a cota do Grok?', monitor)).reply, /nenhum provedor disponível/);
+});
 function mock(routes = {}) {
   const calls = [];
   const monitor = createMonitor({ now: () => 200000, fetchImpl: async (url, options) => {

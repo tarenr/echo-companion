@@ -965,7 +965,12 @@ app.post('/api/converse', requirePin, locationRoutes.converse('echo'), calendarR
   let quickState = null;
   let quickCard = null;
 
-  if (/^(boa noite|vai dormir|dormir|hora de dormir|modo soneca|soneca|descanse)/i.test(textLower)) {
+  if (pcMonitorQueries.parseQuery(message)) {
+    const answer = await pcMonitorQueries.answerQuery(message, pcMonitor);
+    quickReply = answer.reply;
+    quickAccessory = 'lupa';
+    quickCard = cards.buildToolCard('consultar_dashboard_pc', answer.result);
+  } else if (/^(boa noite|vai dormir|dormir|hora de dormir|modo soneca|soneca|descanse)/i.test(textLower)) {
     quickReply = "Boa noite, Mestre! Entrando em modo soneca... Bons sonhos!";
     quickState = 'sleeping';
     quickCard = {
@@ -978,11 +983,6 @@ app.post('/api/converse', requirePin, locationRoutes.converse('echo'), calendarR
     quickReply = "Bom dia, Mestre! Estratégia Nerd online e todos os sistemas operando!";
   } else if (/^(boa tarde)/i.test(textLower)) {
     quickReply = "Boa tarde, Mestre! Monitorando tudo por aqui.";
-  } else if (pcMonitorQueries.parseQuery(message)) {
-    const answer = await pcMonitorQueries.answerQuery(message, pcMonitor);
-    quickReply = answer.reply;
-    quickAccessory = 'lupa';
-    quickCard = cards.buildToolCard('consultar_dashboard_pc', answer.result);
   } else if (/est[aá] me ouvindo|me ouve|teste de voz/i.test(textLower)) {
     quickReply = "Estou te ouvindo perfeitamente, Mestre!";
   } else if (/briefing|verificar sistema|verificações|verificacoes|check-in|status do dia|relat[oó]rio geral/i.test(textLower)) {

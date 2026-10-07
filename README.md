@@ -449,3 +449,19 @@ echo-companion/
 ## Localização entre Echo e Luna
 
 Compartilhamento opt-in do GPS enquanto cada aplicativo estiver aberto e visível. Pergunte onde o outro mascote está; a resposta distingue posição recente e última conhecida, informa precisão e permite abrir o mapa. Sem histórico de trajetos, com revogação e armazenamento criptografado. GPS/mapa não exigem API Google. A resposta traz o endereço completo (rua, número, bairro, cidade, UF e CEP, aproximado) pelo OpenStreetMap, gratuito e sem chave: as coordenadas vão para lá só ao consultar. Com `LOCATION_GOOGLE_GEOCODING_KEY`, usa o Google; `LOCATION_GEOCODING=off` desliga o endereço. Veja [ativação, privacidade e testes](docs/localizacao-compartilhada.md).
+# Consultas de cotas de IA
+
+O Echo consulta o NERD OPS (`GET /api/ai-quota-status`) ao ouvir perguntas como
+“Quantos tokens tenho no Codex?”, “Qual meu limite do Claude?”, “Quanto resta no Cursor?”
+ou “Quando renova o Gemini?”. A consulta tem prioridade sobre saudações no início da frase.
+Também reconhece OpenCode, Antigravity, GLM e Grok, quando disponíveis no dashboard.
+
+A consulta geral resume uma janela por provedor; pergunte pelo provedor para ouvir outras
+janelas. Os nomes exibidos são os fornecidos pelo dashboard (Gemini pode aparecer como Antigravity).
+A resposta mostra a porcentagem restante de cada janela e a data de renovação no horário
+de Brasília. O dashboard informa cotas, não quantidades exatas de tokens. Provedores que
+exibem somente contagens continuam sem percentual; horários ausentes, snapshots antigos,
+autenticação pendente e consultas em espera são sinalizados. Nenhuma credencial é enviada
+ao Echo. O NERD OPS precisa estar disponível no endereço configurado em `NERDOPS_URL`
+(padrão: `http://127.0.0.1:5000`). Após alterar o código do servidor, reinicie o Echo para
+carregar a versão atual. Validação automatizada: `node --test tests/pc-monitor.test.js`.
