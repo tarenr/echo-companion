@@ -60,3 +60,23 @@ fetch('http://127.0.0.1:4884/api/speak', {
 });
 "
 ```
+
+---
+
+## 5. Avaliação do Kokoro-82M (Nativo & ONNX em GPU RTX 3050) ⚡🚀
+
+Em outubro de 2026, foi realizado o primeiro benchmark formal e teste de voz de longa duração do modelo **Kokoro-82M** em Português do Brasil (`pt-br`):
+
+- **Modelo**: `hexgrad/Kokoro-82M` (82 milhões de parâmetros, arquitetura StyleTTS2 / iSTFTNet).
+- **Vozes Testadas**:
+  - `pm_alex`: Voz masculina nativa brasileira (articulada, tom profissional e alinhada ao estilo do Echo).
+  - `pf_dora`: Voz feminina nativa brasileira alternativa.
+- **Resultados de Desempenho (NVIDIA GeForce RTX 3050)**:
+  - **Carregamento da Pipeline**: 1.43s a 1.54s.
+  - **Demonstração Longa (30,52s de fala / 537 caracteres)**: Inferência em apenas **1,55 segundos** (`pm_alex`), RTF: **0.051x** (geração 20x mais rápida que o tempo real).
+  - **Frase Média (4,50s de fala)**: Inferência em **0,19 segundos**, RTF: **0.042x** (praticamente instantâneo).
+- **Arquivos de Amostra Gerados**:
+  - `voice-studio/backend/cache/echo_apresentacao_30s_pm_alex.wav` (30,52s)
+  - `voice-studio/backend/cache/echo_apresentacao_30s_pf_dora.wav` (30,45s)
+- **Conclusão**: O Kokoro-82M provou ser o motor local mais rápido e eficiente já testado no hardware da máquina, sendo um candidato viável para integração direta ao Echo.
+

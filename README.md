@@ -231,11 +231,10 @@ O Echo é uma **Progressive Web App (PWA)** completa com Service Worker, cache d
 O Echo foi configurado como um serviço autônomo e permanente no **Agendador de Tarefas do Windows (Task Scheduler)** sob o nome `EchoCompanion`:
 
 - **Gatilho de Logon (`AtLogOn`):** O servidor inicia automaticamente ao fazer login no Windows, sem necessidade de intervenção humana ou inicialização manual por agentes/IDEs.
-- **Execução Oculta (`echo-daemon.vbs`):** Disparado via `wscript.exe`, rodando o processo do Node em background sem abrir nenhuma janela de prompt de comando visível.
-- **Política de Auto-Recuperação (`RestartOnFailure`):** Caso o processo seja encerrado acidentalmente ou sofra uma exceção, o Agendador de Tarefas do Windows o reinicia automaticamente em 1 minuto (até 10 tentativas sucessivas).
+- **Supervisor com Auto-Recuperação (`iniciar-supervisionado.ps1 -App EchoCompanion`):** Disparado via PowerShell oculto, supervisiona o processo `node server.js` na porta 4884. Se o servidor for encerrado acidentalmente ou sofrer uma exceção, o supervisor o **reinicia automaticamente em 5 a 15 segundos**, garantindo disponibilidade 100% contínua 24/7.
+- **Logs de Execução & Erros:** Redirecionados automaticamente para `%LOCALAPPDATA%\autostart-logs\EchoCompanion.out.log` e `.err.log` para auditoria e depuração rápida sem poluir o console.
 - **Sem Limites de Tempo de Execução (`PT0S`):** Configurado sem o tempo limite padrão de 72 horas do Windows, permitindo execução ininterrupta.
 - **Independência Total da IDE:** O agente de IA opera com 0 tarefas pendentes ou instâncias daemon no terminal do editor.
-- **Logs de Execução:** Redirecionados para `echo.log` na raiz do projeto para auditoria e depuração rápida.
 
 ---
 
