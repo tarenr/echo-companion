@@ -327,6 +327,16 @@ O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado dire
 - ⚔️ **RPG & Hábitos GYM-OS (`consultar_treino_e_streak_gym_os`):** Treino planejado para o dia, streak de dias consecutivos e evolução de nível/XP no RPG da vida real.
 - 🧠 **Memória de Longo Prazo (`gravar_preferencia_usuario`, `consultar_preferencias_usuario`):** Banco local SQLite que preserva preferências, hábitos e fatos ensinados pelo usuário ao Echo.
 
+### 🌐 Catálogo de Integrações e APIs Externas
+
+- **Google Gemini AI API:** Motor gerativo principal de linguagem e raciocínio conversacional (`@google/genai`).
+- **Google Calendar API:** Leitura e gestão por voz de compromissos da agenda Google (`GOOGLE_CALENDAR_CLIENT_ID`).
+- **Google Geocoding API:** Resolução de coordenadas e conversão de endereços para o Waze (`LOCATION_GOOGLE_GEOCODING_KEY`).
+- **Mem0 AI Engine:** Gerenciamento local de memória semântica e contextual do robô (`mem0ai`).
+- **Microsoft Edge TTS:** Síntese de voz neural nativa em alta fidelidade (`msedge-tts`).
+- **Web Push / VAPID:** Envio de notificações push diretas no smartphone (`web-push`).
+- **Cloudflare Tunnel:** Proxy HTTPS seguro de produção (`https://echo.tfr-info.com.br`).
+
 ---
 
 ## 🌸 Luna // Assistente Pessoal Dedicada
