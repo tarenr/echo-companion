@@ -24,9 +24,18 @@ function text(value, field, max = 1000) {
 }
 function eventData(input, previous = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Informe os dados do compromisso.');
+  const normalized = { ...input };
+  if (normalized.useDefault !== undefined) {
+    if (!normalized.reminders) normalized.reminders = { useDefault: Boolean(normalized.useDefault) };
+    delete normalized.useDefault;
+  }
+  if (normalized.title && !normalized.summary) {
+    normalized.summary = normalized.title;
+    delete normalized.title;
+  }
   const allowed = ['summary', 'description', 'location', 'start', 'end', 'recurrence', 'reminders'];
-  if (Object.keys(input).some(key => !allowed.includes(key))) throw new Error('Campo não permitido. Convites e compartilhamento não fazem parte desta integração.');
-  const merged = { ...Object.fromEntries(allowed.filter(k => previous[k] !== undefined).map(k => [k, previous[k]])), ...input };
+  if (Object.keys(normalized).some(key => !allowed.includes(key))) throw new Error('Campo não permitido. Convites e compartilhamento não fazem parte desta integração.');
+  const merged = { ...Object.fromEntries(allowed.filter(k => previous[k] !== undefined).map(k => [k, previous[k]])), ...normalized };
   const result = { summary: text(merged.summary, 'Título', 200) };
   if (!result.summary) throw new Error('Qual é o título do compromisso?');
   for (const key of ['description', 'location']) if (merged[key] !== undefined) result[key] = text(merged[key], key, key === 'description' ? 4000 : 500);
@@ -123,10 +132,25 @@ class CalendarService {
     delete session.pending; delete session.selection; delete session.scopeChoice;
     const action = args.action;
     if (!['create', 'update', 'delete'].includes(action)) throw new Error('Operação inválida.');
-    if (action === 'update' && (!args.event || !Object.keys(args.event).length)) throw new Error('Informe o que deseja alterar no compromisso.');
+    const mergeEvent = candidate => {
+      const target = { ...(candidate || {}) };
+      if (!target.summary && args.summary) target.summary = args.summary;
+      if (!target.summary && args.title) target.summary = args.title;
+      if (!target.summary && args.q) target.summary = args.q;
+      if (!target.start && args.start) target.start = args.start;
+      if (!target.end && args.end) target.end = args.end;
+      if (!target.description && args.description) target.description = args.description;
+      if (!target.location && args.location) target.location = args.location;
+      if (args.useDefault !== undefined && target.useDefault === undefined && !target.reminders) {
+        target.reminders = { useDefault: Boolean(args.useDefault) };
+      }
+      return target;
+    };
+    const candidateEvent = mergeEvent(args.event);
+    if (action === 'update' && (!candidateEvent || !Object.keys(candidateEvent).length)) throw new Error('Informe o que deseja alterar no compromisso.');
     let previous;
     let event;
-    if (action === 'create') event = eventData(args.event);
+    if (action === 'create') event = eventData(candidateEvent);
     else {
       let id = args.eventId;
       if (id) {
@@ -157,7 +181,7 @@ class CalendarService {
       if (previous.organizer && previous.organizer.self !== true) throw new Error('Somente eventos que você organiza podem ser alterados.');
       if (previous.attendees?.some(item => !item.self)) throw new Error('Eventos com convidados ficam fora desta integração.');
       if (!previous.etag) throw new Error('Não consegui verificar a versão do evento. Consulte novamente.');
-      event = action === 'update' ? eventData(args.event, previous) : undefined;
+      event = action === 'update' ? eventData(candidateEvent, previous) : undefined;
       if (args.scope === 'occurrence' && args.event?.recurrence !== undefined) throw new Error('Para alterar a recorrência, selecione a série inteira.');
     }
     const token = crypto.randomBytes(24).toString('hex');

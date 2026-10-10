@@ -44,7 +44,7 @@ const functionDeclarations = [
         start: { type: 'OBJECT', properties: { dateTime: { type: 'STRING', description: 'Data e horário RFC3339; usar -03:00 para Brasília' }, date: { type: 'STRING', description: 'YYYY-MM-DD para dia inteiro' } } },
         end: { type: 'OBJECT', properties: { dateTime: { type: 'STRING' }, date: { type: 'STRING', description: 'Fim exclusivo para dia inteiro' } } },
         recurrence: { type: 'ARRAY', items: { type: 'STRING' }, description: 'RRULE:FREQ=DAILY/WEEKLY/MONTHLY/YEARLY; COUNT ou UNTIL; lista vazia remove recorrência' },
-        reminders: { type: 'OBJECT', properties: { useDefault: { type: 'BOOLEAN' }, overrides: { type: 'ARRAY', items: { type: 'OBJECT', properties: { method: { type: 'STRING', enum: ['popup'] }, minutes: { type: 'INTEGER' } }, required: ['method', 'minutes'] } } }, required: ['useDefault'] }
+        reminders: { type: 'OBJECT', properties: { useDefault: { type: 'BOOLEAN' }, overrides: { type: 'ARRAY', items: { type: 'OBJECT', properties: { method: { type: 'STRING', enum: ['popup'] }, minutes: { type: 'INTEGER' } }, required: ['method', 'minutes'] } } } }
       } }
     }, required: ['action'] }
   },

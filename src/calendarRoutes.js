@@ -88,7 +88,7 @@ function createCalendarRoutes({ auth, service, requirePin }) {
     const choice = message.match(/^evento\s+(\d+)$/);
     const scope = /^(somente esta ocorrencia|so esta ocorrencia|serie inteira)$/.test(message);
     const consultation = /^(?:qual|quais|como|consultar|consulte|ver|veja|mostrar|mostre|listar|liste|tenho|o que).*(?:agenda|compromissos?)/.test(message);
-    const agendaIntent = /\b(agenda|compromisso|compromissos|reuniao|evento|dentista)\b|^(marque|marcar|agende|agendar|remarque)\b/.test(message);
+    const agendaIntent = /\b(agenda|compromisso|compromissos|reuniao|evento|dentista|tarefa|tarefas|lembrete|lembretes)\b|^(marque|marcar|agende|agendar|remarque|anote|anotar|grave|gravar)\b/.test(message);
     if (!confirm && !cancel && !choice && !scope && !consultation && !agendaIntent) return next();
     return validSession(req, res, async () => {
       try {

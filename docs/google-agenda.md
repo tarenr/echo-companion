@@ -30,10 +30,11 @@ No rodapé, Celular, Agenda, Check e Ativo/Ouvir exibem somente ícones com a te
 - “Quais compromissos tenho hoje?” ou “O que tenho na agenda amanhã?”
 - “Quais compromissos tenho entre 10 e 15 de outubro?”
 - “Marque dentista em 10 de outubro de 2026, das 14h às 15h.”
+- “Grave uma tarefa no Google agenda: reunião com fornecedor amanhã das 14h às 15h.”
 - “Mude o dentista de 10 de outubro para as 16h, terminando às 17h.”
 - “Exclua o dentista de 10 de outubro.”
 
-Hoje/amanhã e controles de confirmação são tratados localmente. Demais formulações usam Gemini para propor os campos estruturados: data, título e duração não devem ser inventados. O modelo recebe o comando e contexto de data; os resultados da agenda e suas credenciais não são devolvidos ao modelo nem gravados no histórico comum.
+Hoje/amanhã e controles de confirmação são tratados localmente. Demais formulações (incluindo tarefas, compromissos e lembretes) usam Gemini para propor os campos estruturados: data, título e duração não devem ser inventados. Parâmetros gerados pelo modelo (como uso de lembretes padrão, títulos e campos na raiz da chamada) são automaticamente normalizados pelo serviço. O modelo recebe o comando e contexto de data; os resultados da agenda e suas credenciais não são devolvidos ao modelo nem gravados no histórico comum.
 
 Uma criação, edição ou exclusão produz um **rascunho**, nunca uma alteração imediata. Confira título, datas, horário de Brasília, local, descrição, lembretes e alcance. Depois toque **Confirmar**/**Confirmar exclusão**, ou diga **“confirmar agenda”**. Para desistir, toque **Cancelar** ou diga **“cancelar agenda”**. A confirmação vale dez minutos, somente no navegador/dispositivo que recebeu a proposta. Não há ferramenta do modelo capaz de confirmar.
 

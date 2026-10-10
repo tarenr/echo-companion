@@ -982,7 +982,7 @@ app.post('/api/converse', requirePin, locationRoutes.converse('echo'), calendarR
   if (!message) return res.status(400).json({ error: 'Mensagem vazia' });
 
   const textLower = message.toLowerCase().trim();
-  const calendarIntent = /\b(agenda|compromisso|reuni[aã]o|evento|dentista)\b|^(?:echo[, ]+)?(?:marque|agende|remarque)\b/i.test(message);
+  const calendarIntent = /\b(agenda|compromisso|reuni[aã]o|evento|dentista|tarefa|tarefas|lembrete|lembretes)\b|^(?:echo[, ]+)?(?:marque|agende|remarque|anote|grave)\b/i.test(message);
 
   // 1. Respostas instantâneas para saudações, sono e telemetria básica
   let quickReply = null;

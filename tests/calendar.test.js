@@ -112,6 +112,23 @@ test('validação rejeita datas impossíveis, fim anterior, convidados e lembret
   assert.throws(() => eventData({ ...event, reminders: { useDefault: false, overrides: [{ method: 'email', minutes: 10 }] } }));
   assert.throws(() => range({ timeMin: '2026-10-10T10:00:00', timeMax: '2026-10-09T10:00:00' }));
   assert.equal(eventData({ ...event, start: { dateTime: '2026-10-10T14:00' } }).start.dateTime, '2026-10-10T14:00:00-03:00');
+  const normalizedWithUseDefault = eventData({ ...event, useDefault: true });
+  assert.deepEqual(normalizedWithUseDefault.reminders, { useDefault: true });
+  assert.equal(normalizedWithUseDefault.useDefault, undefined);
+  const normalizedWithTitle = eventData({ title: 'Consulta Médica', start: event.start, end: event.end });
+  assert.equal(normalizedWithTitle.summary, 'Consulta Médica');
+  assert.equal(normalizedWithTitle.title, undefined);
+});
+test('prepare mescla campos de evento fornecidos na raiz de args', async () => {
+  const { service } = fixture();
+  const draft = await service.prepare('device1', {
+    action: 'create',
+    summary: 'Comprar remédio',
+    useDefault: true,
+    event: { start: event.start, end: event.end }
+  });
+  assert.ok(draft.confirmation?.id);
+  assert.match(draft.reply, /Comprar remédio/);
 });
 test('dia inteiro e recorrência têm validação e fim exclusivo', () => {
   const allDay = { summary: 'Folga', start: { date: '2026-10-10' }, end: { date: '2026-10-11' }, recurrence: ['RRULE:FREQ=WEEKLY;BYDAY=SA;COUNT=4'] };
