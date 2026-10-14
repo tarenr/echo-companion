@@ -20,6 +20,23 @@ O Echo adota como motor oficial de voz o **Microsoft Edge Neural TTS**, prioriza
 - **Calibração de Prosódia**:
   - `rate: '+6%'` para ritmo natural e ágil de conversa.
 
+### Ordem dos motores em `/api/speak`
+
+1. **Edge TTS** (primário, acima).
+2. **Gemini TTS** (`gemini-2.5-flash-preview-tts`): usa a `GEMINI_API_KEY` que o servidor já carrega. A voz segue a pedida ao Edge: feminina (`Thalita`, `Francisca`, `Brenda`, usadas pela Luna) vira `Kore`; qualquer outra, inclusive a padrão do Echo (`Antonio`), vira `Charon`. A Gemini devolve PCM 16-bit mono a 24 kHz; o servidor embrulha em WAV (`pcmToWav`) e responde `audio/wav`. Se faltar chave ou falhar, passa adiante.
+3. **OpenAI TTS** (só com chave e saldo).
+4. **Voz nativa do aparelho** (`speechSynthesis`), no front, se o servidor não entregar áudio.
+
+**Prazos:** a cadeia inteira tem 20 s (o celular desiste aos 22 s). Edge: até 8 s por tentativa; Gemini: até 8 s; OpenAI: até 5 s. Um estágio só começa se ainda sobrarem mais de 1,5 s.
+
+**Um Edge por vez:** os pedidos ao Edge passam por uma fila de um só. Quem espera mais de 5 s desiste e segue para o fallback. Se o Edge responder `429` (pedidos demais), há uma nova tentativa depois de 1 s, só se restar prazo. Isso evita que Echo e Luna, falando quase ao mesmo tempo, derrubem um ao outro.
+
+**Log:** cada pedido registra no `echo.log` uma linha `[VOZ] <motor> ok|falhou|sem áudio em <ms>ms`, sem o texto da fala. Serve para saber qual motor atendeu e quanto demorou.
+
+### Aprendizado: o Edge TTS não é um serviço oficial
+
+A `msedge-tts` usa a API de leitura em voz alta do Edge, que a Microsoft pode mudar ou bloquear sem aviso. Em 14/10/2026 o Echo passou a receber `403` no WebSocket com a versão 2.0.9, e a Luna ficou sem voz. Atualizar para a `2.1.0` resolveu. Se voltar a acontecer, o primeiro passo é conferir se há versão nova da biblioteca (`npm view msedge-tts version`); enquanto isso, o fallback Gemini mantém a fala.
+
 ---
 
 ## 2. Experimento Aposentado: Clonagem Neural Local F5-TTS (RTX 3050) 🧪

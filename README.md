@@ -64,7 +64,8 @@ o Echo não escolhe um provedor por aproximação fonética.
 ### Recuperação de voz e conexão
 
 A geração Edge TTS tem limite total de 12 segundos, incluindo conexão e áudio.
-A alternativa OpenAI tem limite de 8 segundos. No celular, o pedido de áudio e seu
+Se o Edge falhar, o Echo tenta a Gemini TTS (limite de 10 segundos, resposta em WAV)
+e só depois a alternativa OpenAI, que tem limite de 8 segundos. No celular, o pedido de áudio e seu
 corpo têm limite de 22 segundos; se falhar, o Echo usa a voz nativa do dispositivo.
 Conversas e briefing têm limite de 30 segundos, e a consulta inicial da agenda, 5 segundos.
 Falhas liberam o processamento para uma nova pergunta. A reprodução tem proteção
@@ -332,7 +333,8 @@ O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado dire
 - **Google Calendar API:** Leitura e gestão por voz de compromissos da agenda Google (`GOOGLE_CALENDAR_CLIENT_ID`).
 - **Google Geocoding API:** Resolução de coordenadas e conversão de endereços para o Waze (`LOCATION_GOOGLE_GEOCODING_KEY`).
 - **Mem0 AI Engine:** Gerenciamento local de memória semântica e contextual do robô (`mem0ai`).
-- **Microsoft Edge TTS:** Síntese de voz neural nativa em alta fidelidade (`msedge-tts`).
+- **Microsoft Edge TTS:** Síntese de voz neural nativa em alta fidelidade (`msedge-tts`, serviço não oficial: pode ser bloqueado; ver `docs/opcoes-de-voz.md`).
+- **Gemini TTS:** Voz de reserva quando o Edge TTS falha (`gemini-2.5-flash-preview-tts`, mesma chave Gemini do Echo).
 - **Web Push / VAPID:** Envio de notificações push diretas no smartphone (`web-push`).
 - **Cloudflare Tunnel:** Proxy HTTPS seguro de produção (`https://echo.tfr-info.com.br`).
 

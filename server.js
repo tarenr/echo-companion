@@ -859,11 +859,17 @@ app.post('/api/speak', requireAnyPin, async (req, res) => {
   if (!text) return res.status(400).json({ error: 'Texto não fornecido' });
 
   const voiceName = voice || 'pt-BR-AntonioNeural';
+  const started = Date.now();
+  const remaining = () => started + SPEAK_TOTAL_MS - Date.now();
+  // Registra só motor, resultado e tempo; nunca o texto da fala.
+  const logVoice = (motor, status) => console.log(`[VOZ] ${motor} ${status} em ${Date.now() - started}ms`);
 
-  // 1. Motor Primário: Microsoft Edge Neural TTS em streaming
+  // 1. Motor Primário: Microsoft Edge Neural TTS em streaming (um pedido por vez)
   try {
-    const tts = new MsEdgeTTS();
-    const audioBuffer = await collectSpeech(tts, voiceName, text, res);
+    const audioBuffer = await edgeGate(() => retryOn429(
+      () => collectSpeech(new MsEdgeTTS(), voiceName, text, res, Math.min(EDGE_MAX_MS, remaining())),
+      { remaining }
+    ));
     if (!audioBuffer || res.destroyed) return;
     res.set({
       'Content-Type': 'audio/mpeg',
@@ -871,13 +877,33 @@ app.post('/api/speak', requireAnyPin, async (req, res) => {
       'Cache-Control': 'no-cache'
     });
     res.send(audioBuffer);
+    logVoice('edge', 'ok');
     return;
   } catch (err) {
-    console.warn('Falha ao instanciar Edge TTS, tentando OpenAI fallback:', err.message);
+    logVoice('edge', `falhou (${err.message})`);
+  }
+
+  // 2. Fallback 1: Gemini TTS (usa a chave Gemini já carregada)
+  if (!res.destroyed && !res.headersSent && remaining() > MIN_STAGE_MS) {
+    const wav = await generateGeminiSpeech(text, GEMINI_API_KEY, undefined, {
+      voice: pickGeminiVoice(voiceName),
+      timeoutMs: Math.min(GEMINI_MAX_MS, remaining())
+    });
+    if (wav && !res.destroyed && !res.headersSent) {
+      res.set({
+        'Content-Type': 'audio/wav',
+        'Content-Length': wav.length,
+        'Cache-Control': 'no-cache'
+      });
+      res.send(wav);
+      logVoice('gemini', 'ok');
+      return;
+    }
+    logVoice('gemini', 'sem áudio');
   }
 
   // 3. Fallback 2: OpenAI TTS (se houver chave e créditos)
-  if (!res.destroyed && !res.headersSent) await generateOpenAISpeech(text, res);
+  if (!res.destroyed && !res.headersSent && remaining() > MIN_STAGE_MS) await generateOpenAISpeech(text, res);
 });
 
 // Limita toda a operação Edge: conexão, metadados e recebimento do áudio.
@@ -917,7 +943,7 @@ async function generateOpenAISpeech(text, res) {
   try {
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(5000),
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
@@ -942,6 +968,98 @@ async function generateOpenAISpeech(text, res) {
     if (!res.destroyed && !res.headersSent) res.send(audioBuffer);
   } catch (err) {
     if (!res.destroyed && !res.headersSent) res.status(503).json({ error: 'Geração de voz indisponível. Use a voz do dispositivo.' });
+  }
+}
+
+// Prazos da síntese de voz: a cadeia inteira (Edge → Gemini → OpenAI) cabe nos 22 s do pedido do celular.
+const SPEAK_TOTAL_MS = 20000;
+const EDGE_MAX_MS = 8000;
+const GEMINI_MAX_MS = 8000;
+const MIN_STAGE_MS = 1500;
+
+// Executa uma tarefa por vez; quem espera mais de maxWaitMs desiste e o chamador segue para o fallback.
+function createSerialGate(maxWaitMs) {
+  let tail = Promise.resolve();
+  return task => {
+    let started = false;
+    let abandoned = false;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        if (started) return;
+        abandoned = true;
+        reject(new Error('fila do Edge TTS cheia (espera excedida)'));
+      }, maxWaitMs);
+      const run = tail.then(() => {
+        if (abandoned) return;
+        started = true;
+        clearTimeout(timer);
+        return Promise.resolve().then(task).then(resolve, reject);
+      });
+      tail = run.catch(() => {});
+    });
+  };
+}
+const edgeGate = createSerialGate(5000);
+
+// O Edge responde 429 quando recebe pedidos demais de uma vez: uma nova tentativa curta, se ainda houver prazo.
+async function retryOn429(attempt, { remaining, delayMs = 1000, minRemainingMs = 3000, sleep = ms => new Promise(r => setTimeout(r, ms)) }) {
+  try {
+    return await attempt();
+  } catch (err) {
+    if (!/\b429\b/.test(err && err.message) || remaining() - delayMs < minRemainingMs) throw err;
+    await sleep(delayMs);
+    return attempt();
+  }
+}
+
+// Voz do fallback Gemini conforme a voz pedida ao Edge: feminina (Luna) usa Kore; masculina (Echo) usa Charon.
+function pickGeminiVoice(edgeVoice) {
+  return /Francisca|Thalita|Brenda/i.test(edgeVoice || '') ? 'Kore' : 'Charon';
+}
+
+// Gemini TTS devolve PCM 16-bit mono cru; o navegador precisa do cabeçalho WAV para tocar.
+function pcmToWav(pcm, sampleRate = 24000) {
+  const header = Buffer.alloc(44);
+  header.write('RIFF', 0);
+  header.writeUInt32LE(36 + pcm.length, 4);
+  header.write('WAVEfmt ', 8);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(1, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * 2, 28);
+  header.writeUInt16LE(2, 32);
+  header.writeUInt16LE(16, 34);
+  header.write('data', 36);
+  header.writeUInt32LE(pcm.length, 40);
+  return Buffer.concat([header, pcm]);
+}
+
+// Retorna um Buffer WAV, ou null se a Gemini não estiver disponível (o chamador segue para o próximo motor).
+async function generateGeminiSpeech(text, apiKey, fetchImpl = fetch, { voice = 'Kore', timeoutMs = GEMINI_MAX_MS } = {}) {
+  if (!apiKey) return null;
+  try {
+    const response = await fetchImpl('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent', {
+      method: 'POST',
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }
+        }
+      })
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const inline = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+    if (!inline || !inline.data) return null;
+    const rate = Number((/rate=(\d+)/.exec(inline.mimeType || '') || [])[1]) || 24000;
+    return pcmToWav(Buffer.from(inline.data, 'base64'), rate);
+  } catch (err) {
+    console.warn('Falha no Gemini TTS:', err.message);
+    return null;
   }
 }
 
