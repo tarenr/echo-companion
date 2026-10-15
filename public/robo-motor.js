@@ -1183,6 +1183,8 @@
       if (s.hands > 0.05) {
         const hr = R * 0.18 * s.hands;
         for (const sd of [-1, 1]) {
+          // A mão que acena sobe: não desenha também a mão de baixo desse lado (senão ficam três mãos)
+          if (this.waveSide === sd) continue;
           x.beginPath();
           x.arc(sd * BODY.hw * 1.25, BODY.cy + BODY.hh * 0.35 + Math.sin(t * 8 + sd) * 6, hr, 0, Math.PI * 2);
           x.fill();

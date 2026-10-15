@@ -387,3 +387,22 @@ test('ritmo: batidas de música fazem dançar; silêncio e som contínuo não', 
   assert.ok(tone.beats <= 1, 'som alto contínuo não é batida');
   assert.equal(tone.music, false);
 });
+
+test('mãos: a mão que acena substitui a de baixo do mesmo lado (nunca três mãos)', () => {
+  const source = read('robo-motor.js');
+  const fn = extractFunction(source, 'drawHands(t) {').replace('drawHands(t) {', 'function drawHands(t) {');
+  const R = 84, HEAD = { cy: -151, hw: 91 }, BODY = { cy: -39, hw: 50, hh: 39 };
+  const count = (hands, waveSide) => {
+    let arcs = 0;
+    const x = { beginPath() {}, arc() { arcs++; }, fill() {}, stroke() {} };
+    const context = vm.createContext({ Math, R, HEAD, BODY });
+    vm.runInContext(`${fn}\nthis.run = (self) => drawHands.call(self, 0);`, context);
+    context.run({ x, s: { hands }, spec: { hands: ['#fff', '#000'] }, waveSide });
+    return arcs;
+  };
+  assert.equal(count(1, 0), 2, 'falando sem acenar: duas mãos');
+  assert.equal(count(1, -1), 2, 'falando e acenando: uma de baixo e a que acena');
+  assert.equal(count(1, 1), 2, 'idem do outro lado');
+  assert.equal(count(0, -1), 1, 'só acenando: uma mão');
+  assert.equal(count(0, 0), 0, 'parado: nenhuma');
+});

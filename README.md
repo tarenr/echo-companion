@@ -119,7 +119,7 @@ Ele monitora em tempo real:
    - **Estados e cores:** os mesmos de antes (repouso, trabalhando, multiagente, pensando, aprovação, concluído, erro, ouvindo, dormindo), com os mesmos sons do Echo em cada troca de estado.
    - **Rosto como peça única:** visor, olhos, boca, bochechas e óculos saem de um só ponto e uma só escala; ao olhar para os lados, para cima, para baixo ou girar, andam juntos.
    - **Regra estrita da boca:** a boca varia ESTRITAMENTE entre `_` (fechada/repouso) e `o` (aberta/falando); dormindo, some.
-   - **Mãos:** as mãos redondas aparecem ao falar e ao dançar; na entrada, uma delas acena.
+   - **Mãos:** as mãos redondas aparecem ao falar e ao dançar; na entrada, uma delas acena (e a mão de baixo desse lado some enquanto ela está no alto, para nunca haver três mãos).
    - Animações, reações ao toque, guarda-roupa, janela flutuante e sensor de movimento: ver [Personagem do Echo](#-personagem-do-echo-robô). Backup da bolha: `docs/legado/` (lá também fica o desenho antigo da Luna, `mascote-luna.js`).
 5. **Design Responsivo Híbrido (Retrato & Paisagem)**:
    - **Em pé (Retrato / Celular na mesa):** O mascote ocupa a parte superior e, ao responder consultas estruturadas de dados (Backups, Telemetria, Bancos, Cartões, Contas, Tarefas do Forge, Posts agendados do Estratégia Nerd, Treinos do Gym OS), desliza suavemente para cima e direciona o olhar para baixo (`mochi.look.y = 0.85`), abrindo o painel de cards neon na metade inferior sem espremer o texto.
