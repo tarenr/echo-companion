@@ -5,6 +5,16 @@ const fs = require('fs');
 const os = require('os');
 const { spawn } = require('child_process');
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
+
+// Alinha cabeçalhos e versão do Sec-MS-GEC com a versão estável do Edge (155)
+// para evitar heurística de bloqueio por desatualização no Azure Front Door.
+if (typeof MsEdgeTTS.getSynthUrl === 'function') {
+  const _origGetSynthUrl = MsEdgeTTS.getSynthUrl;
+  MsEdgeTTS.getSynthUrl = async function() {
+    const url = await _origGetSynthUrl.call(this);
+    return url.replace(/Sec-MS-GEC-Version=[^&]+/, 'Sec-MS-GEC-Version=1-155.0.4283.45');
+  };
+}
 const memory = require('./src/memory');
 const tools = require('./src/tools');
 const navigation = require('./src/navigation');
@@ -864,23 +874,30 @@ app.post('/api/speak', requireAnyPin, async (req, res) => {
   // Registra só motor, resultado e tempo; nunca o texto da fala.
   const logVoice = (motor, status) => console.log(`[VOZ] ${motor} ${status} em ${Date.now() - started}ms`);
 
-  // 1. Motor Primário: Microsoft Edge Neural TTS em streaming (um pedido por vez)
-  try {
-    const audioBuffer = await edgeGate(() => retryOn429(
-      () => collectSpeech(new MsEdgeTTS(), voiceName, text, res, Math.min(EDGE_MAX_MS, remaining())),
-      { remaining }
-    ));
-    if (!audioBuffer || res.destroyed) return;
-    res.set({
-      'Content-Type': 'audio/mpeg',
-      'Content-Length': audioBuffer.length,
-      'Cache-Control': 'no-cache'
-    });
-    res.send(audioBuffer);
-    logVoice('edge', 'ok');
-    return;
-  } catch (err) {
-    logVoice('edge', `falhou (${err.message})`);
+  // 1. Motor Primário: Microsoft Edge Neural TTS em streaming (um pedido por vez com resfriamento)
+  if (!isEdgeCircuitOpen()) {
+    try {
+      const audioBuffer = await edgeGate(async () => {
+        if (res.destroyed) return null;
+        return retryOn429(
+          () => collectSpeech(new MsEdgeTTS(), voiceName, text, res, Math.min(EDGE_MAX_MS, remaining())),
+          { remaining }
+        );
+      });
+      if (!audioBuffer || res.destroyed) return;
+      res.set({
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': audioBuffer.length,
+        'Cache-Control': 'no-cache'
+      });
+      res.send(audioBuffer);
+      logVoice('edge', 'ok');
+      return;
+    } catch (err) {
+      logVoice('edge', `falhou (${err.message})`);
+    }
+  } else {
+    logVoice('edge', 'pulado (circuit breaker 429 ativo)');
   }
 
   // 2. Fallback 1: Gemini TTS (usa a chave Gemini já carregada)
@@ -977,9 +994,30 @@ const EDGE_MAX_MS = 8000;
 const GEMINI_MAX_MS = 8000;
 const MIN_STAGE_MS = 1500;
 
-// Executa uma tarefa por vez; quem espera mais de maxWaitMs desiste e o chamador segue para o fallback.
-function createSerialGate(maxWaitMs) {
+// Circuit breaker do Edge TTS: quando a Microsoft responde 429, entra em pausa
+// temporária para não agravar o bloqueio e permite ao cliente ir direto aos fallbacks.
+let edgeCircuitOpenUntil = 0;
+const EDGE_CIRCUIT_COOLDOWN_MS = 45000;
+const EDGE_REQUEST_SPACING_MS = 1800;
+
+function isEdgeCircuitOpen() {
+  return Date.now() < edgeCircuitOpenUntil;
+}
+
+function tripEdgeCircuit(durationMs = EDGE_CIRCUIT_COOLDOWN_MS) {
+  edgeCircuitOpenUntil = Date.now() + durationMs;
+  console.warn(`[VOZ] Edge TTS Circuit Breaker ATIVADO por ${Math.round(durationMs / 1000)}s (em resfriamento após 429)`);
+}
+
+function resetEdgeCircuit() {
+  edgeCircuitOpenUntil = 0;
+}
+
+// Executa uma tarefa por vez com espaçamento obrigatório (cooldown) entre requisições;
+// quem espera mais de maxWaitMs desiste e o chamador segue para o fallback.
+function createSerialGate(maxWaitMs, minSpacingMs = 0) {
   let tail = Promise.resolve();
+  let lastEndTime = 0;
   return task => {
     let started = false;
     let abandoned = false;
@@ -989,26 +1027,47 @@ function createSerialGate(maxWaitMs) {
         abandoned = true;
         reject(new Error('fila do Edge TTS cheia (espera excedida)'));
       }, maxWaitMs);
-      const run = tail.then(() => {
+      const run = tail.then(async () => {
+        if (abandoned) return;
+        const elapsed = Date.now() - lastEndTime;
+        if (lastEndTime > 0 && elapsed < minSpacingMs) {
+          await new Promise(r => setTimeout(r, minSpacingMs - elapsed));
+        }
         if (abandoned) return;
         started = true;
         clearTimeout(timer);
-        return Promise.resolve().then(task).then(resolve, reject);
+        try {
+          return await task();
+        } finally {
+          lastEndTime = Date.now();
+        }
       });
-      tail = run.catch(() => {});
+      tail = run.catch(() => {
+        lastEndTime = Date.now();
+      });
+      run.then(resolve, reject);
     });
   };
 }
-const edgeGate = createSerialGate(5000);
+const edgeGate = createSerialGate(5000, EDGE_REQUEST_SPACING_MS);
 
-// O Edge responde 429 quando recebe pedidos demais de uma vez: uma nova tentativa curta, se ainda houver prazo.
-async function retryOn429(attempt, { remaining, delayMs = 1000, minRemainingMs = 3000, sleep = ms => new Promise(r => setTimeout(r, ms)) }) {
+// O Edge responde 429 quando recebe pedidos demais de uma vez: uma nova tentativa curta, se ainda houver prazo;
+// caso continue em 429, ativa o circuit breaker para resfriar a conexão e lança o erro para o fallback assumir.
+async function retryOn429(attempt, { remaining, delayMs = 1000, minRemainingMs = 3000, sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
   try {
     return await attempt();
   } catch (err) {
-    if (!/\b429\b/.test(err && err.message) || remaining() - delayMs < minRemainingMs) throw err;
+    if (!/\b429\b/.test(err && err.message) || remaining() - delayMs < minRemainingMs) {
+      if (/\b429\b/.test(err && err.message)) tripEdgeCircuit();
+      throw err;
+    }
     await sleep(delayMs);
-    return attempt();
+    try {
+      return await attempt();
+    } catch (retryErr) {
+      if (/\b429\b/.test(retryErr && retryErr.message)) tripEdgeCircuit();
+      throw retryErr;
+    }
   }
 }
 
@@ -1051,7 +1110,11 @@ async function generateGeminiSpeech(text, apiKey, fetchImpl = fetch, { voice = '
         }
       })
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const errText = typeof response.text === 'function' ? await response.text().catch(() => '') : '';
+      console.warn(`[VOZ] Gemini TTS indisponível (HTTP ${response.status}): ${errText.slice(0, 160)}`);
+      return null;
+    }
     const data = await response.json();
     const inline = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
     if (!inline || !inline.data) return null;

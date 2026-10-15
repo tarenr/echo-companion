@@ -4,8 +4,8 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const server = fs.readFileSync(require.resolve('../server.js'), 'utf8');
 const source = server.slice(server.indexOf('// Prazos da síntese de voz'), server.indexOf('// Endpoint de Briefing Consolidado'));
-const { pcmToWav, generateGeminiSpeech, createSerialGate, retryOn429, pickGeminiVoice } = vm.runInNewContext(
-  `${source}; ({ pcmToWav, generateGeminiSpeech, createSerialGate, retryOn429, pickGeminiVoice })`,
+const { pcmToWav, generateGeminiSpeech, createSerialGate, retryOn429, pickGeminiVoice, isEdgeCircuitOpen, tripEdgeCircuit, resetEdgeCircuit } = vm.runInNewContext(
+  `${source}; ({ pcmToWav, generateGeminiSpeech, createSerialGate, retryOn429, pickGeminiVoice, isEdgeCircuitOpen, tripEdgeCircuit, resetEdgeCircuit })`,
   { Buffer, AbortSignal, Number, JSON, console, setTimeout, clearTimeout, fetch: async () => { throw new Error('sem rede nos testes'); } }
 );
 
@@ -96,4 +96,29 @@ test('429 tenta de novo uma vez; outros erros e falta de prazo não', async () =
   calls = 0;
   await assert.rejects(retryOn429(async () => { calls++; throw new Error('Unexpected server response: 429'); }, { remaining: () => 15000, ...noSleep }), /429/);
   assert.equal(calls, 2);
+});
+
+test('circuit breaker do Edge: ativa em erro 429, recusa tentativas durante resfriamento e reseta', async () => {
+  resetEdgeCircuit();
+  assert.equal(isEdgeCircuitOpen(), false);
+
+  tripEdgeCircuit(100);
+  assert.equal(isEdgeCircuitOpen(), true);
+
+  resetEdgeCircuit();
+  assert.equal(isEdgeCircuitOpen(), false);
+
+  const noSleep = { sleep: async () => {} };
+  await assert.rejects(retryOn429(async () => { throw new Error('Unexpected server response: 429'); }, { remaining: () => 15000, ...noSleep }), /429/);
+  assert.equal(isEdgeCircuitOpen(), true);
+  resetEdgeCircuit();
+});
+
+test('createSerialGate respeita minSpacingMs (cooldown) entre chamadas sucessivas', async () => {
+  const gate = createSerialGate(1000, 30);
+  const start = Date.now();
+  await gate(async () => 'primeira');
+  await gate(async () => 'segunda');
+  const elapsed = Date.now() - start;
+  assert.ok(elapsed >= 25, `esperava pelo menos 25ms de espaçamento, obteve ${elapsed}ms`);
 });

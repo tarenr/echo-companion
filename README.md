@@ -64,6 +64,9 @@ o Echo não escolhe um provedor por aproximação fonética.
 ### Recuperação de voz e conexão
 
 A geração Edge TTS tem limite total de 12 segundos, incluindo conexão e áudio.
+Para prevenir bloqueios de taxa (HTTP 429 pelo Azure Front Door da Microsoft em rajadas de eventos dos agentes),
+o servidor aplica um espaçamento serial obrigatório de 1,8 segundo entre conexões de síntese e um Circuit Breaker
+de 45 segundos: se o Edge retornar 429 insistente, novas requisições pulam imediatamente para os fallbacks durante a janela de resfriamento.
 Se o Edge falhar, o Echo tenta a Gemini TTS (limite de 10 segundos, resposta em WAV)
 e só depois a alternativa OpenAI, que tem limite de 8 segundos. No celular, o pedido de áudio e seu
 corpo têm limite de 22 segundos; se falhar, o Echo usa a voz nativa do dispositivo.
@@ -71,7 +74,7 @@ Conversas e briefing têm limite de 30 segundos, e a consulta inicial da agenda,
 Falhas liberam o processamento para uma nova pergunta. A reprodução tem proteção
 contra ausência de eventos finais (15 a 180 segundos, conforme o tamanho do texto),
 liberando a animação e retomando a escuta automática. Uma reprodução que não inicia em
-5 segundos também tenta a voz nativa. Testes de recuperação: `node --test tests/speech-recovery.test.js`.
+5 segundos também tenta a voz nativa. Testes de recuperação: `node --test tests/speech-recovery.test.js` e `node --test tests/gemini-tts-fallback.test.js`.
 Após atualizar o servidor, recarregue a página do celular para carregar o JavaScript atual.
 
 O Echo consulta por GET as APIs do `pc-monitor-dashboard`, em `NERDOPS_URL` (padrão `http://127.0.0.1:5000`), sem novas dependências. A telemetria de CPU/RAM também usa o coletor do dashboard, a cada 3 segundos, substituindo a antiga estimativa local de CPU.

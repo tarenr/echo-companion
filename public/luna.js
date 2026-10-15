@@ -336,7 +336,23 @@
 
       await currentAudio.play();
     } catch (e) {
-      console.warn('Erro ao reproduzir voz:', e);
+      console.warn('Servidor TTS indisponível, usando voz nativa do dispositivo:', e.message);
+      if ('speechSynthesis' in window) {
+        try {
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = 'pt-BR';
+          utter.rate = 1.08;
+          utter.pitch = 1.15;
+          const voices = window.speechSynthesis.getVoices();
+          const ptFemale = voices.find(v => (v.lang === 'pt-BR' || v.lang.startsWith('pt')) && /female|mulher|luciana|maria|helena|zira/i.test(v.name)) || voices.find(v => v.lang === 'pt-BR' || v.lang.startsWith('pt')) || null;
+          if (ptFemale) utter.voice = ptFemale;
+          utter.onstart = () => startSpeakingAnim();
+          utter.onend = () => { stopSpeakingAnim(); resumeListeningIfHandsFree(); };
+          utter.onerror = () => { stopSpeakingAnim(); resumeListeningIfHandsFree(); };
+          window.speechSynthesis.speak(utter);
+          return;
+        } catch (_) {}
+      }
       stopSpeakingAnim();
       resumeListeningIfHandsFree();
     }

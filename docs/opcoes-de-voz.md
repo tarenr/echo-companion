@@ -29,13 +29,13 @@ O Echo adota como motor oficial de voz o **Microsoft Edge Neural TTS**, prioriza
 
 **Prazos:** a cadeia inteira tem 20 s (o celular desiste aos 22 s). Edge: até 8 s por tentativa; Gemini: até 8 s; OpenAI: até 5 s. Um estágio só começa se ainda sobrarem mais de 1,5 s.
 
-**Um Edge por vez:** os pedidos ao Edge passam por uma fila de um só. Quem espera mais de 5 s desiste e segue para o fallback. Se o Edge responder `429` (pedidos demais), há uma nova tentativa depois de 1 s, só se restar prazo. Isso evita que Echo e Luna, falando quase ao mesmo tempo, derrubem um ao outro.
+**Fila serial, Cooldown e Circuit Breaker:** os pedidos ao Edge passam por uma fila única (`createSerialGate`) com espaçamento obrigatório de 1,8 s entre sínteses sucessivas para respeitar os limites do gateway da Microsoft (Azure Front Door). Se a Microsoft responder `429` (Too Many Requests), o servidor ativa automaticamente um **Circuit Breaker** de 45 segundos: durante essa janela, qualquer nova requisição de voz pula imediatamente o Edge e aciona os fallbacks (Gemini, OpenAI ou a voz nativa do dispositivo), garantindo que o IP local esfrie e a voz continue funcionando sem atrasos.
 
-**Log:** cada pedido registra no `echo.log` uma linha `[VOZ] <motor> ok|falhou|sem áudio em <ms>ms`, sem o texto da fala. Serve para saber qual motor atendeu e quanto demorou.
+**Log:** cada pedido registra no `echo.log` uma linha `[VOZ] <motor> ok|falhou|sem áudio|pulado em <ms>ms`, sem o texto da fala. Erros de status HTTP na API da Gemini agora são detalhados no log para diagnóstico imediato de cotas.
 
 ### Aprendizado: o Edge TTS não é um serviço oficial
 
-A `msedge-tts` usa a API de leitura em voz alta do Edge, que a Microsoft pode mudar ou bloquear sem aviso. Em 14/10/2026 o Echo passou a receber `403` no WebSocket com a versão 2.0.9, e a Luna ficou sem voz. Atualizar para a `2.1.0` resolveu. Se voltar a acontecer, o primeiro passo é conferir se há versão nova da biblioteca (`npm view msedge-tts version`); enquanto isso, o fallback Gemini mantém a fala.
+A `msedge-tts` usa a API de leitura em voz alta do Edge, que a Microsoft pode mudar ou bloquear sem aviso. Em 14/10/2026 o Echo passou a receber `403` no WebSocket com a versão 2.0.9, e a Luna ficou sem voz. Atualizar para a `2.1.0` (novo endpoint `api.msedgeservices.com`) e alinhar a versão do protocolo (`Sec-MS-GEC-Version=1-155.0.4283.45`) resolveu. O Circuit Breaker e o cooldown de fila impedem que rajadas de eventos derrubem a conexão com erro 429. Se ambos falharem, o fallback nativo no navegador do aparelho assume a fala sem interrupção.
 
 ---
 
