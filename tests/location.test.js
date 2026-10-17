@@ -159,3 +159,26 @@ test('rotas isolam PINs, cookies e CSRF; consentimento e substituição são obr
   assert.equal((await send('echo', 'stop', echo, { confirm: 'stop' })).status, 200);
   assert.equal((await (await send('luna', 'query', luna, {})).json()).location, undefined);
 });
+
+test('targetFromMessage reconhece variacoes foneticas (eco, ecko), cade e pronomes contextuais', () => {
+  assert.equal(targetFromMessage('onde está o echo', 'luna'), 'echo');
+  assert.equal(targetFromMessage('onde está o eco', 'luna'), 'echo');
+  assert.equal(targetFromMessage('onde tá o eco?', 'luna'), 'echo');
+  assert.equal(targetFromMessage('cadê o eco?', 'luna'), 'echo');
+  assert.equal(targetFromMessage('cade o echo?', 'luna'), 'echo');
+  assert.equal(targetFromMessage('onde ele está?', 'luna'), 'echo');
+  assert.equal(targetFromMessage('cadê ele?', 'luna'), 'echo');
+  assert.equal(targetFromMessage('qual a localizacao dele?', 'luna'), 'echo');
+
+  assert.equal(targetFromMessage('onde está a luna', 'echo'), 'luna');
+  assert.equal(targetFromMessage('cadê a luna?', 'echo'), 'luna');
+  assert.equal(targetFromMessage('onde ela está?', 'echo'), 'luna');
+  assert.equal(targetFromMessage('cadê ela?', 'echo'), 'luna');
+  assert.equal(targetFromMessage('qual a localizacao dela?', 'echo'), 'luna');
+
+  assert.equal(targetFromMessage('onde é o dentista?', 'echo'), null);
+  assert.equal(targetFromMessage('como está o dia hoje?', 'luna'), null);
+  assert.equal(targetFromMessage('qual a previsão do tempo?', 'echo'), null);
+});
+
+

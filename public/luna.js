@@ -286,9 +286,22 @@
     badgeTop.textContent = 'PRONTA';
   }
 
+  let speechRecoveryTimer = null;
+  function armSpeechRecovery(text, onTimeout) {
+    clearTimeout(speechRecoveryTimer);
+    const ms = Math.min(30000, Math.max(6000, (text || '').length * 100));
+    speechRecoveryTimer = setTimeout(() => {
+      console.warn('Watchdog de fala acionado: destravando Luna e retomando escuta.');
+      if (onTimeout) { try { onTimeout(); } catch (_) {} }
+      stopSpeakingAnim();
+      resumeListeningIfHandsFree();
+    }, ms);
+  }
+
   async function speak(text) {
     if (!text) return;
     unlockAudio();
+    clearTimeout(speechRecoveryTimer);
 
     if (recognition && isListening) {
       try { recognition.stop(); } catch(e){}
@@ -299,20 +312,27 @@
       currentAudio = null;
       stopSpeakingAnim();
     }
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch (_) {}
+    }
 
     try {
+      const fetchSignal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(6500) : undefined;
       const res = await fetch('/api/speak', {
         method: 'POST',
         headers: getAuthHeaders(),
+        signal: fetchSignal,
         body: JSON.stringify({
           text,
           voice: 'pt-BR-ThalitaNeural'
         })
       });
 
-      if (!res.ok) throw new Error('Falha no áudio');
+      if (!res.ok) throw new Error(`Falha no áudio (HTTP ${res.status})`);
 
       const blob = await res.blob();
+      if (!blob || blob.size === 0) throw new Error('Áudio vazio retornado');
+
       const audioUrl = URL.createObjectURL(blob);
       currentAudio = new Audio(audioUrl);
 
@@ -322,6 +342,7 @@
       };
 
       currentAudio.onended = () => {
+        clearTimeout(speechRecoveryTimer);
         stopSpeakingAnim();
         currentAudio = null;
         URL.revokeObjectURL(audioUrl);
@@ -329,14 +350,29 @@
       };
 
       currentAudio.onerror = () => {
+        clearTimeout(speechRecoveryTimer);
         stopSpeakingAnim();
         currentAudio = null;
+        URL.revokeObjectURL(audioUrl);
         resumeListeningIfHandsFree();
       };
 
-      await currentAudio.play();
+      const audio = currentAudio;
+      let playTimeout;
+      await Promise.race([
+        audio.play(),
+        new Promise((_, reject) => { playTimeout = setTimeout(() => reject(new Error('Reprodução não iniciou')), 4000); })
+      ]).finally(() => clearTimeout(playTimeout));
+
+      armSpeechRecovery(text, () => {
+        audio.onended = audio.onerror = audio.onplay = null;
+        audio.pause();
+        if (currentAudio === audio) currentAudio = null;
+        URL.revokeObjectURL(audioUrl);
+      });
+      return;
     } catch (e) {
-      console.warn('Servidor TTS indisponível, usando voz nativa do dispositivo:', e.message);
+      console.warn('Servidor TTS indisponível ou demorado, usando voz nativa do dispositivo:', e.message);
       if ('speechSynthesis' in window) {
         try {
           const utter = new SpeechSynthesisUtterance(text);
@@ -347,12 +383,14 @@
           const ptFemale = voices.find(v => (v.lang === 'pt-BR' || v.lang.startsWith('pt')) && /female|mulher|luciana|maria|helena|zira/i.test(v.name)) || voices.find(v => v.lang === 'pt-BR' || v.lang.startsWith('pt')) || null;
           if (ptFemale) utter.voice = ptFemale;
           utter.onstart = () => startSpeakingAnim();
-          utter.onend = () => { stopSpeakingAnim(); resumeListeningIfHandsFree(); };
-          utter.onerror = () => { stopSpeakingAnim(); resumeListeningIfHandsFree(); };
+          utter.onend = () => { clearTimeout(speechRecoveryTimer); stopSpeakingAnim(); resumeListeningIfHandsFree(); };
+          utter.onerror = () => { clearTimeout(speechRecoveryTimer); stopSpeakingAnim(); resumeListeningIfHandsFree(); };
+          armSpeechRecovery(text, () => window.speechSynthesis.cancel());
           window.speechSynthesis.speak(utter);
           return;
         } catch (_) {}
       }
+      clearTimeout(speechRecoveryTimer);
       stopSpeakingAnim();
       resumeListeningIfHandsFree();
     }

@@ -988,17 +988,17 @@ async function generateOpenAISpeech(text, res) {
   }
 }
 
-// Prazos da síntese de voz: a cadeia inteira (Edge → Gemini → OpenAI) cabe nos 22 s do pedido do celular.
-const SPEAK_TOTAL_MS = 20000;
-const EDGE_MAX_MS = 8000;
-const GEMINI_MAX_MS = 8000;
-const MIN_STAGE_MS = 1500;
+// Prazos da síntese de voz: a cadeia inteira (Edge → Gemini → OpenAI) cabe com folga no pedido do celular.
+const SPEAK_TOTAL_MS = 14000;
+const EDGE_MAX_MS = 4500;
+const GEMINI_MAX_MS = 4000;
+const MIN_STAGE_MS = 1200;
 
 // Circuit breaker do Edge TTS: quando a Microsoft responde 429, entra em pausa
 // temporária para não agravar o bloqueio e permite ao cliente ir direto aos fallbacks.
 let edgeCircuitOpenUntil = 0;
 const EDGE_CIRCUIT_COOLDOWN_MS = 45000;
-const EDGE_REQUEST_SPACING_MS = 1800;
+const EDGE_REQUEST_SPACING_MS = 1200;
 
 function isEdgeCircuitOpen() {
   return Date.now() < edgeCircuitOpenUntil;
@@ -1049,7 +1049,7 @@ function createSerialGate(maxWaitMs, minSpacingMs = 0) {
     });
   };
 }
-const edgeGate = createSerialGate(5000, EDGE_REQUEST_SPACING_MS);
+const edgeGate = createSerialGate(4000, EDGE_REQUEST_SPACING_MS);
 
 // O Edge responde 429 quando recebe pedidos demais de uma vez: uma nova tentativa curta, se ainda houver prazo;
 // caso continue em 429, ativa o circuit breaker para resfriar a conexão e lança o erro para o fallback assumir.

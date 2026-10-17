@@ -27,9 +27,9 @@ O Echo adota como motor oficial de voz o **Microsoft Edge Neural TTS**, prioriza
 3. **OpenAI TTS** (só com chave e saldo).
 4. **Voz nativa do aparelho** (`speechSynthesis`), no front, se o servidor não entregar áudio.
 
-**Prazos:** a cadeia inteira tem 20 s (o celular desiste aos 22 s). Edge: até 8 s por tentativa; Gemini: até 8 s; OpenAI: até 5 s. Um estágio só começa se ainda sobrarem mais de 1,5 s.
+**Prazos e Otimização:** a cadeia inteira tem 14 s (otimizado para resposta ágil no celular). Edge: até 4,5 s por tentativa; Gemini: até 4 s; OpenAI: até 4 s. Um estágio só começa se ainda sobrarem mais de 1,2 s. No cliente da Luna (`public/luna.js`), a requisição de fala conta com timeout de rede de 6,5 s e watchdog de recuperação (`armSpeechRecovery`) para destravamento automático e fallback imediato caso a conexão móvel congele.
 
-**Fila serial, Cooldown e Circuit Breaker:** os pedidos ao Edge passam por uma fila única (`createSerialGate`) com espaçamento obrigatório de 1,8 s entre sínteses sucessivas para respeitar os limites do gateway da Microsoft (Azure Front Door). Se a Microsoft responder `429` (Too Many Requests), o servidor ativa automaticamente um **Circuit Breaker** de 45 segundos: durante essa janela, qualquer nova requisição de voz pula imediatamente o Edge e aciona os fallbacks (Gemini, OpenAI ou a voz nativa do dispositivo), garantindo que o IP local esfrie e a voz continue funcionando sem atrasos.
+**Fila serial, Cooldown e Circuit Breaker:** os pedidos ao Edge passam por uma fila única (`createSerialGate`) com espaçamento obrigatório de 1,2 s entre sínteses sucessivas para respeitar os limites do gateway da Microsoft sem introduzir lentidão excessiva. Se a Microsoft responder `429` (Too Many Requests), o servidor ativa automaticamente um **Circuit Breaker** de 45 segundos: durante essa janela, qualquer nova requisição de voz pula imediatamente o Edge e aciona os fallbacks (Gemini, OpenAI ou a voz nativa do dispositivo), garantindo que o IP local esfrie e a voz continue funcionando sem atrasos.
 
 **Log:** cada pedido registra no `echo.log` uma linha `[VOZ] <motor> ok|falhou|sem áudio|pulado em <ms>ms`, sem o texto da fala. Erros de status HTTP na API da Gemini agora são detalhados no log para diagnóstico imediato de cotas.
 

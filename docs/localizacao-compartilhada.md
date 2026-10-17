@@ -8,7 +8,7 @@ Echo e Luna consultam a localização dos celulares associados a cada mascote. O
 2. Toque no ícone de localização no rodapé (LOCAL na tela deitada).
 3. Leia a explicação e toque **Compartilhar minha localização**. Autorize a localização no navegador/Android.
 4. Repita no outro celular se quiser compartilhar nos dois sentidos. Não há captura antes dessa escolha.
-5. Pergunte **“Echo, onde a Luna está?”** ou **“Luna, onde o Echo está?”**. O painel também oferece o botão de consulta.
+5. Pergunte **“Echo, onde a Luna está?”**, **“Luna, onde o Echo está?”**, **“Luna, cadê o Eco?”**, ou simplesmente **“Onde ele está?”** (na Luna) ou **“Cadê ela?”** (no Echo). O sistema tolera variações de transcrição fonética do microfone (*Eco*, *Echo*, *Ecko*). O painel também oferece o botão de consulta.
 
 O aplicativo precisa ficar aberto e visível para atualizar GPS. Ao mudar de aplicativo, fechar a página ou bloquear a tela, as atualizações param. Ao retornar, o dispositivo autorizado retoma enquanto continuar autorizado. Não há serviço Android de localização em segundo plano.
 

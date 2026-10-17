@@ -97,9 +97,15 @@ class LocationService {
 }
 function targetFromMessage(message, own) {
   const text = String(message || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  if (!/\bonde\b|\blocalizacao\b|\blocalizar\b/.test(text)) return null;
-  if (/\bluna\b/.test(text) && /\becho\b/.test(text)) return own === 'echo' ? 'luna' : 'echo';
-  if (/\bluna\b/.test(text)) return 'luna'; if (/\becho\b/.test(text)) return 'echo'; return null;
+  if (!/\bonde\b|\bcade\b|\blocalizacao\b|\blocalizar\b/.test(text)) return null;
+  const mentionsEcho = /\b(echo|eco|ecko)\b/.test(text);
+  const mentionsLuna = /\bluna\b/.test(text);
+  if (mentionsLuna && mentionsEcho) return own === 'echo' ? 'luna' : 'echo';
+  if (mentionsLuna) return 'luna';
+  if (mentionsEcho) return 'echo';
+  if (own === 'luna' && /\b(ele|dele|o parceiro|o outro)\b/.test(text)) return 'echo';
+  if (own === 'echo' && /\b(ela|dela|a parceira|a outra)\b/.test(text)) return 'luna';
+  return null;
 }
 function createLocationRoutes({ service, requirePin, requireLunaPin }) {
   const router = express.Router(), sessions = new Map();
