@@ -1,5 +1,64 @@
 # Echo // Estratégia Nerd Companion 🤖
 
+## Consultas combinadas (fase 1)
+
+O Echo pode consultar mais de uma fonte antes de responder. Exemplos:
+
+- “Bom dia, confira as tarefas do Forge e os backups.”
+- “Confira a CPU, a GPU e os serviços com problema.”
+- “Veja os posts agendados e as métricas do Instagram.”
+
+O novo fluxo consulta projetos/tarefas e backups do Forge, serviços, dashboard
+NERD OPS, posts agendados e métricas do blog/Instagram. As respostas mostram
+um cartão consolidado com as fontes consultadas. Uma fonte que falhar aparece
+como indisponível; o cartão e a fala identificam consultas incompletas.
+As fontes reconhecidas no pedido que o modelo deixar de consultar também
+aparecem como indisponíveis, sem aceitar uma conclusão de sucesso do modelo.
+Uma consulta feita com sucesso não significa que o serviço consultado esteja saudável:
+os problemas encontrados continuam indicados no cartão.
+Quando há alertas ou dados ausentes, a fala usa o resumo verificado do cartão
+e destaca esses pontos, em vez de aceitar uma síntese otimista do modelo.
+
+O limite por pedido é de quatro rodadas de ferramentas, seis execuções e
+25 segundos para o processamento do novo fluxo, contando a preparação do contexto.
+Há uma chamada final de síntese após as rodadas, dentro do mesmo prazo.
+Chamadas idênticas no mesmo pedido reutilizam o resultado. O adaptador Gemini
+limita cada tentativa a oito segundos e só troca de modelo antes de receber
+a primeira resposta válida, preservando os IDs e assinaturas das chamadas.
+Resultados individuais têm limite de 4.000 caracteres e o contexto enviado
+tem limite de 48.000 caracteres; recortes são identificados como parciais.
+
+Ao encerrar o prazo ou desconectar o cliente, o Echo interrompe o ciclo e
+cancela a chamada ao Gemini. Uma consulta já iniciada em um conector que não
+aceita cancelamento pode terminar depois, mas seu resultado é descartado;
+não inicia outra rodada nem grava o histórico de ferramentas desse pedido.
+
+Ferramentas e argumentos são validados por uma lista explícita de leituras.
+O ciclo não grava preferências, não altera a agenda nem abre o Waze. Agenda,
+navegação, localização, finanças e memória continuam em seus fluxos dedicados.
+Os resultados da agenda continuam fora do contexto enviado ao Gemini.
+Cruzar agenda com Forge ainda não faz parte desta fase. Corrigir ou esquecer
+um fato durante uma consulta invalida a resposta que estava em preparação.
+
+O recurso usa o Gemini já configurado e pode consumir mais chamadas por pergunta.
+As métricas novas registram apenas modelo/ferramenta, duração e status, sem
+argumentos nem conteúdo. As mensagens deste fluxo ficam no histórico de sessões
+do Mem0 (`echo_mem0_state.sqlite`), com verificação de versão da memória e gravação
+síncrona. Não são duplicadas no histórico legado nem no log de ferramentas.
+Não há nova tabela nem migração. O OpenJarvis não é uma dependência.
+
+Configuração e recuperação: `src/conversationConfig.js`. Para desativar o
+ciclo, mudar `enabled` para `false` e reiniciar exclusivamente o Echo pelo
+mecanismo que o mantém ativo. Isso conserva os dados e retorna ao caminho
+anterior de resposta. Não é necessário editar `.env` nem reinstalar pacotes.
+
+Validação: `node --test tests/conversation.test.js tests/gemini-provider.test.js
+tests/conversation-routing.test.js tests/tool-policy.test.js tests/cards.test.js
+tests/calendar.test.js` (em uma linha), seguido de `npm test`.
+Os testes usam provedores simulados, memória temporária e servidores locais
+de teste; não chamam Gemini nem alteram a agenda real. A verificação do serviço
+ativo consome cota Gemini e produz os registros normais de conversa.
+
 ## Memória de conversa com Mem0
 
 O Echo mantém fatos pessoais explícitos, histórico de sessões e resumos em
@@ -414,12 +473,37 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
 ### Guarda-roupa
 
 - **Peças (11, desenhadas em código):** cabeça — chapéu de festa, gorro com pompom, coroa, chapéu de bruxa, gorro de Papai Noel, orelhas de coelho, laço, abóbora; rosto — óculos escuros, óculos redondos; pescoço — cachecol.
-- **Fantasias exclusivas (desde 06/10/2026):** cada personagem tem a sua, sem braços. São desenhos próprios no estilo de fantasia de Halloween, sem copiar personagem.
-  - **Regras gerais:** as 11 peças comuns valem para os dois. Nenhuma fantasia entra no automático (estação): elas são só por escolha.
+- **Fantasias exclusivas (desde 06/10/2026):** cada personagem tem as suas, sem braços. O esqueleto e a boneca de pano são desenhos próprios no estilo de fantasia de Halloween, sem copiar personagem; o Kratos, o Tyrael e o Darth Vader (18/10/2026) são inspirados nos personagens de God of War, de Diablo III e de Star Wars, desenhados do zero para o corpo do robô (o Echo passou a apresentar os vídeos, e a fantasia acompanha o tema); o Yusuke e o Toguro (20/10/2026) são o herói e o vilão de Yu Yu Hakusho, para os vídeos em que o vilão toma a tela no meio e o herói volta no fim.
+  - **Regras gerais:** as 11 peças comuns valem para os dois. Nenhuma fantasia entra no automático (estação): elas são só por escolha. Toda fantasia fica por trás da tela `>_` do peito; a única exceção é a camiseta do TI, que põe a estampa no lugar da tela.
+  - **Fantasia nova entra "em teste":** o conjunto e as peças levam `lab: true` e aparecem só na página de testes (`/robo.html`), que pede `{ lab: true }` a `setsFor`/`itemsFor`. O Echo e a Luna só listam a fantasia depois da aprovação, quando a marca sai (publicar = apagar o `lab: true`). Se a roupa guardada no celular tiver uma peça em teste, ela volta sem essa peça.
+  - **Trocar de fantasia no Echo tira tudo da anterior:** a folha do Echo chama `toggleSet(..., { exclusive: true })`, que antes de vestir tira as peças dos lugares que a nova fantasia não usa (ex.: Darth Vader → Kratos não deixa o capacete). Peças avulsas podem ser postas depois (ex.: Kratos + gorro). Na página de testes as fantasias continuam se misturando.
   - **Botão "Fantasia de …":** veste ou tira todas as peças da fantasia de uma vez. As peças também aparecem soltas.
   - **Echo, "Fantasia de esqueleto"** (`public/robo-roupas-echo.js`):
     - "Sorriso costurado" (rosto): curva com pontos de costura entre as bochechas; não combina com óculos.
     - "Terno de esqueleto" (pescoço): preto listrado, camisa branca em V, gravata de morcego cujas asas balançam e a tela `>_` à mostra; não combina com o cachecol.
+  - **Echo, "Fantasia de Kratos"** (também em `public/robo-roupas-echo.js`):
+    - "Barba e marca de guerra" (rosto): a marca vermelha é uma tatuagem pintada na casca, larga no alto da cabeça, que afina, quebra em ângulo acima do olho direito (de quem olha), passa por baixo do visor e reaparece na bochecha antes de entrar na barba. A barba é castanha e ondulada, com bigode em volta da boca (que continua falando) e bochechas à mostra dos dois lados; fica por cima do contorno do queixo (parte `over`).
+    - "Armadura e machado" (pescoço): ombreira de bronze em lâminas com friso grego no ombro direito, correia de couro cruzada (por trás da tela `>_`), cinto com fivela de bronze com o lambda de Esparta, saiote de tiras de couro e pano vermelho que balança. O machado fica nas costas (parte `back`): lâmina de aço com runas azuis saindo à esquerda e o pomo aparecendo embaixo, à direita.
+  - **Echo, "Fantasia de Tyrael"** (também em `public/robo-roupas-echo.js`):
+    - "Capuz de Tyrael" (cabeça): pano claro cinza-azulado em arco sobre a cabeça, aberto embaixo, com barra dourada na borda de dentro, ponta sobre a testa com uma joia azul e o fundo escuro atrás da cabeça (parte `back`). Fica preso na base dos chapéus (não `anchor: 'robo'`), por isso acompanha um pouco o rosto ao olhar para os lados; também pula junto quando alguém toca no chapéu.
+    - "Rosto nas sombras" (rosto): escurece a casca em volta do visor (o visor fica por cima), mais forte perto do capuz e mais leve embaixo do visor, com uma luz fria; os olhos brilham e a boca continua aparecendo quando ele fala.
+    - "Armadura e asas de luz" (pescoço): peitoral prateado com filetes dourados, moldura dourada com asinhas em volta da tela `>_`, ombreiras nos dois ombros, cinto e pano claro com barra dourada que balança. As asas ficam na parte de trás (`back`): faixas de luz branco-azulada que saem de trás dos ombros, se abrem ao lado do corpo e ondulam o tempo todo.
+  - **Echo, "Fantasia de Darth Vader"** (também em `public/robo-roupas-echo.js`):
+    - "Capacete de Darth Vader" (cabeça): cúpula preta brilhante com costura no meio, testa saliente com a ponta sobre o nariz e a aba larga que se abre para os lados na base; a aba continua atrás da cabeça (parte `back`). Preso na base dos chapéus, como o capuz do Tyrael.
+    - "Máscara de Darth Vader" (rosto): tampa o rosto todo, por cima do visor, dos olhos e da boca (enquanto estiver de Vader, o Echo não mostra olhos nem boca; a voz continua). Lentes triangulares escuras com reflexo vermelho, nariz em ponta, maçãs do rosto e respirador cinza com fendas.
+    - "Armadura e capa" (pescoço): corpo preto acolchoado, a tela `>_` como o painel do peito (moldura cinza e luzinhas vermelha, verde e azul), ombreiras e cinto com as caixas prateadas. A capa fica na parte de trás (`back`): preta, cai dos ombros até abaixo do corpo e a barra balança.
+  - **Echo, "Fantasia de TI"** (também em `public/robo-roupas-echo.js`; feita para o Dia do Profissional de Informática, 19/10/2026):
+    - "Headset de suporte" (cabeça): arco preto, conchas com detalhe ciano, LED verde e a haste do microfone terminando ao lado da boca, sem cobri-la. Preso na base dos chapéus, como o capuz do Tyrael.
+    - "Óculos de programador" (rosto): armação preta grossa e retangular com borda clara (para aparecer sobre o visor escuro) e reflexo nas lentes.
+    - "Moletom e camiseta do Estratégia Nerd" (pescoço): moletom preto aberto com zíper, punho canelado e cordões do capuz, sobre a camiseta preta com a caveira cibernética do site (redesenhada em vetor) e "ESTRATÉGIA NERD". A camiseta cobre a tela `>_` do peito.
+  - **Echo, "Fantasia de Yusuke"** (também em `public/robo-roupas-echo.js`; o herói de Yu Yu Hakusho, 20/10/2026; em teste):
+    - "Cabelo penteado para trás" (cabeça): verde-petróleo quase preto, como no anime, com reflexos verde-água indo para trás; a mecha da frente desce em ponta sobre a testa e as laterais terminam em ponta atrás da orelha. Preso na base dos chapéus, como o capuz do Tyrael.
+    - "Uniforme verde da escola" (pescoço): fechado, de gola alta com fecho dourado, e botões dourados acima e abaixo da tela `>_`, que fica à mostra.
+  - **Echo, "Fantasia de Toguro"** (também em `public/robo-roupas-echo.js`; o vilão de Yu Yu Hakusho, 20/10/2026; em teste):
+    - "Cabelo alto cortado reto" (cabeça): preto, alto e reto em cima (a face de cima mais clara), com entradas na testa e costeletas curtas. Preso na base dos chapéus.
+    - "Óculos escuros do Toguro" (rosto): em lâmina, as duas lentes formam uma faixa com reflexo prateado na borda de cima e afinam em ponta do lado de fora; o contorno claro faz os óculos aparecerem sobre o visor. O visor é pintado de novo por baixo, então os olhos somem e o rosto fica sem expressão; a boca continua falando.
+    - "Paletó e regata" (pescoço): paletó verde-oliva aberto, com lapelas, ombreiras largas que passam da borda do corpo e um botão abaixo da tela; por baixo, regata verde-escura e um pouco do peito no decote. A tela `>_` fica por cima.
+  - **Echo, figurinos da "Vida de TI"** (também em `public/robo-roupas-echo.js`, no bloco `VidaTI`; feitos pelo Codex para o carrossel "Na cabeça dos outros, TI é…" e trazidos para o guarda-roupa em 20/10/2026; em teste): médico (espelho de testa e jaleco com estetoscópio, que passa pelos lados e por baixo da tela), mago (chapéu grande com a ponta caída e túnica com capa), mecânico (boné e macacão), adivinho (turbante e traje), bombeiro (capacete e jaqueta com faixas refletivas), arqueólogo (chapéu de exploração e colete), psicólogo (óculos de leitura e cardigã), detetive (chapéu e sobretudo xadrez de Sherlock) e hacker (capuz de moletom que cai nos ombros, com cordões, e moletom com o `>_` no bolso). Os chapéus ficam na base dos chapéus. O carrossel gerado com eles fica em `output/echo-carrossel-vida-ti/v2/`.
   - **Luna, "Fantasia de boneca de pano"** (`public/robo-roupas-luna.js`):
     - "Cabelo ruivo" (cabeça): comprido, com risca no meio. A parte de trás fica atrás da cabeça e do corpo e as pontas balançam. Fica preso à cabeça (`anchor: 'robo'`), não na base dos chapéus.
     - "Rosto de boneca" (rosto): cílios, sorriso costurado fino e costuras nas bochechas.
@@ -430,6 +514,7 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
   - **Funções comuns:** `robo-roupas.js` reúne as funções dos conjuntos (`SETS`, `toggleSet`, `itemsFor`, `outfitOf`) e as medidas do corpo usadas pelo terno e pelo vestido (`shape`).
 - **Desenho do motor:**
   - Peças podem ter parte de trás (`back`), desenhada antes do corpo.
+  - Peças do rosto podem ter parte por cima (`over`): mesmo referencial do rosto (acompanha o olhar e o giro), mas recortada só nas laterais da cabeça, então pode passar da borda de baixo e cair sobre o pescoço (ex.: a barba do Kratos). As outras partes do rosto continuam recortadas pelo contorno da cabeça.
   - O quadro `>_` da cabeça fica por cima das peças da cabeça.
   - As cores vêm do tema: `THEMES.echo`, o padrão, ciano e igual ao de antes; `THEMES.luna`, lavanda.
 - **Como usar:** tocar numa peça veste; tocar de novo tira. Uma peça por lugar (outro chapéu troca o atual) e dá para combinar os três lugares. "Tirar tudo" tira as três. Segurar o dedo no robô rola a página até o guarda-roupa. Dá para usar junto com os acessórios de trabalho (ex.: gorro e caneca de café).

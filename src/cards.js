@@ -354,7 +354,38 @@ function buildToolCard(name, toolResult, now = new Date()) {
   return builder ? builder(toolResult, now) : null;
 }
 
+function buildConversationCard({ results = [], partial = false }) {
+  let invalidSources = false;
+  const labels = {
+    consultar_projetos_forge: 'Forge · projetos', consultar_tarefas_forge: 'Forge · tarefas',
+    consultar_status_backup_forge: 'Backups', consultar_monitor_servicos: 'Serviços',
+    consultar_dashboard_pc: 'PC', consultar_agendamento_posts: 'Posts agendados',
+    consultar_metricas_blog: 'Blog', consultar_metricas_instagram: 'Instagram'
+  };
+  const rows = results.map(({ name, result }) => {
+    if (!result.ok) return row(labels[name] || 'Consulta', 'Indisponível', 'error');
+    if (result.truncated) return row(labels[name] || 'Consulta', 'Resultado parcial por limite de tamanho', 'warn');
+    let card;
+    try { card = buildToolCard(name, result); }
+    catch (_) {
+      invalidSources = true;
+      return row(labels[name] || 'Consulta', 'Resposta inválida da fonte', 'error');
+    }
+    const detail = card?.rows?.find(r => r.status === 'error') || card?.rows?.find(r => r.status === 'warn') || card?.rows?.[0];
+    const detailValue = detail?.value === '—' ? 'indisponível' : detail?.value;
+    const value = [card?.title, detail && `${detail.label}: ${detailValue}`].filter(Boolean).join(' · ');
+    const status = card?.rows?.some(r => r.status === 'error') ? 'error' : card?.rows?.some(r => r.status === 'warn') ? 'warn' : 'ok';
+    return row(labels[name] || 'Consulta', value || 'Consulta realizada', status);
+  });
+  if (!rows.length) rows.push(row('Fontes', 'Nenhum resultado disponível', 'error'));
+  const attention = rows.filter(r => r.status === 'error' || r.status === 'warn');
+  const spoken = [...attention, ...rows.filter(r => !attention.includes(r))].slice(0, 3);
+  const attentionReply = attention.length ? `Há pontos de atenção. ${spoken.map(r => `${r.label}: ${r.value}.`).join(' ')}${rows.length > 3 ? ' Os demais resultados estão no cartão.' : ''}` : '';
+  return { badge: 'CONSULTAS COMBINADAS', title: partial || invalidSources ? 'Consulta incompleta' : 'Resultados das consultas', rows: limitRows(rows, 'consultas'), invalidSources, attentionReply };
+}
+
 module.exports = {
+  buildConversationCard,
   buildToolCard,
   buildBriefingCard,
   forgePendingByProject,

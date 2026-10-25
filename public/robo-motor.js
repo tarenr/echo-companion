@@ -920,17 +920,19 @@
     }
 
     // Peças de um lugar do guarda-roupa, com a transição de entrada e saída. anchor separa, na cabeça, as
-    // peças presas ao robô ('robo') dos chapéus ('chapeu', o padrão)
-    drawWorn(slot, n, t, anchor) {
+    // peças presas ao robô ('robo') dos chapéus ('chapeu', o padrão). part escolhe a parte da peça: 'draw' (o
+    // padrão) ou 'over' (a parte do rosto que passa por cima do contorno da cabeça); peça sem a parte fica de fora
+    drawWorn(slot, n, t, anchor, part = 'draw') {
       const x = this.x;
       for (const layer of this.wardrobe.layers(slot, n)) {
         if (layer.alpha <= 0.01) continue;
         if (anchor && (layer.item.anchor || 'chapeu') !== anchor) continue;
+        if (typeof layer.item[part] !== 'function') continue;
         x.save();
         x.globalAlpha *= layer.alpha;
         x.translate(0, layer.dy);
         x.scale(layer.scale, layer.scale);
-        layer.item.draw(x, t, layer.a);
+        layer.item[part](x, t, layer.a);
         x.restore();
       }
     }
@@ -1131,6 +1133,15 @@
       // Óculos: no mesmo referencial do rosto, então ficam sempre sobre os olhos
       at(pts.visor, () => this.drawWorn('rosto', n, t));
 
+      x.restore();
+
+      // Parte "por cima" das peças do rosto (ex.: pontas da barba): mesmo referencial, mas recortada só nas
+      // laterais da cabeça, então pode passar da borda de baixo e cair sobre o pescoço sem vazar para os lados
+      x.save();
+      x.beginPath();
+      x.rect(-HEAD.hw, HEAD.cy - HEAD.hh, HEAD.hw * 2, HEAD.hh * 2 + 60);
+      x.clip();
+      at(pts.visor, () => this.drawWorn('rosto', n, t, undefined, 'over'));
       x.restore();
     }
 

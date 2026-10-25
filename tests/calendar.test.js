@@ -31,6 +31,30 @@ function fixture() {
   return { service, store, api, calls, auth, existing, advance: amount => { now += amount; } };
 }
 
+test('conversa de tarefas do Forge passa sem sessão; agenda combinada mantém CSRF', async () => {
+  const { auth, service } = fixture();
+  const { converse } = createCalendarRoutes({ auth, service, requirePin: (_, __, next) => next() });
+  let passed = 0, status;
+  const res = { status: code => { status = code; return res; }, json: value => value };
+  await converse({ body: { message: 'Veja tarefas do Forge e backups' }, headers: {} }, res, () => passed++);
+  assert.equal(passed, 1);
+  await converse({ body: { message: 'Veja tarefas do Forge e minha agenda' }, headers: {} }, res, () => passed++);
+  assert.equal(passed, 1);
+  // Pedido composto é explicado localmente antes de qualquer consulta ou sessão.
+  assert.equal(status, undefined);
+});
+
+test('agenda combinada é recusada antes de ler compromissos ou chamar o modelo', async () => {
+  const { auth, service } = fixture();
+  service.list = () => { throw new Error('Não deveria consultar'); };
+  const { converse } = createCalendarRoutes({ auth, service, requirePin: (_, __, next) => next() });
+  let body;
+  await converse({ body: { message: 'Veja minha agenda de hoje e os backups' }, headers: {} },
+    { json: value => { body = value; } }, () => { throw new Error('Não deveria enviar ao modelo'); });
+  assert.equal(body.source, 'google-calendar');
+  assert.match(body.reply, /separad/i);
+});
+
 test('store cifra tokens e snapshots, autentica conteúdo e preserva arquivo corrompido', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'echo-calendar-test-'));
   try {

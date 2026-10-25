@@ -98,7 +98,8 @@
       btn.dataset.set = id;
       btn.addEventListener('click', () => {
         prefs.auto = false;
-        Roupas.toggleSet(robo.wardrobe, id, now());
+        // Trocar de fantasia tira tudo da anterior; acessórios avulsos podem ser postos depois
+        Roupas.toggleSet(robo.wardrobe, id, now(), { exclusive: true });
         prefs.roupa = robo.wardrobe.outfit();
         save();
         render();
@@ -170,12 +171,21 @@
       }
     }
 
+    // Roupa guardada sem as peças "em teste" (lab): elas só aparecem na página de testes, então não voltam aqui
+    function savedOutfit() {
+      const outfit = {};
+      for (const [slot, id] of Object.entries(prefs.roupa || {})) {
+        outfit[slot] = id && Roupas.ITEMS[id] && !Roupas.ITEMS[id].lab ? id : null;
+      }
+      return outfit;
+    }
+
     // Roupa do dia (automático) ou a escolhida
     let wardrobeDay = '';
     const dayKey = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     function applyWardrobe() {
       if (prefs.auto) robo.wardrobe.set(Roupas.seasonFor(new Date()).outfit, now());
-      else robo.wardrobe.set(prefs.roupa || {}, now());
+      else robo.wardrobe.set(savedOutfit(), now());
       wardrobeDay = dayKey(new Date());
       render();
     }

@@ -278,9 +278,94 @@ test('fantasia de esqueleto do Echo: entra no guarda-roupa e desenha sem erro', 
   const { ITEMS, SETS, shape, Wardrobe } = context.RoboRoupas;
   assert.deepEqual([...SETS.esqueleto.items], ['sorrisoCosturado', 'ternoEsqueleto']);
   assert.equal(SETS.esqueleto.owner, 'echo');
-  assert.equal(Object.keys(ITEMS).length, 13, '11 peças comuns + 2 do Echo');
+  assert.deepEqual([...SETS.kratos.items], ['guerraEspartana', 'armaduraKratos']);
+  assert.equal(SETS.kratos.owner, 'echo');
+  assert.deepEqual([...SETS.tyrael.items], ['capuzTyrael', 'rostoSombras', 'armaduraTyrael']);
+  assert.equal(SETS.tyrael.owner, 'echo');
+  assert.deepEqual([...SETS.darthVader.items], ['capaceteVader', 'mascaraVader', 'armaduraVader']);
+  assert.equal(SETS.darthVader.owner, 'echo');
+  assert.deepEqual([...SETS.ti.items], ['headsetTI', 'oculosProgramador', 'moletomNerd']);
+  assert.equal(SETS.ti.owner, 'echo');
+  assert.deepEqual([...SETS.yusuke.items], ['cabeloYusuke', 'uniformeYusuke']);
+  assert.equal(SETS.yusuke.owner, 'echo');
+  assert.deepEqual([...SETS.toguro.items], ['cabeloToguro', 'oculosToguro', 'paletoToguro']);
+  assert.equal(SETS.toguro.owner, 'echo');
+  assert.deepEqual([...SETS.medico.items], ['espelhoMedico', 'jalecoMedico']);
+  assert.equal(SETS.medico.owner, 'echo');
+  assert.equal(SETS.medico.lab, true);
+  assert.deepEqual([...SETS.mago.items], ['chapeuMago', 'tunicaMago']);
+  assert.equal(SETS.mago.owner, 'echo');
+  assert.equal(SETS.mago.lab, true);
+  assert.deepEqual([...SETS.mecanico.items], ['boneMecanico', 'macacaoMecanico']);
+  assert.equal(SETS.mecanico.owner, 'echo');
+  assert.equal(SETS.mecanico.lab, true);
+  assert.deepEqual([...SETS.adivinho.items], ['turbanteAdivinho', 'trajeAdivinho']);
+  assert.equal(SETS.adivinho.owner, 'echo');
+  assert.equal(SETS.adivinho.lab, true);
+  assert.deepEqual([...SETS.bombeiro.items], ['capaceteBombeiro', 'jaquetaBombeiro']);
+  assert.equal(SETS.bombeiro.owner, 'echo');
+  assert.equal(SETS.bombeiro.lab, true);
+  assert.deepEqual([...SETS.arqueologo.items], ['chapeuArqueologo', 'coleteArqueologo']);
+  assert.equal(SETS.arqueologo.owner, 'echo');
+  assert.equal(SETS.arqueologo.lab, true);
+  assert.deepEqual([...SETS.psicologo.items], ['oculosPsicologo', 'cardigaPsicologo']);
+  assert.equal(SETS.psicologo.owner, 'echo');
+  assert.equal(SETS.psicologo.lab, true);
+  assert.deepEqual([...SETS.detetive.items], ['chapeuSherlock', 'sobretudoSherlock']);
+  assert.equal(SETS.detetive.owner, 'echo');
+  assert.equal(SETS.detetive.lab, true);
+  assert.deepEqual([...SETS.hacker.items], ['capuzHacker', 'moletomHacker']);
+  assert.equal(SETS.hacker.owner, 'echo');
+  assert.equal(SETS.hacker.lab, true);
+  assert.equal(Object.keys(ITEMS).length, 47, '11 peças comuns + 36 do Echo');
   assert.equal(ITEMS.sorrisoCosturado.slot, 'rosto');
   assert.equal(ITEMS.ternoEsqueleto.slot, 'pescoco');
+  assert.equal(ITEMS.guerraEspartana.slot, 'rosto');
+  assert.equal(ITEMS.armaduraKratos.slot, 'pescoco');
+  assert.equal(ITEMS.capuzTyrael.slot, 'cabeca');
+  assert.equal(ITEMS.capuzTyrael.anchor, undefined, 'o capuz fica na base dos chapéus, para acompanhar um pouco o rosto');
+  // O capuz volta da base dos chapéus para as coordenadas do robô com a mesma base do motor
+  assert.match(read('robo-motor.js'), /const HAT = \{ x: 18, y: HEAD\.cy - HEAD\.hh \+ 2 \};/);
+  assert.match(read('robo-motor.js'), /const HEAD = \{ cy: -151, hw: 91, hh: 65 \};/);
+  assert.match(read('robo-roupas-echo.js'), /const HAT_BASE = \{ x: 18, y: -151 - 65 \+ 2 \};/);
+  assert.equal(ITEMS.rostoSombras.slot, 'rosto');
+  assert.equal(ITEMS.armaduraTyrael.slot, 'pescoco');
+  assert.equal(typeof ITEMS.armaduraTyrael.back, 'function', 'as asas de luz ficam atrás do corpo');
+  assert.equal(ITEMS.capaceteVader.slot, 'cabeca');
+  assert.equal(ITEMS.capaceteVader.anchor, undefined, 'o capacete fica na base dos chapéus, como o capuz');
+  assert.equal(ITEMS.mascaraVader.slot, 'rosto');
+  assert.equal(ITEMS.armaduraVader.slot, 'pescoco');
+  assert.equal(typeof ITEMS.armaduraVader.back, 'function', 'a capa fica atrás do corpo');
+  assert.equal(ITEMS.headsetTI.slot, 'cabeca');
+  assert.equal(ITEMS.headsetTI.anchor, undefined, 'o headset fica na base dos chapéus');
+  assert.equal(ITEMS.oculosProgramador.slot, 'rosto');
+  assert.equal(ITEMS.moletomNerd.slot, 'pescoco');
+  assert.equal(ITEMS.cabeloYusuke.slot, 'cabeca');
+  assert.equal(ITEMS.cabeloYusuke.anchor, undefined, 'o cabelo do Yusuke fica na base dos chapéus');
+  assert.equal(ITEMS.uniformeYusuke.slot, 'pescoco');
+  assert.equal(ITEMS.cabeloToguro.slot, 'cabeca');
+  assert.equal(ITEMS.cabeloToguro.anchor, undefined, 'o cabelo do Toguro fica na base dos chapéus');
+  assert.equal(ITEMS.oculosToguro.slot, 'rosto');
+  assert.equal(ITEMS.paletoToguro.slot, 'pescoco');
+  assert.equal(ITEMS.jalecoMedico.slot, 'pescoco');
+  assert.equal(ITEMS.espelhoMedico.slot, 'cabeca');
+  assert.equal(ITEMS.espelhoMedico.anchor, undefined, 'o espelho fica na base dos chapéus');
+  assert.equal(ITEMS.chapeuMago.slot, 'cabeca');
+  assert.equal(ITEMS.tunicaMago.slot, 'pescoco');
+  assert.equal(ITEMS.boneMecanico.slot, 'cabeca');
+  assert.equal(ITEMS.macacaoMecanico.slot, 'pescoco');
+  assert.equal(ITEMS.turbanteAdivinho.slot, 'cabeca');
+  assert.equal(ITEMS.trajeAdivinho.slot, 'pescoco');
+  assert.equal(ITEMS.capaceteBombeiro.slot, 'cabeca');
+  assert.equal(ITEMS.jaquetaBombeiro.slot, 'pescoco');
+  assert.equal(ITEMS.chapeuArqueologo.slot, 'cabeca');
+  assert.equal(ITEMS.coleteArqueologo.slot, 'pescoco');
+  assert.equal(ITEMS.oculosPsicologo.slot, 'rosto');
+  assert.equal(ITEMS.cardigaPsicologo.slot, 'pescoco');
+  assert.equal(ITEMS.chapeuSherlock.slot, 'cabeca');
+  assert.equal(ITEMS.sobretudoSherlock.slot, 'pescoco');
+  assert.equal(ITEMS.capuzHacker.slot, 'cabeca');
+  assert.equal(ITEMS.moletomHacker.slot, 'pescoco');
 
   // Todas as peças desenham num contexto de mentira sem erro
   const noop = () => {};
@@ -290,6 +375,7 @@ test('fantasia de esqueleto do Echo: entra no guarda-roupa e desenha sem erro', 
   });
   for (const [id, it] of Object.entries(ITEMS)) {
     assert.doesNotThrow(() => it.draw(ctx, 0, it.springs.map(() => 0.2)), id);
+    if (it.back) assert.doesNotThrow(() => it.back(ctx, 1.5, it.springs.map(() => 0.2)), `${id}: trás`);
   }
 
   // O terno e o vestido usam as mesmas medidas do corpo do motor
@@ -301,6 +387,11 @@ test('fantasia de esqueleto do Echo: entra no guarda-roupa e desenha sem erro', 
   w.wear('sorrisoCosturado', 0);
   w.wear('ternoEsqueleto', 0);
   assert.deepEqual({ ...w.outfit() }, { cabeca: null, rosto: 'sorrisoCosturado', pescoco: 'ternoEsqueleto' }, 'veste as duas juntas');
+
+  const wk = new Wardrobe();
+  wk.wear('guerraEspartana', 0);
+  wk.wear('armaduraKratos', 0);
+  assert.deepEqual({ ...wk.outfit() }, { cabeca: null, rosto: 'guerraEspartana', pescoco: 'armaduraKratos' }, 'veste as duas de Kratos juntas');
 
   // A página de testes do Echo carrega a fantasia dele, entre as peças comuns e o robo.js
   const lab = read('robo.html');
@@ -405,4 +496,42 @@ test('mãos: a mão que acena substitui a de baixo do mesmo lado (nunca três m�
   assert.equal(count(1, 1), 2, 'idem do outro lado');
   assert.equal(count(0, -1), 1, 'só acenando: uma mão');
   assert.equal(count(0, 0), 0, 'parado: nenhuma');
+});
+
+test('rosto por cima: o motor desenha a parte "over" só das peças que têm, e a barba do Kratos usa', () => {
+  const source = read('robo-motor.js');
+  const sig = "drawWorn(slot, n, t, anchor, part = 'draw') {";
+  const fn = extractFunction(source, sig).replace(sig, "function drawWorn(slot, n, t, anchor, part = 'draw') {");
+  const calls = [];
+  const item = (id, withOver) => ({
+    draw: () => calls.push(id + ':draw'),
+    ...(withOver ? { over: () => calls.push(id + ':over') } : {})
+  });
+  const layers = [{ alpha: 1, dy: 0, scale: 1, a: [], item: item('barba', true) }, { alpha: 1, dy: 0, scale: 1, a: [], item: item('oculos', false) }];
+  const x = { save() {}, restore() {}, translate() {}, scale() {}, globalAlpha: 1 };
+  const context = vm.createContext({});
+  vm.runInContext(`${fn}\nthis.run = (self, part) => drawWorn.call(self, 'rosto', 0, 0, undefined, part);`, context);
+  const self = { x, wardrobe: { layers: () => layers } };
+  context.run(self);
+  assert.deepEqual(calls.splice(0), ['barba:draw', 'oculos:draw'], 'sem part: só a parte normal de todas');
+  context.run(self, 'over');
+  assert.deepEqual(calls.splice(0), ['barba:over'], 'over: só quem tem a parte por cima');
+
+  // drawFace chama a parte por cima depois de soltar o recorte da cabeça, com recorte só nas laterais
+  const face = extractFunction(source, 'drawFace(f, n, t) {');
+  const over = face.indexOf("this.drawWorn('rosto', n, t, undefined, 'over')");
+  assert.ok(over > face.indexOf("this.drawWorn('rosto', n, t));"), 'por cima vem depois do rosto normal');
+  assert.match(face.slice(0, over), /x\.rect\(-HEAD\.hw, HEAD\.cy - HEAD\.hh, HEAD\.hw \* 2,/);
+
+  // A barba do Kratos é a parte por cima; a marca fica na parte normal
+  const roupas = vm.createContext({});
+  vm.runInContext(read('robo-roupas.js'), roupas);
+  vm.runInContext(read('robo-roupas-echo.js'), roupas);
+  const { guerraEspartana } = roupas.RoboRoupas.ITEMS;
+  assert.equal(typeof guerraEspartana.over, 'function');
+  const ctx = new Proxy({}, {
+    get: (target, key) => (key in target ? target[key] : () => ({ addColorStop() {} })),
+    set: (target, key, value) => { target[key] = value; return true; }
+  });
+  assert.doesNotThrow(() => guerraEspartana.over(ctx, 0, []));
 });

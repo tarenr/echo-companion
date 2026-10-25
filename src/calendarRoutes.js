@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const express = require('express');
+const { isCalendarIntent, routeConversation } = require('./conversationRouting');
 
 function cookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').map(piece => piece.trim().split('=')).filter(([key, value]) => key && value));
@@ -83,12 +84,15 @@ function createCalendarRoutes({ auth, service, requirePin }) {
 
   async function converse(req, res, next) {
     const message = typeof req.body?.message === 'string' ? req.body.message.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^echo[, ]+/, '') : '';
+    if (routeConversation(message).mixedCalendar) {
+      return res.json({ ok: true, source: 'google-calendar', reply: 'Consulte a agenda separadamente das outras fontes. Nesta fase, os compromissos não são enviados à IA para cruzamento com os projetos.' });
+    }
     const confirm = /^(confirmar agenda|confirmo agenda|confirmar|confirmo)$/.test(message);
     const cancel = /^(cancelar agenda|cancelo agenda|cancelar|cancelo)$/.test(message);
     const choice = message.match(/^evento\s+(\d+)$/);
     const scope = /^(somente esta ocorrencia|so esta ocorrencia|serie inteira)$/.test(message);
     const consultation = /^(?:qual|quais|como|consultar|consulte|ver|veja|mostrar|mostre|listar|liste|tenho|o que).*(?:agenda|compromissos?)/.test(message);
-    const agendaIntent = /\b(agenda|compromisso|compromissos|reuniao|evento|dentista|tarefa|tarefas|lembrete|lembretes)\b|^(marque|marcar|agende|agendar|remarque|anote|anotar|grave|gravar)\b/.test(message);
+    const agendaIntent = isCalendarIntent(message) || /^(marcar|agendar|anotar|gravar)\b/.test(message);
     if (!confirm && !cancel && !choice && !scope && !consultation && !agendaIntent) return next();
     return validSession(req, res, async () => {
       try {

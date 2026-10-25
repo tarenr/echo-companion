@@ -217,10 +217,11 @@
     },
     {
       id: 'guarda-roupa', title: 'Guarda-roupa',
-      // Fantasias do personagem, peças comuns e as dele; a Luna não tem o automático (nem a data de teste)
+      // Fantasias do personagem, peças comuns e as dele, inclusive as "em teste" (lab), que só aparecem aqui;
+      // a Luna não tem o automático (nem a data de teste)
       items: [
-        ...Roupas.setsFor(PERSONAGEM).map(([id, set]) => ['fantasia:' + id, set.label]),
-        ...Roupas.itemsFor(PERSONAGEM).map(([id, it]) => [id, it.label]),
+        ...Roupas.setsFor(PERSONAGEM, { lab: true }).map(([id, set]) => ['fantasia:' + id, set.label]),
+        ...Roupas.itemsFor(PERSONAGEM, { lab: true }).map(([id, it]) => [id, it.label]),
         ...(IS_ECHO ? [['auto', 'Automático (estação)']] : []),
         ['tirar', 'Tirar tudo']
       ],

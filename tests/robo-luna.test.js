@@ -69,19 +69,23 @@ test('fantasias exclusivas: Echo só vê o esqueleto, Luna só a boneca de pano;
   const luna = load({ owner: 'luna' }).Roupas;
   const ids = entries => [...entries.map(([id]) => id)];
 
-  assert.deepEqual(ids(echo.setsFor('echo')), ['esqueleto']);
+  assert.deepEqual(ids(echo.setsFor('echo')), ['esqueleto', 'kratos', 'tyrael', 'darthVader', 'ti']);
   assert.deepEqual(ids(luna.setsFor('luna')), ['bonecaDePano']);
   assert.deepEqual(ids(echo.setsFor('luna')), [], 'a página do Echo não tem a fantasia da Luna');
   assert.deepEqual(ids(luna.setsFor('echo')), [], 'a página da Luna não tem a fantasia do Echo');
 
   const common = ['festa', 'gorro', 'coroa', 'bruxa', 'noel', 'coelho', 'laco', 'abobora', 'oculosEscuros', 'oculosRedondos', 'cachecol'];
-  assert.deepEqual(ids(echo.itemsFor('echo')), [...common, 'sorrisoCosturado', 'ternoEsqueleto']);
+  assert.deepEqual(ids(echo.itemsFor('echo')), [...common, 'sorrisoCosturado', 'ternoEsqueleto', 'guerraEspartana', 'armaduraKratos', 'capuzTyrael', 'rostoSombras', 'armaduraTyrael', 'capaceteVader', 'mascaraVader', 'armaduraVader', 'headsetTI', 'oculosProgramador', 'moletomNerd']);
   assert.deepEqual(ids(luna.itemsFor('luna')), [...common, 'cabeloRuivo', 'cabeloPreto', 'cabeloCacheado', 'rostoBoneca', 'vestidoRetalhos']);
 
   // Mesmo com os dois arquivos juntos, o filtro por dono separa
   const both = load({ owners: ['echo', 'luna'] });
   assert.ok(!ids(both.Roupas.itemsFor('echo')).includes('cabeloRuivo'), 'peça da Luna fora da lista do Echo');
   assert.ok(!ids(both.Roupas.itemsFor('luna')).includes('ternoEsqueleto'), 'peça do Echo fora da lista da Luna');
+  assert.ok(!ids(both.Roupas.itemsFor('luna')).includes('armaduraKratos'), 'peça do Echo fora da lista da Luna');
+  assert.ok(!ids(both.Roupas.itemsFor('luna')).includes('capuzTyrael'), 'peça do Echo fora da lista da Luna');
+  assert.ok(!ids(both.Roupas.itemsFor('luna')).includes('mascaraVader'), 'peça do Echo fora da lista da Luna');
+  assert.ok(!ids(both.Roupas.itemsFor('luna')).includes('moletomNerd'), 'peça do Echo fora da lista da Luna');
 });
 
 test('fantasia como conjunto: veste e tira todas as peças; a da Luna devolve o laço ao tirar', () => {
@@ -222,6 +226,53 @@ const find = (sheet, cls) => {
   return card.children.find(c => c.className.split(' ').includes(cls));
 };
 
+test('troca de fantasia: no Echo tira tudo da anterior; acessório depois continua; sem exclusive, mistura', async () => {
+  // Página de testes (sem exclusive): a máscara e o capacete do Vader continuam com a fantasia de Kratos
+  const { Roupas } = loadSheet('echo');
+  const w = new Roupas.Wardrobe();
+  Roupas.toggleSet(w, 'darthVader', 0);
+  Roupas.toggleSet(w, 'kratos', 1000);
+  assert.deepEqual({ ...w.outfit() }, { cabeca: 'capaceteVader', rosto: 'guerraEspartana', pescoco: 'armaduraKratos' });
+
+  // Folha do Echo (exclusive): nada do Vader sobra; um acessório posto depois continua
+  const echo = loadSheet('echo');
+  const sheet = echo.sandbox.RoboPersonagem.create({
+    robo: echo.robo, owner: 'echo', storageKey: 'echo_personagem',
+    defaults: { auto: false, roupa: {}, sensor: false }, features: {}
+  });
+  const buttons = find(sheet.element, 'character-items').children;
+  const byLabel = label => buttons.find(b => b.textContent === label);
+  await byLabel('Fantasia de Darth Vader').click();
+  await byLabel('Fantasia de Kratos').click();
+  assert.deepEqual({ ...echo.robo.wardrobe.outfit() }, { cabeca: null, rosto: 'guerraEspartana', pescoco: 'armaduraKratos' }, 'sem o capacete do Vader');
+  await byLabel('Gorro').click();
+  assert.equal(echo.robo.wardrobe.outfit().cabeca, 'gorro', 'acessório depois da fantasia');
+  assert.equal(echo.robo.wardrobe.outfit().pescoco, 'armaduraKratos');
+});
+
+test('fantasias em teste (lab): só na página de testes; o Echo não lista nem veste da roupa guardada', () => {
+  const { Roupas } = loadSheet('echo');
+  const ids = entries => entries.map(([id]) => id);
+  for (const id of ['yusuke', 'toguro', 'medico', 'mago', 'mecanico', 'adivinho', 'bombeiro', 'arqueologo', 'psicologo', 'detetive', 'hacker']) {
+    assert.equal(Roupas.SETS[id].lab, true, `${id} em teste`);
+    assert.ok(Roupas.SETS[id].items.every(it => Roupas.ITEMS[it].lab), `${id}: peças em teste`);
+    assert.ok(!ids(Roupas.setsFor('echo')).includes(id), `${id} fora do Echo`);
+    assert.ok(ids(Roupas.setsFor('echo', { lab: true })).includes(id), `${id} na página de testes`);
+  }
+  assert.ok(!ids(Roupas.itemsFor('echo')).includes('cabeloYusuke'), 'peça em teste fora do Echo');
+  assert.ok(ids(Roupas.itemsFor('echo', { lab: true })).includes('cabeloYusuke'), 'peça em teste na página de testes');
+  // A página de testes pede as peças em teste
+  assert.match(read('robo.js'), /setsFor\(PERSONAGEM, \{ lab: true \}\)/);
+  assert.match(read('robo.js'), /itemsFor\(PERSONAGEM, \{ lab: true \}\)/);
+  // Roupa guardada com peça em teste: o Echo volta só com o resto
+  const echo = loadSheet('echo', { auto: false, roupa: { cabeca: 'cabeloYusuke', rosto: 'oculosEscuros', pescoco: 'uniformeYusuke' } });
+  echo.sandbox.RoboPersonagem.create({
+    robo: echo.robo, owner: 'echo', storageKey: 'echo_personagem',
+    defaults: { auto: false, roupa: {}, sensor: false }, features: {}
+  });
+  assert.deepEqual([...echo.robo.wardrobe.ids()], ['oculosEscuros']);
+});
+
 test('folha Personagem compartilhada: botões por personagem; Luna começa de fantasia e volta ao laço', async () => {
   // Echo: tudo como antes, mais a fantasia de esqueleto em primeiro
   const echo = loadSheet('echo');
@@ -234,7 +285,12 @@ test('folha Personagem compartilhada: botões por personagem; Luna começa de fa
   });
   const itemsE = labels(find(sheetE.element, 'character-items'));
   assert.equal(itemsE[0], 'Fantasia de esqueleto');
-  assert.equal(itemsE.length, 1 + 13, 'fantasia + 11 comuns + 2 do Echo');
+  assert.equal(itemsE[1], 'Fantasia de Kratos');
+  assert.equal(itemsE[2], 'Fantasia de Tyrael');
+  assert.equal(itemsE[3], 'Fantasia de Darth Vader');
+  assert.equal(itemsE[4], 'Fantasia de TI');
+  assert.equal(itemsE.length, 5 + 24, '5 fantasias + 11 comuns + 13 do Echo (as em teste ficam de fora)');
+  assert.ok(!itemsE.includes('Fantasia de Yusuke'), 'fantasia em teste fora do Echo');
   assert.ok(!itemsE.includes('Cabelo ruivo'), 'sem peças da Luna');
   assert.deepEqual(labels(find(sheetE.element, 'character-actions')), ['Automático (estação)', 'Tirar tudo', 'Janela flutuante', 'Sensor de movimento']);
   assert.equal(sheetE.prefs.auto, true, 'Echo continua no automático');

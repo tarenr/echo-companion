@@ -8,6 +8,7 @@ const weather = require('./connectors/weather');
 const memory = require('./memory');
 const navigation = require('./navigation');
 const pcMonitor = require('./connectors/pcMonitor');
+const { createToolPolicy } = require('./toolPolicy');
 
 const functionDeclarations = [
   {
@@ -230,7 +231,15 @@ const functionDeclarations = [
   }
 ];
 
-async function executeTool(name, args = {}, { allowMemoryWrite = false } = {}) {
+const readPolicy = createToolPolicy(functionDeclarations);
+
+async function executeTool(name, args = {}, { allowMemoryWrite = false, readOnly = false, logExecution = true, signal } = {}) {
+  if (signal?.aborted) return { ok: false, erro: 'Consulta encerrada.' };
+  if (readOnly) {
+    const validation = readPolicy.validate(name, args);
+    if (!validation.ok) return validation;
+    args = validation.args;
+  }
   let result = null;
 
   try {
@@ -343,7 +352,7 @@ async function executeTool(name, args = {}, { allowMemoryWrite = false } = {}) {
 
   // Registra no histórico de ferramentas
   try {
-    if (['gravar_preferencia_usuario', 'consultar_preferencias_usuario'].includes(name)) return result;
+    if (!logExecution || signal?.aborted || ['gravar_preferencia_usuario', 'consultar_preferencias_usuario'].includes(name)) return result;
     await memory.logToolExecution(name, args, result);
   } catch (_) {}
 
@@ -351,6 +360,7 @@ async function executeTool(name, args = {}, { allowMemoryWrite = false } = {}) {
 }
 
 module.exports = {
+  readPolicy,
   functionDeclarations,
   executeTool
 };

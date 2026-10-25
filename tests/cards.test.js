@@ -14,6 +14,41 @@ const { buildToolCard, buildBriefingCard, forgePendingByProject } = require('../
 
 const NOW = new Date(2026, 9, 5, 12, 0, 0); // 05/10/2026
 
+test('consulta combinada identifica fontes, falhas e recorte sem converter ausência em sucesso', () => {
+  const { buildConversationCard } = require('../src/cards');
+  const card = buildConversationCard({ partial: true, results: [
+    { name: 'consultar_projetos_forge', result: { ok: true, total_projetos: 2, projetos: [] } },
+    { name: 'consultar_status_backup_forge', result: { ok: false, erro: 'offline' } },
+    { name: 'consultar_metricas_blog', result: { ok: true, truncated: true, trecho: 'nao interpretar como objeto completo' } }
+  ] });
+  assert.match(card.title, /incompleta/i);
+  assert.equal(card.rows.length, 3);
+  assert.match(card.rows[0].label, /Forge/i);
+  assert.equal(card.rows[1].status, 'error');
+  assert.equal(card.rows[2].status, 'warn');
+  assert.doesNotMatch(card.rows[2].value, /nao interpretar/);
+});
+
+test('cartão malformado de uma fonte preserva as demais e marca parcial', () => {
+  const card = require('../src/cards').buildConversationCard({ results: [
+    { name: 'consultar_projetos_forge', result: { ok: true, projetos: {} } },
+    { name: 'consultar_tarefas_forge', result: { ok: true, tarefas: [], pendentes: 0 } }
+  ] });
+  assert.equal(card.invalidSources, true);
+  assert.match(card.title, /incompleta/i);
+  assert.equal(card.rows[0].status, 'error');
+  assert.match(card.rows[1].value, /0 pendentes/);
+});
+
+test('aviso de backup ausente aparece no resumo e na fala verificada', () => {
+  const card = require('../src/cards').buildConversationCard({ results: [
+    { name: 'consultar_status_backup_forge', result: { ok: true, tarefa_agendada: { ultimo_resultado: 'Sucesso (código 0)', ultima_execucao: '2026-10-20T20:00:00' }, restic_snapshots: {} } }
+  ] });
+  assert.equal(card.rows[0].status, 'warn');
+  assert.match(card.rows[0].value, /Restic projetos/);
+  assert.match(card.attentionReply, /atenção.*Restic projetos/i);
+});
+
 function rowByLabel(card, label) {
   return card.rows.find(r => r.label === label);
 }

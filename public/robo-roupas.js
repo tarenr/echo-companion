@@ -579,12 +579,14 @@
   // robo-roupas-luna.js; cada página carrega só o arquivo do seu personagem.
   const SETS = {};
 
-  function itemsFor(owner) {
-    return Object.entries(ITEMS).filter(([, it]) => !it.owner || it.owner === owner);
+  // Peças e fantasias "em teste" (lab: true) só aparecem na página de testes, que pede { lab: true }; o Echo e a
+  // Luna só recebem depois de aprovadas (quando a marca sai)
+  function itemsFor(owner, { lab = false } = {}) {
+    return Object.entries(ITEMS).filter(([, it]) => (!it.owner || it.owner === owner) && (lab || !it.lab));
   }
 
-  function setsFor(owner) {
-    return Object.entries(SETS).filter(([, set]) => set.owner === owner);
+  function setsFor(owner, { lab = false } = {}) {
+    return Object.entries(SETS).filter(([, set]) => set.owner === owner && (lab || !set.lab));
   }
 
   function setWorn(wardrobe, id) {
@@ -601,13 +603,19 @@
 
   // Veste a fantasia inteira; se ela já estiver vestida, tira as peças dela e veste o que ela pede no
   // lugar (afterRemove, ex.: o laço da Luna)
-  function toggleSet(wardrobe, id, now) {
+  // exclusive: ao vestir, tira antes as peças dos lugares que a fantasia não usa (nada sobra da anterior, como a
+  // máscara do Vader). O Echo usa assim; a página de testes continua misturando. Peças avulsas depois continuam livres.
+  function toggleSet(wardrobe, id, now, { exclusive = false } = {}) {
     const set = SETS[id];
     if (!set) return false;
     if (setWorn(wardrobe, id)) {
       for (const item of set.items) wardrobe.remove(ITEMS[item].slot, now);
       for (const item of Object.values(set.afterRemove || {})) wardrobe.wear(item, now);
     } else {
+      if (exclusive) {
+        const used = new Set(set.items.map(item => ITEMS[item].slot));
+        for (const slot of SLOTS) if (!used.has(slot)) wardrobe.remove(slot, now);
+      }
       for (const item of set.items) wardrobe.wear(item, now);
     }
     return true;
