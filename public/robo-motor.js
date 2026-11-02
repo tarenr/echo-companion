@@ -97,6 +97,9 @@
   const BODY = { cy: -39, hw: 50, bottomHw: 40, hh: 39, r: 24 };
   const TAG = { x: -61, y: -206, w: 58, h: 40 };
   const HAT = { x: 18, y: HEAD.cy - HEAD.hh + 2 };   // base dos chapéus: alto da cabeça, à direita da etiqueta
+  const MATRIX_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/{}$#*+=!?:|';
+  const PROPULSION_NOZZLES = [-30, -15, 0, 15, 30];  // 5 jatos independentes sob a base do corpo do Echo
+  const MAX_PROPULSION_PARTICLES = 75;
 
   // Escala para o canto mais alto (quadro da cabeça ou canto da cabeça) caber no quadro quando o robô inclina
   // em torno do meio do corpo (PIVOT). Sem inclinação dá 1.
@@ -399,6 +402,7 @@
       this.last = NOW();
       this.accessory = 'none';
       this.confetti = [];
+      this.propulsion = [];
       this.speaking = false;
 
       this.wardrobe = new Roupas.Wardrobe();
@@ -421,7 +425,7 @@
       this.setSize(280);
     }
 
-    // Tamanho na tela em CSS px; o desenho continua em coordenadas de 280 × 280, só muda a escala
+    // Tamanho na tela em CSS px; no Echo o quadro vertical reserva espaço abaixo de GROUND para os 3 jatos Matrix
     setSize(size) {
       const cssSize = Math.round(size);
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -432,8 +436,15 @@
       this.c.height = Math.round(cssSize * dpr);
       this.c.style.width = `${cssSize}px`;
       this.c.style.height = `${cssSize}px`;
-      const k = (cssSize / 280) * dpr;
-      this.x.setTransform(k, 0, 0, k, 0, 0);
+      if (this.theme.id === 'echo') {
+        const k = (cssSize / 310) * dpr;
+        const offX = (this.c.width - 280 * k) / 2;
+        const offY = -10 * k;
+        this.x.setTransform(k, 0, 0, k, offX, offY);
+      } else {
+        const k = (cssSize / 280) * dpr;
+        this.x.setTransform(k, 0, 0, k, 0, 0);
+      }
     }
 
     setAccessory(name, duration = 0) {
@@ -734,6 +745,10 @@
 
     // Região tocada, em coordenadas do quadro de 280 (desfaz o recuo e a posição do robô)
     regionAt(px, py) {
+      if (this.theme.id === 'echo') {
+        px = 140 + (px - 140) * (310 / 280);
+        py = 10 + py * (310 / 280);
+      }
       const zx = 140 + (px - 140) / this.fz, zy = GROUND + (py - GROUND) / this.fz;
       const rx = zx - this.base.x, ry = zy - this.base.y, f = this.face;
       const hatTop = this.wardrobe.headroom();
@@ -850,6 +865,7 @@
 
       for (const p of this.parts) p.age += dt;
       this.parts = this.parts.filter(p => p.age < p.life);
+      if (this.theme.id === 'echo') this.stepPropulsion(dt || 0.016);
     }
 
     spawnSleepZ() {
@@ -871,7 +887,7 @@
     draw() {
       const x = this.x, s = this.s, n = NOW();
       const t = (n - this.t0) / 1000;
-      x.clearRect(0, 0, 280, 280);
+      x.clearRect(-30, -20, 340, 360);
 
       x.save();
       // Recuo para chapéu alto: escala pela base, para o robô continuar no chão
@@ -883,7 +899,7 @@
       const hover = this.state === 'sleeping' ? 0 : Math.sin(t * 1.6) * 3;
       const bx = 140 + s.ox * R, by = GROUND + s.oy * R + hover;
       this.base = { x: bx, y: by };
-      this.drawGlow(by);
+      if (this.theme.id !== 'echo') this.drawGlow(by);
 
       const f = faceFrame(s.yaw, s.pitch, s.roll);
       this.face = f;
@@ -898,6 +914,7 @@
 
       // Partes de trás das peças (ex.: cabelo comprido) ficam atrás do corpo e da cabeça
       this.drawWornBack(n);
+      if (this.theme.id === 'echo') this.drawPropulsion();
       this.drawBody(t);
       this.drawWorn('pescoco', n, t);
       this.drawHead();
@@ -952,7 +969,7 @@
       }
     }
 
-    // Brilho de flutuação no chão: menor e mais fraco quando o robô sobe
+    // Brilho de flutuação no chão (usado pela Luna): menor e mais fraco quando o robô sobe
     drawGlow(by) {
       const x = this.x;
       const rise = clamp((GROUND - by) / 40, 0, 1);
@@ -968,6 +985,78 @@
       x.beginPath();
       x.arc(0, 0, w, 0, Math.PI * 2);
       x.fill();
+      x.restore();
+    }
+
+    // Propulsão Matrix cadente do Echo: 5 jatos independentes (-30, -15, 0, 15, 30) presos à base do corpo
+    spawnPropulsionParticle(initialProgress = 0) {
+      const nozzle = PROPULSION_NOZZLES[Math.floor(Math.random() * PROPULSION_NOZZLES.length)] + (Math.random() - 0.5) * 3.5;
+      const maxLife = 0.52 + Math.random() * 0.22;
+      const vy = 56 + Math.random() * 32;
+      const life = initialProgress * maxLife;
+      return {
+        x: nozzle,
+        y: 2 + Math.random() * 3 + vy * life,
+        vy,
+        char: MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)],
+        life,
+        maxLife,
+        size: 12 + Math.random() * 3
+      };
+    }
+
+    stepPropulsion(dt) {
+      for (let i = this.propulsion.length - 1; i >= 0; i--) {
+        const p = this.propulsion[i];
+        p.life += dt;
+        p.y += p.vy * dt;
+        if (Math.random() < 0.08) {
+          p.char = MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
+        }
+        if (p.life >= p.maxLife) {
+          this.propulsion.splice(i, 1);
+        }
+      }
+      if (this.state !== 'sleeping') {
+        const empty = this.propulsion.length === 0;
+        while (this.propulsion.length < MAX_PROPULSION_PARTICLES) {
+          const seed = empty ? (this.propulsion.length / MAX_PROPULSION_PARTICLES) * 0.92 : 0;
+          this.propulsion.push(this.spawnPropulsionParticle(seed));
+        }
+      }
+    }
+
+    drawPropulsion() {
+      if (this.propulsion.length === 0 && this.state !== 'sleeping') {
+        this.stepPropulsion(0.016);
+      }
+      if (this.propulsion.length === 0) return;
+      const x = this.x;
+      x.save();
+      x.textAlign = 'center';
+      x.textBaseline = 'top';
+      for (let i = 0; i < this.propulsion.length; i++) {
+        const p = this.propulsion[i];
+        const progress = p.life / p.maxLife;
+        if (progress >= 1) continue;
+        x.font = `bold ${Math.round(p.size)}px "Courier New", Consolas, monospace`;
+        if (progress < 0.16) {
+          const a = progress / 0.16;
+          x.fillStyle = `rgba(255, 255, 255, ${a})`;
+          x.shadowColor = '#00ff66';
+          x.shadowBlur = 3;
+        } else if (progress < 0.55) {
+          const a = 1.0 - (progress - 0.16) * 0.35;
+          x.fillStyle = `rgba(0, 255, 102, ${a})`;
+          x.shadowColor = '#00ff66';
+          x.shadowBlur = 2;
+        } else {
+          const a = Math.max(0, (1.0 - progress) / 0.45 * 0.75);
+          x.fillStyle = `rgba(34, 197, 94, ${a})`;
+          x.shadowBlur = 0;
+        }
+        x.fillText(p.char, p.x, p.y);
+      }
       x.restore();
     }
 

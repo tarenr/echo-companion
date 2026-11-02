@@ -317,7 +317,7 @@ test('fantasia de esqueleto do Echo: entra no guarda-roupa e desenha sem erro', 
   assert.deepEqual([...SETS.hacker.items], ['capuzHacker', 'moletomHacker']);
   assert.equal(SETS.hacker.owner, 'echo');
   assert.equal(SETS.hacker.lab, true);
-  assert.equal(Object.keys(ITEMS).length, 47, '11 peças comuns + 36 do Echo');
+  assert.equal(Object.keys(ITEMS).length, 50, '11 peças comuns + 39 do Echo');
   assert.equal(ITEMS.sorrisoCosturado.slot, 'rosto');
   assert.equal(ITEMS.ternoEsqueleto.slot, 'pescoco');
   assert.equal(ITEMS.guerraEspartana.slot, 'rosto');

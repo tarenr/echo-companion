@@ -1,4 +1,4 @@
-// Robô // peças exclusivas do Echo: as fantasias de esqueleto, de Kratos, de Tyrael, de Darth Vader, de TI, de Yusuke,
+// Robô // peças exclusivas do Echo: as fantasias de esqueleto, de Kratos, de Tyrael, de Darth Vader, de TI, de Ranger Branco, de Yusuke,
 // de Toguro (sem braços) e os 9 figurinos da Vida de TI (médico, mago, mecânico, adivinho, bombeiro, arqueólogo, psicólogo, detetive e hacker, em teste)
 // Carregado depois de robo-roupas.js pelo Echo e pela página de testes do Echo (/robo.html); a Luna não carrega.
 // Esqueleto: desenho próprio no estilo de fantasia de Halloween (sorriso costurado, terno listrado e gravata de
@@ -3199,4 +3199,877 @@
     label: 'Fantasia de hacker', owner: 'echo', lab: true,
     items: ['capuzHacker', 'moletomHacker']
   };
+
+  // ========================================================
+  // FANTASIA DE RANGER BRANCO (inspirada no Ranger Branco de Mighty Morphin Power Rangers)
+  // ========================================================
+  // Desenhada do zero para o corpo do robô, pelas referências do usuário (02/11/2026), sem logotipo oficial.
+  // Protótipo e prancha: estrategia-nerd/conteudo-planejado/videos-echo/power-rangers-the-movie-snes/
+  // figurino-ranger-branco-v1/. Bloco próprio: os nomes de dentro (INK, GOLD, vgrad...) não colidem com os
+  // deste arquivo. O protetor de boca é fechado de propósito (pedido do usuário: de máscara, a boca não mexe).
+  {
+    const INK = '#141c28';
+    const PEARL = ['#ffffff', '#f1f4f8', '#d6dde7', '#b3bfcd'];
+    const GOLD = ['#fff3c4', '#f4cf5a', '#d39a2b', '#8a5a12'];
+    const GOLD_EDGE = '#5b3a08';
+    const SILVER = ['#ffffff', '#dfe4eb', '#a9b3c1', '#727d8c'];
+    const BLACK = ['#3a414e', '#15181f', '#050608'];
+    const STRIPE = '#101319';
+    const TIGER_STRIPE = '#5c6f8c';
+
+    const HEAD = { cy: -151, hw: 91, hh: 65, n: 3.6 };
+    const VISOR = { x: -75, y: -27, w: 150, h: 54, r: 27 };
+    // Contorno dourado da tela do peito: a tela do motor (rr(-30, -64, 60, 36, 10)) com 3 px de folga
+    const SCREEN_FRAME = { x: -33, y: -67, w: 66, h: 42, r: 12 };
+
+    function vgrad(x, y0, y1, stops) {
+      const g = x.createLinearGradient(0, y0, 0, y1);
+      stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c));
+      return g;
+    }
+
+    function lgrad(x, x0, y0, x1, y1, stops) {
+      const g = x.createLinearGradient(x0, y0, x1, y1);
+      stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c));
+      return g;
+    }
+
+    // Mesmo contorno da cabeça do motor (superelipse de 72 pontos), sem beginPath
+    function headOutline(x, hw = HEAD.hw, hh = HEAD.hh) {
+      for (let i = 0; i <= 72; i++) {
+        const a = i / 72 * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+        const px = hw * Math.sign(ca) * Math.pow(Math.abs(ca), 2 / HEAD.n);
+        const py = HEAD.cy + hh * Math.sign(sa) * Math.pow(Math.abs(sa), 2 / HEAD.n);
+        i ? x.lineTo(px, py) : x.moveTo(px, py);
+      }
+      x.closePath();
+    }
+
+    // ========================================================
+    // CAPACETE (cabeça, preso ao robô)
+    // ========================================================
+    // Casco um pouco maior que a cabeça: aparece como a borda grossa do capacete
+    function drawHelmetBack(x) {
+      x.save();
+      x.beginPath();
+      headOutline(x, HEAD.hw + 7, HEAD.hh + 7);
+      x.fillStyle = vgrad(x, -223, -79, ['#eef2f6', '#bcc6d3', '#7f8c9e']);
+      x.fill();
+      x.strokeStyle = INK;
+      x.lineWidth = 2;
+      x.stroke();
+      x.restore();
+    }
+
+    // Contorno da cabeça de novo: a pintura do rosto cobre a metade de dentro do traço do motor
+    function drawHelmetFront(x) {
+      x.save();
+      x.beginPath();
+      headOutline(x);
+      x.strokeStyle = INK;
+      x.lineWidth = 1.8;
+      x.stroke();
+      x.restore();
+    }
+
+    // ========================================================
+    // MÁSCARA (rosto, no referencial do visor)
+    // ========================================================
+    // Tudo menos o visor
+    function faceHoles(x) {
+      x.beginPath();
+      x.rect(-200, -200, 400, 400);
+      roundRectOutline(x, VISOR);
+    }
+
+    function drawPearlFace(x) {
+      x.save();
+      faceHoles(x);
+      x.fillStyle = vgrad(x, -70, 62, PEARL);
+      x.fill('evenodd');
+      // Volume do capacete: luz no alto à esquerda, sombra nas bordas
+      const g = x.createRadialGradient(-24, -34, 12, 0, -4, 132);
+      g.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+      g.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+      g.addColorStop(1, 'rgba(84, 99, 122, 0.5)');
+      faceHoles(x);
+      x.fillStyle = g;
+      x.fill('evenodd');
+      // Reflexo do plástico no canto de cima, fora da testa dourada
+      x.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      x.beginPath();
+      x.ellipse(-70, -54, 10, 3, -0.6, 0, Math.PI * 2);
+      x.fill();
+      x.restore();
+    }
+
+    // Linhas de junção entre a frente e as laterais do capacete (sulco escuro + filete de luz)
+    function drawSeams(x) {
+      x.save();
+      x.lineCap = 'round';
+      for (const sd of [-1, 1]) {
+        x.strokeStyle = 'rgba(66, 79, 99, 0.6)';
+        x.lineWidth = 1.7;
+        x.beginPath();
+        x.moveTo(sd * 82, -40);
+        x.quadraticCurveTo(sd * 89, 8, sd * 74, 58);
+        x.stroke();
+        x.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        x.lineWidth = 1.1;
+        x.beginPath();
+        x.moveTo(sd * 79.5, -38);
+        x.quadraticCurveTo(sd * 86.5, 8, sd * 71.5, 56);
+        x.stroke();
+      }
+      x.restore();
+    }
+
+    // Três fendas curvas em cada bochecha (como na referência): sulco preto de pontas redondas e luz embaixo
+    function drawCheekSlots(x) {
+      x.save();
+      x.lineCap = 'round';
+      for (const sd of [-1, 1]) {
+        for (const [y, outerY] of [[33, 22], [43, 34], [53, 46]]) {
+          x.strokeStyle = STRIPE;
+          x.lineWidth = 4.8;
+          x.beginPath();
+          x.moveTo(sd * 31, y);
+          x.quadraticCurveTo(sd * 56, y + 4, sd * 77, outerY);
+          x.stroke();
+          x.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+          x.lineWidth = 1;
+          x.beginPath();
+          x.moveTo(sd * 32, y + 3.6);
+          x.quadraticCurveTo(sd * 56, y + 7.6, sd * 76, outerY + 3.6);
+          x.stroke();
+        }
+      }
+      x.restore();
+    }
+
+    function mouthPlatePath(x) {
+      x.beginPath();
+      x.moveTo(-26, 24);
+      x.lineTo(26, 24);
+      x.lineTo(20, 57);
+      x.quadraticCurveTo(19, 61, 14, 61);
+      x.lineTo(-14, 61);
+      x.quadraticCurveTo(-19, 61, -20, 57);
+      x.closePath();
+    }
+
+    // Protetor de boca prateado e fechado: barra no alto e painel rebaixado com barras verticais
+    function drawMouthPlate(x) {
+      x.save();
+      mouthPlatePath(x);
+      x.fillStyle = vgrad(x, 24, 61, SILVER);
+      x.fill();
+      x.strokeStyle = INK;
+      x.lineWidth = 1.6;
+      x.stroke();
+      // Barra de cima
+      x.strokeStyle = 'rgba(40, 50, 64, 0.8)';
+      x.lineWidth = 1.3;
+      x.beginPath();
+      x.moveTo(-23, 31);
+      x.lineTo(23, 31);
+      x.stroke();
+      x.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      x.lineWidth = 1;
+      x.beginPath();
+      x.moveTo(-22, 26.5);
+      x.lineTo(22, 26.5);
+      x.stroke();
+      // Painel rebaixado, afinando para baixo como o protetor
+      x.beginPath();
+      x.moveTo(-17, 34);
+      x.lineTo(17, 34);
+      x.lineTo(14, 56);
+      x.lineTo(-14, 56);
+      x.closePath();
+      x.fillStyle = vgrad(x, 34, 56, ['#c9d1dc', '#8d98a8']);
+      x.fill();
+      x.strokeStyle = 'rgba(20, 28, 40, 0.7)';
+      x.lineWidth = 1.2;
+      x.stroke();
+      // Barras verticais: sulco escuro e filete de luz ao lado
+      x.lineCap = 'round';
+      for (const [top, bottom] of [[-8.5, -7], [0, 0], [8.5, 7]]) {
+        x.strokeStyle = '#0c1016';
+        x.lineWidth = 2;
+        x.beginPath();
+        x.moveTo(top, 36);
+        x.lineTo(bottom, 54);
+        x.stroke();
+        x.strokeStyle = 'rgba(240, 244, 250, 0.7)';
+        x.lineWidth = 0.8;
+        x.beginPath();
+        x.moveTo(top + 1.6, 36);
+        x.lineTo(bottom + 1.6, 54);
+        x.stroke();
+      }
+      x.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      x.beginPath();
+      x.ellipse(-15, 28.5, 5, 1.3, -0.1, 0, Math.PI * 2);
+      x.fill();
+      x.restore();
+    }
+
+    // Testa dourada em forma de escudo: larga sobre o visor, afinando até o alto; os cantos de cima ficam brancos
+    function goldMaskPath(x) {
+      x.beginPath();
+      x.moveTo(-83, 4);
+      x.bezierCurveTo(-86, -22, -80, -38, -60, -50);
+      x.bezierCurveTo(-42, -60, -20, -64, 0, -72);
+      x.bezierCurveTo(20, -64, 42, -60, 60, -50);
+      x.bezierCurveTo(80, -38, 86, -22, 83, 4);
+      x.lineTo(0, 6);
+      x.closePath();
+    }
+
+    // Barra com gancho na ponta (as listras da testa da referência); desenhada à direita e espelhada por sd
+    function hookBar(x, sd, y, len) {
+      x.save();
+      x.scale(sd, 1);
+      x.beginPath();
+      x.moveTo(6, y - 1.9);
+      x.quadraticCurveTo(len * 0.55, y - 2.8, len, y + 0.2);
+      x.lineTo(len + 5, y - 5.5);
+      x.lineTo(len + 2.5, y + 5.2);
+      x.quadraticCurveTo(len * 0.55, y + 3.6, 6, y + 1.9);
+      x.closePath();
+      x.fill();
+      x.restore();
+    }
+
+    // Testa dourada com a espinha central em ponta, três pares de barras com gancho e ganchos nos cantos
+    function drawGoldMask(x) {
+      x.save();
+      x.beginPath();
+      x.rect(-200, -200, 400, 400);
+      roundRectOutline(x, VISOR);
+      x.clip('evenodd');
+
+      goldMaskPath(x);
+      x.fillStyle = vgrad(x, -74, 6, GOLD);
+      x.fill();
+      // Brilho metálico atravessando a máscara
+      x.fillStyle = lgrad(x, -85, -60, 60, 10, ['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.38)', 'rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.18)']);
+      x.fill();
+      x.strokeStyle = GOLD_EDGE;
+      x.lineWidth = 2;
+      x.stroke();
+
+      x.save();
+      goldMaskPath(x);
+      x.clip();
+      x.fillStyle = STRIPE;
+      // Espinha central, do alto até uma ponta acima do nariz
+      x.beginPath();
+      x.moveTo(-4.2, -80);
+      x.lineTo(4.2, -80);
+      x.lineTo(4.2, -42);
+      x.lineTo(0, -34);
+      x.lineTo(-4.2, -42);
+      x.closePath();
+      x.fill();
+      for (const sd of [-1, 1]) {
+        hookBar(x, sd, -59, 20);
+        hookBar(x, sd, -50, 36);
+        hookBar(x, sd, -41, 52);
+      }
+      // Bisel: luz na borda de cima
+      x.strokeStyle = 'rgba(255, 248, 220, 0.85)';
+      x.lineWidth = 1.4;
+      x.beginPath();
+      x.moveTo(-81, -18);
+      x.bezierCurveTo(-82, -34, -76, -44, -58, -54);
+      x.bezierCurveTo(-40, -63, -20, -66, 0, -74);
+      x.stroke();
+      x.restore();
+
+      // Reflexos no ouro
+      x.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      x.beginPath();
+      x.ellipse(-44, -46, 10, 2.4, -0.45, 0, Math.PI * 2);
+      x.fill();
+      x.restore();
+
+      // Ganchos nos cantos de cima, no branco do capacete
+      x.save();
+      x.fillStyle = STRIPE;
+      for (const sd of [-1, 1]) {
+        x.save();
+        x.scale(sd, 1);
+        x.beginPath();
+        x.moveTo(60, -55);
+        x.lineTo(71, -61);
+        x.lineTo(75, -67);
+        x.lineTo(76, -58);
+        x.lineTo(62, -51);
+        x.closePath();
+        x.fill();
+        x.restore();
+      }
+      x.restore();
+    }
+
+    // Borda dourada do visor (moldura com bisel, como a da tela do peito do Tyrael)
+    function drawVisorRim(x) {
+      x.save();
+      x.beginPath();
+      roundRectOutline(x, VISOR);
+      x.strokeStyle = GOLD_EDGE;
+      x.lineWidth = 5.5;
+      x.stroke();
+      x.strokeStyle = vgrad(x, -27, 27, GOLD);
+      x.lineWidth = 3.4;
+      x.stroke();
+      x.strokeStyle = 'rgba(255, 250, 225, 0.75)';
+      x.lineWidth = 1;
+      x.beginPath();
+      x.moveTo(-48, -28.3);
+      x.lineTo(48, -28.3);
+      x.stroke();
+      x.restore();
+    }
+
+    // "Nariz" pentagonal dourado descendo da testa até o meio do visor, com a aresta no meio (metade da direita
+    // na sombra); estreito o bastante para não cobrir os olhos acesos (em ±35,5)
+    function drawNose(x) {
+      x.save();
+      x.beginPath();
+      x.moveTo(-18, -30);
+      x.lineTo(18, -30);
+      x.lineTo(16, -3);
+      x.lineTo(0, 15);
+      x.lineTo(-16, -3);
+      x.closePath();
+      x.fillStyle = vgrad(x, -30, 15, GOLD);
+      x.fill();
+      x.strokeStyle = GOLD_EDGE;
+      x.lineWidth = 1.6;
+      x.stroke();
+      x.beginPath();
+      x.moveTo(0, -30);
+      x.lineTo(18, -30);
+      x.lineTo(16, -3);
+      x.lineTo(0, 15);
+      x.closePath();
+      x.fillStyle = 'rgba(110, 70, 8, 0.32)';
+      x.fill();
+      x.strokeStyle = 'rgba(255, 246, 210, 0.85)';
+      x.lineWidth = 1.1;
+      x.beginPath();
+      x.moveTo(-0.6, -29);
+      x.lineTo(-0.6, 13);
+      x.moveTo(-16.5, -28.5);
+      x.lineTo(-15, -4);
+      x.stroke();
+      x.restore();
+    }
+
+    // Amêndoas brancas nos cantos de dentro do visor, ao lado do nariz (como na referência)
+    function drawAlmonds(x) {
+      x.save();
+      for (const sd of [-1, 1]) {
+        x.save();
+        x.scale(sd, 1);
+        x.beginPath();
+        x.moveTo(20, -14.5);
+        x.quadraticCurveTo(30, -26, 44, -24.5);
+        x.quadraticCurveTo(33, -15, 20, -14.5);
+        x.closePath();
+        x.fillStyle = vgrad(x, -26, -14, ['#ffffff', '#dde3eb', '#a9b4c3']);
+        x.fill();
+        x.strokeStyle = INK;
+        x.lineWidth = 1.2;
+        x.stroke();
+        x.restore();
+      }
+      x.restore();
+    }
+
+    function drawMask(x) {
+      drawPearlFace(x);
+      drawSeams(x);
+      drawCheekSlots(x);
+      drawMouthPlate(x);
+      drawGoldMask(x);
+      drawVisorRim(x);
+      drawAlmonds(x);
+      drawNose(x);
+    }
+
+    // ========================================================
+    // TRAJE (pescoço, origem na base do corpo)
+    // ========================================================
+    function drawSuitBody(x) {
+      x.save();
+      clipBodyWithoutScreen(x);
+      x.fillStyle = vgrad(x, -78, 0, PEARL);
+      x.fillRect(-60, -82, 120, 84);
+      x.fillStyle = lgrad(x, -50, 0, 50, 0, ['rgba(84, 99, 122, 0.4)', 'rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0)', 'rgba(84, 99, 122, 0.45)']);
+      x.fillRect(-60, -82, 120, 84);
+      x.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      x.beginPath();
+      x.ellipse(-45, -40, 2.6, 9, 0.18, 0, Math.PI * 2);
+      x.fill();
+      x.restore();
+    }
+
+    // Colete: centro preto do peito até acima do cinto, com degraus nas laterais da barra de baixo
+    function vestPath(x) {
+      x.beginPath();
+      x.moveTo(-40, -82);
+      x.lineTo(40, -82);
+      x.lineTo(40, -23);
+      x.lineTo(31, -23);
+      x.lineTo(31, -16);
+      x.lineTo(-31, -16);
+      x.lineTo(-31, -23);
+      x.lineTo(-40, -23);
+      x.closePath();
+    }
+
+    function drawVest(x) {
+      x.save();
+      clipBodyWithoutScreen(x);
+      vestPath(x);
+      x.fillStyle = vgrad(x, -82, -16, BLACK);
+      x.fill();
+      // Brilho fosco do tecido preto
+      x.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      x.beginPath();
+      x.ellipse(-30, -60, 5, 14, 0.1, 0, Math.PI * 2);
+      x.fill();
+      // Borda escura discreta (sem filete dourado: o dourado do peito fica só no contorno da tela)
+      x.strokeStyle = 'rgba(20, 28, 40, 0.8)';
+      x.lineWidth = 1.2;
+      x.stroke();
+      x.restore();
+    }
+
+    // Filete dourado vertical (com borda escura) entre y0 e y1, no meio do peito
+    function goldStem(x, y0, y1) {
+      x.lineCap = 'butt';
+      x.strokeStyle = GOLD_EDGE;
+      x.lineWidth = 4.4;
+      x.beginPath();
+      x.moveTo(0, y0);
+      x.lineTo(0, y1);
+      x.stroke();
+      x.strokeStyle = vgrad(x, y0, y1, GOLD);
+      x.lineWidth = 2.6;
+      x.stroke();
+    }
+
+    // A tela >_ fica no lugar do símbolo do peito: contorno dourado acompanhando a própria tela, e o filete
+    // vertical da referência ligando a gola ao contorno e o contorno à barra de baixo do colete
+    function drawScreenFrame(x) {
+      const F = SCREEN_FRAME;
+      x.save();
+      clipBodyWithoutScreen(x);
+      goldStem(x, -80, F.y);
+      goldStem(x, F.y + F.h, -16);
+      x.restore();
+
+      x.save();
+      x.beginPath();
+      roundRectOutline(x, F);
+      x.strokeStyle = GOLD_EDGE;
+      x.lineWidth = 5.4;
+      x.stroke();
+      x.strokeStyle = vgrad(x, F.y, F.y + F.h, GOLD);
+      x.lineWidth = 3.4;
+      x.stroke();
+      // Bisel: luz no alto, sombra embaixo
+      x.lineCap = 'round';
+      x.strokeStyle = 'rgba(255, 250, 225, 0.85)';
+      x.lineWidth = 1;
+      x.beginPath();
+      x.moveTo(F.x + F.r, F.y - 1.2);
+      x.lineTo(F.x + F.w - F.r, F.y - 1.2);
+      x.stroke();
+      x.strokeStyle = 'rgba(70, 45, 5, 0.55)';
+      x.beginPath();
+      x.moveTo(F.x + F.r, F.y + F.h + 1.2);
+      x.lineTo(F.x + F.w - F.r, F.y + F.h + 1.2);
+      x.stroke();
+      x.restore();
+    }
+
+    // Ombreira toda dourada, chata em cima, com frisos, assentada no ombro (cobre o canto arredondado do corpo
+    // sem encostar na moldura da tela); sd = -1 (esquerda de quem olha) ou 1
+    function drawPauldron(x, sd) {
+      x.save();
+      x.scale(sd, 1);
+      x.beginPath();
+      x.moveTo(34, -81);
+      x.lineTo(76, -81);
+      x.lineTo(81, -75);
+      x.lineTo(79, -61);
+      x.lineTo(70, -54);
+      x.lineTo(47, -55);
+      x.lineTo(39, -66);
+      x.closePath();
+      x.fillStyle = vgrad(x, -81, -54, GOLD);
+      x.fill();
+      x.fillStyle = lgrad(x, 34, -81, 81, -54, ['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0)']);
+      x.fill();
+      x.strokeStyle = INK;
+      x.lineWidth = 1.6;
+      x.stroke();
+      // Frisos horizontais
+      for (const y of [-74, -67]) {
+        x.strokeStyle = GOLD_EDGE;
+        x.lineWidth = 1.3;
+        x.beginPath();
+        x.moveTo(39, y);
+        x.lineTo(79.5, y);
+        x.stroke();
+        x.strokeStyle = 'rgba(255, 248, 215, 0.85)';
+        x.lineWidth = 0.9;
+        x.beginPath();
+        x.moveTo(39.5, y + 1.4);
+        x.lineTo(79, y + 1.4);
+        x.stroke();
+      }
+      x.strokeStyle = 'rgba(255, 252, 230, 0.9)';
+      x.lineWidth = 1.2;
+      x.beginPath();
+      x.moveTo(36, -79.6);
+      x.lineTo(75.5, -79.6);
+      x.stroke();
+      // Sombra que a ombreira faz no corpo, embaixo
+      x.strokeStyle = 'rgba(20, 28, 40, 0.35)';
+      x.lineWidth = 2;
+      x.beginPath();
+      x.moveTo(48, -52.5);
+      x.lineTo(69, -51.5);
+      x.stroke();
+      x.restore();
+    }
+
+    // Espiral quadrada da fivela (desenho geométrico, centrada em cx, cy)
+    function squareSpiral(x, cx, cy, s) {
+      x.beginPath();
+      x.moveTo(cx - s, cy + s);
+      x.lineTo(cx - s, cy - s);
+      x.lineTo(cx + s, cy - s);
+      x.lineTo(cx + s, cy + s * 0.5);
+      x.lineTo(cx - s * 0.4, cy + s * 0.5);
+      x.lineTo(cx - s * 0.4, cy - s * 0.3);
+      x.lineTo(cx + s * 0.35, cy - s * 0.3);
+      x.stroke();
+    }
+
+    function drawBelt(x) {
+      x.save();
+      x.beginPath();
+      bodyOutline(x);
+      x.clip();
+      x.fillStyle = vgrad(x, -14, -6, ['#f7f9fb', '#c3ccd8', '#8b97a8']);
+      x.fillRect(-60, -14, 120, 8);
+      x.strokeStyle = INK;
+      x.lineWidth = 1.2;
+      x.beginPath();
+      x.moveTo(-60, -14);
+      x.lineTo(60, -14);
+      x.moveTo(-60, -6);
+      x.lineTo(60, -6);
+      x.stroke();
+      x.restore();
+
+      // Fivela dourada com duas espirais quadradas
+      x.save();
+      x.beginPath();
+      roundRectOutline(x, { x: -13, y: -15.5, w: 26, h: 11, r: 2 });
+      x.fillStyle = vgrad(x, -15.5, -4.5, GOLD);
+      x.fill();
+      x.strokeStyle = GOLD_EDGE;
+      x.lineWidth = 1.2;
+      x.stroke();
+      x.strokeStyle = STRIPE;
+      x.lineWidth = 1.1;
+      x.lineJoin = 'miter';
+      squareSpiral(x, -6, -10, 3.4);
+      squareSpiral(x, 6, -10, 3.4);
+      x.restore();
+    }
+
+    // Cabeça de tigre da Saba, de frente (pela referência em desenho): capuz preto com listras douradas,
+    // rosto branco com orelhas, listras pretas na testa, olhos vermelhos e boca aberta com presas.
+    // Origem no meio do rosto; vai de y -16 (pontas das orelhas) a y 12 (queixo)
+    function drawTigerFace(x) {
+      x.save();
+      // Capuz atrás do rosto
+      x.beginPath();
+      x.moveTo(-15.5, 12);
+      x.lineTo(-16, -6);
+      x.quadraticCurveTo(-15, -15, -8, -17.5);
+      x.quadraticCurveTo(0, -19.5, 8, -17.5);
+      x.quadraticCurveTo(15, -15, 16, -6);
+      x.lineTo(15.5, 12);
+      x.closePath();
+      x.fillStyle = vgrad(x, -19, 12, ['#2b313c', '#0b0d12']);
+      x.fill();
+      x.strokeStyle = INK;
+      x.lineWidth = 1.2;
+      x.stroke();
+      x.strokeStyle = '#e0b43c';
+      x.lineWidth = 1.6;
+      x.lineCap = 'round';
+      for (const sd of [-1, 1]) {
+        for (const y of [-6, 0, 6]) {
+          x.beginPath();
+          x.moveTo(sd * 15, y);
+          x.lineTo(sd * 12.5, y + 2.4);
+          x.stroke();
+        }
+      }
+
+      // Rosto com orelhas
+      x.beginPath();
+      x.moveTo(-12, 4);
+      x.lineTo(-12.5, -7);
+      x.lineTo(-12, -14);
+      x.lineTo(-7.5, -16);
+      x.lineTo(-5, -11.5);
+      x.quadraticCurveTo(0, -13, 5, -11.5);
+      x.lineTo(7.5, -16);
+      x.lineTo(12, -14);
+      x.lineTo(12.5, -7);
+      x.lineTo(12, 4);
+      x.quadraticCurveTo(8, 11.5, 0, 12);
+      x.quadraticCurveTo(-8, 11.5, -12, 4);
+      x.closePath();
+      x.fillStyle = vgrad(x, -16, 12, ['#ffffff', '#eef1f5', '#b9c2ce']);
+      x.fill();
+      x.strokeStyle = INK;
+      x.lineWidth = 1.3;
+      x.stroke();
+      // Dentro das orelhas
+      x.fillStyle = '#9aa4b2';
+      for (const sd of [-1, 1]) {
+        x.beginPath();
+        x.moveTo(sd * 10.8, -13.2);
+        x.lineTo(sd * 8, -14.4);
+        x.lineTo(sd * 9.8, -10.6);
+        x.closePath();
+        x.fill();
+      }
+
+      // Listras pretas da testa: traço no alto e divisa embaixo; duas listras em cada bochecha
+      x.fillStyle = STRIPE;
+      x.fillRect(-4.5, -10.2, 9, 1.8);
+      x.beginPath();
+      x.moveTo(-7, -7.6);
+      x.lineTo(0, -4.4);
+      x.lineTo(7, -7.6);
+      x.lineTo(7, -5.8);
+      x.lineTo(0, -2.6);
+      x.lineTo(-7, -5.8);
+      x.closePath();
+      x.fill();
+      x.strokeStyle = STRIPE;
+      x.lineWidth = 1.2;
+      for (const sd of [-1, 1]) {
+        x.beginPath();
+        x.moveTo(sd * 12.2, -1);
+        x.lineTo(sd * 9.4, 0.4);
+        x.moveTo(sd * 12, 2.6);
+        x.lineTo(sd * 9.6, 3.6);
+        x.stroke();
+      }
+
+      // Olhos vermelhos em amêndoa, inclinados para o nariz
+      for (const sd of [-1, 1]) {
+        x.save();
+        x.scale(sd, 1);
+        x.beginPath();
+        x.moveTo(2.2, -1.6);
+        x.lineTo(8.8, -4.2);
+        x.lineTo(7.8, -1.2);
+        x.lineTo(3, -0.4);
+        x.closePath();
+        x.fillStyle = '#e3241b';
+        x.fill();
+        x.strokeStyle = STRIPE;
+        x.lineWidth = 0.9;
+        x.stroke();
+        x.fillStyle = '#ffd2c4';
+        x.beginPath();
+        x.arc(6.6, -2.6, 0.7, 0, Math.PI * 2);
+        x.fill();
+        x.restore();
+      }
+
+      // Focinho e nariz
+      x.strokeStyle = 'rgba(80, 92, 110, 0.8)';
+      x.lineWidth = 0.9;
+      x.beginPath();
+      x.moveTo(-2.6, -2);
+      x.quadraticCurveTo(-3.8, 2.2, -2.4, 3);
+      x.moveTo(2.6, -2);
+      x.quadraticCurveTo(3.8, 2.2, 2.4, 3);
+      x.stroke();
+      x.fillStyle = '#5c6676';
+      x.beginPath();
+      x.moveTo(-2.2, 1.4);
+      x.lineTo(2.2, 1.4);
+      x.lineTo(0, 3.4);
+      x.closePath();
+      x.fill();
+
+      // Boca aberta com presas
+      x.beginPath();
+      x.moveTo(-6, 5);
+      x.quadraticCurveTo(0, 3.6, 6, 5);
+      x.quadraticCurveTo(4.6, 10.4, 0, 10.6);
+      x.quadraticCurveTo(-4.6, 10.4, -6, 5);
+      x.closePath();
+      x.fillStyle = '#3a1418';
+      x.fill();
+      x.fillStyle = '#ffffff';
+      for (const [bx, dir] of [[-4.6, 1], [4.6, -1]]) {
+        x.beginPath();
+        x.moveTo(bx, 4.8);
+        x.lineTo(bx + dir * 2.4, 4.6);
+        x.lineTo(bx + dir * 1.1, 8.4);
+        x.closePath();
+        x.fill();
+      }
+      for (const bx of [-2.6, 0, 2.6]) {
+        x.beginPath();
+        x.moveTo(bx - 1, 10.3);
+        x.lineTo(bx + 1, 10.3);
+        x.lineTo(bx, 8.4);
+        x.closePath();
+        x.fill();
+      }
+
+      // Brilho na testa
+      x.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      x.beginPath();
+      x.ellipse(-5.5, -12.2, 2.4, 0.8, -0.2, 0, Math.PI * 2);
+      x.fill();
+      x.restore();
+    }
+
+    // Saba na bainha, pendurada no quadril direito de quem olha, com a cabeça de tigre de frente no alto
+    function drawSabaSheathed(x) {
+      x.save();
+      x.translate(60, -4);
+      x.rotate(-0.12);
+
+      // Bainha curta: eixo +y para baixo; termina pouco abaixo da base do corpo, para não parecer bengala
+      x.beginPath();
+      x.moveTo(-4.6, 0);
+      x.lineTo(4.6, 0);
+      x.lineTo(3.8, 22);
+      x.lineTo(0, 30);
+      x.lineTo(-3.8, 22);
+      x.closePath();
+      x.fillStyle = lgrad(x, -4.6, 0, 4.6, 0, ['#ffffff', '#d7dde6', '#8f9aaa']);
+      x.fill();
+      x.strokeStyle = INK;
+      x.lineWidth = 1.3;
+      x.stroke();
+      // Ponteira dourada
+      x.beginPath();
+      x.moveTo(-3.9, 21);
+      x.lineTo(3.9, 21);
+      x.lineTo(0, 30);
+      x.closePath();
+      x.fillStyle = vgrad(x, 21, 30, GOLD);
+      x.fill();
+      x.strokeStyle = GOLD_EDGE;
+      x.lineWidth = 1;
+      x.stroke();
+
+      // Cabo branco com listras cinza na diagonal (como na foto), da bainha até a cabeça
+      x.beginPath();
+      x.rect(-5, -12, 10, 12);
+      x.fillStyle = lgrad(x, -5, 0, 5, 0, ['#ffffff', '#dfe4eb', '#a3adbb']);
+      x.fill();
+      x.strokeStyle = INK;
+      x.lineWidth = 1.2;
+      x.stroke();
+      x.save();
+      x.beginPath();
+      x.rect(-5, -12, 10, 12);
+      x.clip();
+      x.strokeStyle = '#7f8a99';
+      x.lineWidth = 1.8;
+      for (const y of [-12, -7.5, -3]) {
+        x.beginPath();
+        x.moveTo(-6, y + 3);
+        x.lineTo(6, y);
+        x.stroke();
+      }
+      x.restore();
+      // Dois discos dourados na lateral, ligados por um filete (como na foto)
+      x.strokeStyle = GOLD_EDGE;
+      x.lineWidth = 0.9;
+      x.beginPath();
+      x.moveTo(6.6, -8.5);
+      x.lineTo(7.4, -2.8);
+      x.stroke();
+      for (const [cx, cy, r] of [[6.4, -8.6, 3.2], [7.4, -2.6, 2.1]]) {
+        x.beginPath();
+        x.arc(cx, cy, r, 0, Math.PI * 2);
+        x.fillStyle = vgrad(x, cy - r, cy + r, GOLD);
+        x.fill();
+        x.strokeStyle = GOLD_EDGE;
+        x.stroke();
+        x.fillStyle = 'rgba(255, 252, 230, 0.9)';
+        x.beginPath();
+        x.arc(cx - r * 0.35, cy - r * 0.35, r * 0.3, 0, Math.PI * 2);
+        x.fill();
+      }
+
+      // Cabeça de tigre no alto do cabo
+      x.translate(0, -24);
+      drawTigerFace(x);
+      x.restore();
+    }
+
+    function drawSuit(x) {
+      drawSuitBody(x);
+      drawVest(x);
+      drawScreenFrame(x);
+      drawBelt(x);
+      x.save();
+      x.beginPath();
+      bodyOutline(x);
+      x.strokeStyle = INK;
+      x.lineWidth = 1.8;
+      x.stroke();
+      x.restore();
+      drawPauldron(x, -1);
+      drawPauldron(x, 1);
+      drawSabaSheathed(x);
+    }
+
+    Object.assign(Roupas.ITEMS, {
+      capaceteRangerBranco: {
+        label: 'Capacete do Ranger Branco', slot: 'cabeca', owner: 'echo',
+        anchor: 'robo', top: 8, springs: [], back: drawHelmetBack, draw: drawHelmetFront
+      },
+      mascaraRangerBranco: {
+        label: 'Máscara de tigre do Ranger Branco', slot: 'rosto', owner: 'echo',
+        top: 0, springs: [], draw: drawMask
+      },
+      trajeRangerBranco: {
+        label: 'Traje, colete e Saba do Ranger Branco', slot: 'pescoco', owner: 'echo',
+        top: 0, springs: [], draw: drawSuit
+      }
+    });
+
+    Roupas.SETS.rangerBranco = {
+      label: 'Fantasia de Ranger Branco', owner: 'echo',
+      items: ['capaceteRangerBranco', 'mascaraRangerBranco', 'trajeRangerBranco']
+    };
+  }
 })(typeof window !== 'undefined' ? window : globalThis);

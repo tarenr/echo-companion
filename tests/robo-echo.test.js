@@ -202,3 +202,58 @@ test('robô muito inclinado recua para o quadro da cabeça não sair pelo alto',
   run(3000);
   assert.ok(robo.fz > 0.995, `volta ao normal (${robo.fz.toFixed(3)})`);
 });
+
+test('propulsão Matrix sob o corpo do Echo: 5 jatos cadentes sem corte na borda, pausa dormindo e preserva brilho na Luna', () => {
+  const { motor, canvas, clock } = loadMotor();
+  const echo = new motor.RoboBot(canvas);
+  let glowCalls = 0;
+  const origGlow = echo.drawGlow.bind(echo);
+  echo.drawGlow = (by) => { glowCalls++; origGlow(by); };
+
+  const texts = [];
+  echo.x.fillText = (ch, x, y) => texts.push({ ch, x, y, fill: echo.x.fillStyle });
+
+  clock.now += 16;
+  echo.update();
+  echo.draw();
+
+  assert.equal(glowCalls, 0, 'o Echo usa a propulsão Matrix no lugar do brilho de chão');
+  assert.equal(echo.propulsion.length, 75, '75 partículas ativas nos 5 jatos');
+  assert.ok(texts.length >= 60, 'caracteres Matrix desenhados sob o corpo');
+
+  // Confere os 5 jatos (-30, -15, 0, +15, +30) e que nenhuma partícula ultrapassa o espaço vertical reservado abaixo de GROUND
+  const nozzles = [-30, -15, 0, 15, 30];
+  for (const n of nozzles) {
+    assert.ok(echo.propulsion.some(p => Math.abs(p.x - n) <= 4), `jato em x = ${n} populado`);
+  }
+
+  for (let i = 0; i < 60; i++) {
+    clock.now += 16;
+    echo.update();
+    for (const p of echo.propulsion) {
+      assert.ok(p.y >= 2 && p.y <= 73, `partícula dentro da margem vertical segura (y = ${p.y.toFixed(1)})`);
+    }
+  }
+
+  // Dormindo: para de emitir novas partículas até esvaziar; acordando: religa os propulsores
+  echo.setState('sleeping');
+  for (let i = 0; i < 60; i++) {
+    clock.now += 16;
+    echo.update();
+  }
+  assert.equal(echo.propulsion.length, 0, 'propulsão desliga suavemente ao dormir');
+  echo.setState('idle');
+  clock.now += 16;
+  echo.update();
+  assert.equal(echo.propulsion.length, 75, 'propulsão religa ao acordar');
+
+  // Luna continua com o brilho de chão original e sem propulsão Matrix
+  const luna = new motor.RoboBot(canvas, { theme: motor.THEMES.luna });
+  let lunaGlow = 0;
+  luna.drawGlow = () => { lunaGlow++; };
+  clock.now += 16;
+  luna.update();
+  luna.draw();
+  assert.equal(lunaGlow, 1, 'a Luna mantém o brilho de flutuação no chão');
+  assert.equal(luna.propulsion.length, 0, 'a Luna não usa propulsão Matrix');
+});

@@ -69,13 +69,13 @@ test('fantasias exclusivas: Echo só vê o esqueleto, Luna só a boneca de pano;
   const luna = load({ owner: 'luna' }).Roupas;
   const ids = entries => [...entries.map(([id]) => id)];
 
-  assert.deepEqual(ids(echo.setsFor('echo')), ['esqueleto', 'kratos', 'tyrael', 'darthVader', 'ti']);
+  assert.deepEqual(ids(echo.setsFor('echo')), ['esqueleto', 'kratos', 'tyrael', 'darthVader', 'ti', 'rangerBranco']);
   assert.deepEqual(ids(luna.setsFor('luna')), ['bonecaDePano']);
   assert.deepEqual(ids(echo.setsFor('luna')), [], 'a página do Echo não tem a fantasia da Luna');
   assert.deepEqual(ids(luna.setsFor('echo')), [], 'a página da Luna não tem a fantasia do Echo');
 
   const common = ['festa', 'gorro', 'coroa', 'bruxa', 'noel', 'coelho', 'laco', 'abobora', 'oculosEscuros', 'oculosRedondos', 'cachecol'];
-  assert.deepEqual(ids(echo.itemsFor('echo')), [...common, 'sorrisoCosturado', 'ternoEsqueleto', 'guerraEspartana', 'armaduraKratos', 'capuzTyrael', 'rostoSombras', 'armaduraTyrael', 'capaceteVader', 'mascaraVader', 'armaduraVader', 'headsetTI', 'oculosProgramador', 'moletomNerd']);
+  assert.deepEqual(ids(echo.itemsFor('echo')), [...common, 'sorrisoCosturado', 'ternoEsqueleto', 'guerraEspartana', 'armaduraKratos', 'capuzTyrael', 'rostoSombras', 'armaduraTyrael', 'capaceteVader', 'mascaraVader', 'armaduraVader', 'headsetTI', 'oculosProgramador', 'moletomNerd', 'capaceteRangerBranco', 'mascaraRangerBranco', 'trajeRangerBranco']);
   assert.deepEqual(ids(luna.itemsFor('luna')), [...common, 'cabeloRuivo', 'cabeloPreto', 'cabeloCacheado', 'rostoBoneca', 'vestidoRetalhos']);
 
   // Mesmo com os dois arquivos juntos, o filtro por dono separa
@@ -289,7 +289,8 @@ test('folha Personagem compartilhada: botões por personagem; Luna começa de fa
   assert.equal(itemsE[2], 'Fantasia de Tyrael');
   assert.equal(itemsE[3], 'Fantasia de Darth Vader');
   assert.equal(itemsE[4], 'Fantasia de TI');
-  assert.equal(itemsE.length, 5 + 24, '5 fantasias + 11 comuns + 13 do Echo (as em teste ficam de fora)');
+  assert.equal(itemsE[5], 'Fantasia de Ranger Branco');
+  assert.equal(itemsE.length, 6 + 27, '6 fantasias + 11 comuns + 16 do Echo (as em teste ficam de fora)');
   assert.ok(!itemsE.includes('Fantasia de Yusuke'), 'fantasia em teste fora do Echo');
   assert.ok(!itemsE.includes('Cabelo ruivo'), 'sem peças da Luna');
   assert.deepEqual(labels(find(sheetE.element, 'character-actions')), ['Automático (estação)', 'Tirar tudo', 'Janela flutuante', 'Sensor de movimento']);
