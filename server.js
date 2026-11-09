@@ -103,7 +103,7 @@ try {
 
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 4884;
+const PORT = process.env.PORT || 5020;
 // Sem PIN configurado, o acesso externo fica bloqueado (não há valor padrão)
 const ECHO_PIN = (process.env.ECHO_PIN || '').trim();
 const LUNA_PIN = (process.env.LUNA_PIN || '').trim();
@@ -1675,7 +1675,7 @@ function getLocalWifiIp() {
 const localIp = getLocalWifiIp();
 const accessUrl = `http://${localIp}:${PORT}`;
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '127.0.0.1', () => {
   console.log('\n======================================================');
   console.log('🤖 ECHO // ESTRATÉGIA NERD COMPANION ONLINE!');
   console.log(`📡 Servidor Local ativo na porta: ${PORT}`);

@@ -21,7 +21,7 @@ function matchesProvider(provider, filter) {
   return normalizeName(`${provider.id} ${provider.label}`).includes(normalizeName(filter));
 }
 
-function createMonitor({ fetchImpl = global.fetch, now = Date.now, baseUrl = process.env.NERDOPS_URL || 'http://127.0.0.1:5000', timeoutMs = 2800 } = {}) {
+function createMonitor({ fetchImpl = global.fetch, now = Date.now, baseUrl = process.env.NERDOPS_URL || 'http://127.0.0.1:5030', timeoutMs = 2800 } = {}) {
   async function get(route) {
     const response = await fetchImpl(`${baseUrl}${route}`, { method: 'GET', signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) throw new Error(`Dashboard respondeu HTTP ${response.status}`);

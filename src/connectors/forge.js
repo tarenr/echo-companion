@@ -1,4 +1,4 @@
-const FORGE_URL = process.env.FORGE_URL || 'http://127.0.0.1:4477';
+const FORGE_URL = process.env.FORGE_URL || 'http://127.0.0.1:4000';
 
 /**
  * Consulta a lista de projetos cadastrados no The Forge

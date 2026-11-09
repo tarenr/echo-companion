@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Echo Dispatcher - Bridge universal ultra-rápido para Claude Code, Antigravity e Codex CLI
- * Envia eventos para o servidor local do Echo (porta 4884) e nunca bloqueia os agentes:
+ * Envia eventos para o servidor local do Echo (porta 5020) e nunca bloqueia os agentes:
  * processa cada chamada uma única vez e sempre termina com código 0.
  */
 
@@ -75,7 +75,7 @@ function sendEchoEvent(payload, done) {
   };
   const req = http.request({
     hostname: '127.0.0.1',
-    port: 4884,
+    port: 5020,
     path: '/api/events',
     method: 'POST',
     headers: {

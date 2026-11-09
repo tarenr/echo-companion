@@ -68,7 +68,7 @@ Para verificar a velocidade e entrega de áudio da voz oficial:
 ```bash
 node -e "
 const t0 = Date.now();
-fetch('http://127.0.0.1:4884/api/speak', {
+fetch('http://127.0.0.1:5020/api/speak', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', 'x-echo-pin': 'SEU_PIN' },
   body: JSON.stringify({ text: 'Olá Mestre! Voz padrão ativa e respondendo com fluidez.' })

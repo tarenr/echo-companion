@@ -12,7 +12,7 @@ O Echo atua como um companheiro inteligente de mesa capaz de responder perguntas
 [ Usuário (Voz / Web PWA) ]
               │
               ▼
-   [ Echo Server (4884) ] ── (Gemini TTS: Puck [primário] | Edge Neural: Antonio [fallback])
+   [ Echo Server (5020) ] ── (Gemini TTS: Puck [primário] | Edge Neural: Antonio [fallback])
               │
     ┌─────────┴───────────────────────────────┐
     ▼                                         ▼
@@ -23,7 +23,7 @@ O Echo atua como um companheiro inteligente de mesa capaz de responder perguntas
     ▼                                    - tool_executions
 [ src/tools.js & src/connectors/ ]
     ├── strategyHub.js   ──► MySQL (strategy_hub)
-    ├── forge.js         ──► HTTP API (127.0.0.1:4477)
+    ├── forge.js         ──► HTTP API (127.0.0.1:4000)
     ├── estrategiaNerd.js──► MySQL (estrategia-nerd)
     └── gymOs.js         ──► SQLite (GYM-OS/data/gym-os.sqlite)
 ```
@@ -140,7 +140,7 @@ O Echo foi desenhado para operar como infraestrutura nativa e silenciosa do Wind
 2. **Auto-Recuperação e Resiliência**:
    - `<RestartOnFailure>`: Intervalo de 1 minuto (`PT1M`) e 10 contagens (`Count: 10`). Caso o processo seja encerrado por qualquer motivo imprevisto, o Windows restaura o serviço automaticamente.
    - `<ExecutionTimeLimit>`: Configurado como `PT0S` (sem timeout de 72 horas).
-   - `<MultipleInstancesPolicy>`: `IgnoreNew` (evita duplicidade de instâncias disputando a porta 4884).
+   - `<MultipleInstancesPolicy>`: `IgnoreNew` (evita duplicidade de instâncias disputando a porta 5020).
 3. **Isolamento de Sessão de IA**:
    - O assistente não executa instâncias do servidor como tarefas em segundo plano dentro de sessões de chat. O comando de status `manage_task` permanece estritamente com 0 tarefas ativas.
 

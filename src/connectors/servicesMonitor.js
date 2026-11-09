@@ -1,9 +1,9 @@
-const NERDOPS_URL = process.env.NERDOPS_URL || 'http://127.0.0.1:5000';
-const FORGE_URL = process.env.FORGE_URL || 'http://127.0.0.1:4477';
+const NERDOPS_URL = process.env.NERDOPS_URL || 'http://127.0.0.1:5030';
+const FORGE_URL = process.env.FORGE_URL || 'http://127.0.0.1:4000';
 
 /**
  * Consulta o status de todos os serviços monitorados em tempo real.
- * Prioriza o NerdOPS (porta 5000) e faz fallback para o The Forge (porta 4477).
+ * Prioriza o NerdOPS (porta 5030) e faz fallback para o The Forge (porta 4000).
  * 
  * @param {Object} [options]
  * @param {string} [options.projeto] - Filtrar por nome do projeto (ex: Echo, Strategy Hub, Estratégia Nerd)

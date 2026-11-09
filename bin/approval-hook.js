@@ -16,7 +16,7 @@ function getArg(flag, defaultVal = '') {
 }
 
 const kind = getArg('--kind', 'permission') === 'question' ? 'question' : 'permission';
-const PORT = Number(process.env.ECHO_PORT) || 4884;
+const PORT = Number(process.env.ECHO_PORT) || 5020;
 const STDIN_WAIT_MS = 300;
 const REQUEST_TIMEOUT_MS = 115 * 1000; // o servidor encerra a espera em 110 s
 const HARD_EXIT_MS = 120 * 1000;       // abaixo do timeout de 130 s do settings.json
