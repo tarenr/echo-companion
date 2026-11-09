@@ -136,7 +136,7 @@ liberando a animação e retomando a escuta automática. Uma reprodução que n�
 5 segundos também tenta a voz nativa. Testes de recuperação: `node --test tests/speech-recovery.test.js` e `node --test tests/gemini-tts-fallback.test.js`.
 Após atualizar o servidor, recarregue a página do celular para carregar o JavaScript atual.
 
-O Echo consulta por GET as APIs do `pc-monitor-dashboard`, em `NERDOPS_URL` (padrão `http://127.0.0.1:5000`), sem novas dependências. A telemetria de CPU/RAM também usa o coletor do dashboard, a cada 3 segundos, substituindo a antiga estimativa local de CPU.
+O Echo consulta por GET as APIs do `pc-monitor-dashboard`, em `NERDOPS_URL` (padrão `http://127.0.0.1:5030`), sem novas dependências. A telemetria de CPU/RAM também usa o coletor do dashboard, a cada 3 segundos, substituindo a antiga estimativa local de CPU.
 
 Perguntas reconhecidas diretamente, mesmo sem Gemini: “Qual a temperatura da GPU?”, “Quanto espaço livre tenho no C:?”, “Qual programa está consumindo mais memória?”, “Como ficou a CPU nos últimos 15 minutos?”, “Qual o download da rede?”, “Qual o volume do PC?”, “Qual a ficha do computador?” e “Quanto tenho de cota de IA?”. Outras formulações podem usar a ferramenta `consultar_dashboard_pc` pelo Gemini. O status dos serviços mantém a integração existente.
 
@@ -281,9 +281,11 @@ O Echo é uma **Progressive Web App (PWA)** completa com Service Worker, cache d
 3. O ícone oficial do Echo com o Kaomoji ciano neon `\ ( ^ _ ^ ) /` ficará na tela inicial do seu celular, abrindo em tela cheia (Display Standalone/Fullscreen OLED) sem barras de endereço do navegador.
 
 ### Opção 2: Pela Wi-Fi de Casa
+> **Indisponível desde o padrão de portas (novembro/2026):** o servidor roda na porta 5020 e só escuta em `127.0.0.1`, então o endereço abaixo não abre no celular. Use a Opção 1.
+
 1. Abra no celular:
    ```text
-   http://192.168.1.4:4884
+   http://192.168.1.4:5020
    ```
 2. Dê um toque na tela para ativar som e WakeLock.
 
@@ -294,7 +296,7 @@ O Echo é uma **Progressive Web App (PWA)** completa com Service Worker, cache d
 O Echo foi configurado como um serviço autônomo e permanente no **Agendador de Tarefas do Windows (Task Scheduler)** sob o nome `EchoCompanion`:
 
 - **Gatilho de Logon (`AtLogOn`):** O servidor inicia automaticamente ao fazer login no Windows, sem necessidade de intervenção humana ou inicialização manual por agentes/IDEs.
-- **Supervisor com Auto-Recuperação (`iniciar-supervisionado.ps1 -App EchoCompanion`):** Disparado via PowerShell oculto, supervisiona o processo `node server.js` na porta 4884. Se o servidor for encerrado acidentalmente ou sofrer uma exceção, o supervisor o **reinicia automaticamente em 5 a 15 segundos**, garantindo disponibilidade 100% contínua 24/7.
+- **Supervisor com Auto-Recuperação (`iniciar-supervisionado.ps1 -App EchoCompanion`):** Disparado via PowerShell oculto, supervisiona o processo `node server.js` na porta 5020. Se o servidor for encerrado acidentalmente ou sofrer uma exceção, o supervisor o **reinicia automaticamente em 5 a 15 segundos**, garantindo disponibilidade 100% contínua 24/7.
 - **Logs de Execução & Erros:** Redirecionados automaticamente para `%LOCALAPPDATA%\autostart-logs\EchoCompanion.out.log` e `.err.log` para auditoria e depuração rápida sem poluir o console.
 - **Sem Limites de Tempo de Execução (`PT0S`):** Configurado sem o tempo limite padrão de 72 horas do Windows, permitindo execução ininterrupta.
 - **Independência Total da IDE:** O agente de IA opera com 0 tarefas pendentes ou instâncias daemon no terminal do editor.
@@ -303,7 +305,7 @@ O Echo foi configurado como um serviço autônomo e permanente no **Agendador de
 
 ## 🔌 Integração com os Agentes de IA
 
-O Echo inclui um despachante universal (`bin/dispatcher.js`) que envia eventos para a porta 4884 via HTTP, sem jamais bloquear ou atrasar a execução dos agentes: processa cada chamada uma única vez, espera no máximo 300 ms pelos dados do agente e sempre termina com código 0 (teto de 900 ms), mesmo com o Echo desligado.
+O Echo inclui um despachante universal (`bin/dispatcher.js`) que envia eventos para a porta 5020 via HTTP, sem jamais bloquear ou atrasar a execução dos agentes: processa cada chamada uma única vez, espera no máximo 300 ms pelos dados do agente e sempre termina com código 0 (teto de 900 ms), mesmo com o Echo desligado.
 
 - **Claude Code:** configurado em `~/.claude/settings.json` nos eventos `UserPromptSubmit`, `PreToolUse`, `PermissionRequest`, `Notification` e `Stop`, no formato atual de hooks (cada comando dentro de `"hooks": [{ "type": "command", "command": "...", "timeout": 5 }]`). O despachante lê a ferramenta, o arquivo ou comando e a pasta do projeto: `Write`/`Edit`/`MultiEdit`/`NotebookEdit` e comandos que escrevem viram "implementando"; o resto, "pesquisando". Um pedido de permissão acende a pose de aprovação; as notificações em que o Claude espera você (`idle_prompt`, `elicitation_dialog`, `agent_needs_input`) acendem a espera; as demais são ignoradas. O Claude Code não recebe nenhuma resposta do despachante. Mudanças nos hooks só valem em sessões novas do Claude Code.
 - **Antigravity:** Configurado em `~/.gemini/config/hooks.json` interceptando execuções de ferramentas e finalização. Só o Antigravity recebe a resposta `{"decision":"allow"}` no `PreToolUse`.
@@ -382,7 +384,7 @@ O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado dire
 - ⚡ **Briefing do Sistema & Verificações (`executar_briefing_sistema` / Botão `CHECK` / `POST /api/briefing`):** Dispara uma checagem integrada do ecossistema com saudação contextual pelo horário de Brasília, verificando os 24 serviços e bancos, conferindo a execução dos backups diários e agendamentos do Windows, contando as tarefas pendentes no The Forge e lendo e-mails não lidos. O Echo responde em áudio neural e mostra um cartão compacto, uma linha por item: serviços online (até 2 com problema listados), backups e agendadas numa linha só (`3/3 OK`, com uma linha extra para cada falha), total de pendências do Forge (`26 pendentes em 4 projetos`) e as pendências de até 4 projetos, do maior para o menor (o restante vira `+N projetos`), e e-mails quando configurados. As pendências vêm da contagem de cada projeto no Forge (tarefas totais − concluídas); títulos de tarefas não aparecem no CHECK.
 - 🕒 **Tarefas Agendadas do Windows (`src/connectors/scheduledTasks.js`):** Consulta segura com cache de 60s via `Get-ScheduledTaskInfo` para checar os backups diários de todos os projetos, backup do blog/banco de dados e publicador do Instagram.
 - 📧 **Conector Modular de E-mails (`src/connectors/email.js`):** Integração IMAP nativa sobre TLS pronta para consultar a quantidade de e-mails não lidos na Caixa de Entrada via credenciais seguras no `.env`.
-- 🟢 **Monitor de Serviços em Tempo Real (`consultar_monitor_servicos`):** Conecta-se ao monitor contínuo NerdOPS (`:5000`) com fallback para o The Forge (`:4477`), checando a saúde operacional de todos os apps locais, bancos de dados (SQLite, MySQL, MariaDB, PostgreSQL), túneis Cloudflare e integrações de todos os 5 projetos em menos de 50ms.
+- 🟢 **Monitor de Serviços em Tempo Real (`consultar_monitor_servicos`):** Conecta-se ao monitor contínuo NerdOPS (`:5030`) com fallback para o The Forge (`:4000`), checando a saúde operacional de todos os apps locais, bancos de dados (SQLite, MySQL, MariaDB, PostgreSQL), túneis Cloudflare e integrações de todos os 5 projetos em menos de 50ms.
 - 💰 **Finanças Pessoais Strategy Hub (`consultar_saldos_bancos`, `consultar_cartoes_credito`, `consultar_contas_a_pagar`):** Saldos consolidados e por instituição (Mercado Pago, Itaú, XP, PicPay), limites e faturas abertas de cartões e contas a pagar do mês.
 - 🔨 **Painel Central The Forge (`consultar_projetos_forge`, `consultar_tarefas_forge`, `consultar_status_backup_forge`):** Progresso e status de cada projeto, tarefas pendentes/concluídas e integridade dos backups locais.
 - 📱 **Conteúdo Estratégia Nerd (`consultar_agendamento_posts`, `consultar_metricas_blog`, `consultar_metricas_instagram`):** Fila de postagens agendadas, métricas de audiência, curtidas, comentários e inscritos.
@@ -406,7 +408,7 @@ O Echo possui raciocínio conversacional alimentado pelo Gemini e integrado dire
 
 Mascote companheira desenvolvida especialmente para uso pessoal com inteligência dedicada para responder perguntas do dia a dia, culinária/receitas, organização, resumos e conversação leve, operando em rota e PWA completamente isolados:
 
-- **Rota de Acesso:** `/luna` (ex.: `https://echo.tfr-info.com.br/luna` ou `http://localhost:4884/luna`)
+- **Rota de Acesso:** `/luna` (ex.: `https://echo.tfr-info.com.br/luna` ou `http://localhost:5020/luna`)
 - **Autenticação por PIN Exclusivo:** Configurado via variável `LUNA_PIN` no `.env` (independente do PIN do Echo). Pode ser pré-carregado via URL (`/luna?pin=SEU_PIN`).
 - **Modo Mãos-Livres Contínuo:** Microfone com escuta contínua ativa por padrão (`ATIVO`), detecção inteligente de final de frase e retorno automático à escuta após a fala com cooldown anti-eco de 1.2s.
 - **Previsão do Tempo em Tempo Real:** Integrado com Open-Meteo para Serra/ES (temperatura, sensação térmica, umidade, vento, máxima, mínima e probabilidade de chuva), respondendo com afeto e precisão às dúvidas do dia a dia.
@@ -475,6 +477,7 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
 - **Peças (11, desenhadas em código):** cabeça — chapéu de festa, gorro com pompom, coroa, chapéu de bruxa, gorro de Papai Noel, orelhas de coelho, laço, abóbora; rosto — óculos escuros, óculos redondos; pescoço — cachecol.
 - **Fantasias exclusivas (desde 06/10/2026):** cada personagem tem as suas, sem braços. O esqueleto e a boneca de pano são desenhos próprios no estilo de fantasia de Halloween, sem copiar personagem; o Kratos, o Tyrael e o Darth Vader (18/10/2026) são inspirados nos personagens de God of War, de Diablo III e de Star Wars, desenhados do zero para o corpo do robô (o Echo passou a apresentar os vídeos, e a fantasia acompanha o tema); o Yusuke e o Toguro (20/10/2026) são o herói e o vilão de Yu Yu Hakusho, para os vídeos em que o vilão toma a tela no meio e o herói volta no fim.
   - **Regras gerais:** as 11 peças comuns valem para os dois. Nenhuma fantasia entra no automático (estação): elas são só por escolha. Toda fantasia fica por trás da tela `>_` do peito; a única exceção é a camiseta do TI, que põe a estampa no lugar da tela.
+  - **Nomes nos botões (padrão de nomes curtos):** a folha usa o mapa `SHORT_LABELS` de `public/robo-personagem.js`. A fantasia tem um nome curto (ex.: "R. Branco", "M39", "Ultramarine") e cada peça leva o nome do tipo, abreviado quando preciso: `Cap.` (capacete), `M.` (máscara ou rosto fechado), `Óc.` (óculos) e `Arm.` (armadura). O nome longo continua na linha de status da folha. Os botões quebram o nome em duas linhas e continuam com 46 px, sem crescer (medido em 375 e 320 px e em 1024 px, na folha do Echo). Palavras sem espaço maiores que o botão, como "Arqueólogo" e "Ultramarine" a 320 px, ainda são cortadas. A fantasia da Luna aparece como "Sally" no botão; o nome completo, "Fantasia de boneca de pano", continua na linha de status.
   - **Fantasia nova entra "em teste":** o conjunto e as peças levam `lab: true` e aparecem só na página de testes (`/robo.html`), que pede `{ lab: true }` a `setsFor`/`itemsFor`. O Echo e a Luna só listam a fantasia depois da aprovação, quando a marca sai (publicar = apagar o `lab: true`). Se a roupa guardada no celular tiver uma peça em teste, ela volta sem essa peça.
   - **Trocar de fantasia no Echo tira tudo da anterior:** a folha do Echo chama `toggleSet(..., { exclusive: true })`, que antes de vestir tira as peças dos lugares que a nova fantasia não usa (ex.: Darth Vader → Kratos não deixa o capacete). Peças avulsas podem ser postas depois (ex.: Kratos + gorro). Na página de testes as fantasias continuam se misturando.
   - **Botão "Fantasia de …":** veste ou tira todas as peças da fantasia de uma vez. As peças também aparecem soltas.
@@ -500,14 +503,20 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
     - "Capacete do Ranger Branco" (cabeça, preso ao robô): casco do capacete um pouco maior que a cabeça (parte `back`) e o contorno da cabeça redesenhado por cima.
     - "Máscara de tigre do Ranger Branco" (rosto): cabeça branca perolada com o visor do Echo aberto, testa dourada com a espinha central e as barras com gancho, "nariz" pentagonal descendo no visor, amêndoas brancas nos cantos do visor, três fendas em cada bochecha e protetor de boca **fechado**, com barras verticais. A boca não mexe de propósito (pedido do usuário: de máscara, não faz sentido).
     - "Traje, colete e Saba do Ranger Branco" (pescoço): corpo perolado, colete preto, ombreiras douradas com frisos, contorno dourado na própria tela `>_` com filete vertical, cinto com fivela de duas espirais e a Saba na bainha, no quadril direito, com a cabeça de tigre de frente (olhos vermelhos, presas, capuz preto com listras douradas). Quando o Echo fala ou dança, a mão direita passa por cima da cabeça de tigre (decisão do usuário: deixar assim).
-  - **Echo, "Fantasia de Yusuke"** (também em `public/robo-roupas-echo.js`; o herói de Yu Yu Hakusho, 20/10/2026; em teste):
+  - **Echo, "Fantasia de Yusuke"** (também em `public/robo-roupas-echo.js`; o herói de Yu Yu Hakusho, 20/10/2026; publicada no Echo em 08/11/2026):
     - "Cabelo penteado para trás" (cabeça): verde-petróleo quase preto, como no anime, com reflexos verde-água indo para trás; a mecha da frente desce em ponta sobre a testa e as laterais terminam em ponta atrás da orelha. Preso na base dos chapéus, como o capuz do Tyrael.
     - "Uniforme verde da escola" (pescoço): fechado, de gola alta com fecho dourado, e botões dourados acima e abaixo da tela `>_`, que fica à mostra.
-  - **Echo, "Fantasia de Toguro"** (também em `public/robo-roupas-echo.js`; o vilão de Yu Yu Hakusho, 20/10/2026; em teste):
+  - **Echo, "Fantasia de Toguro"** (também em `public/robo-roupas-echo.js`; o vilão de Yu Yu Hakusho, 20/10/2026; publicada no Echo em 08/11/2026):
     - "Cabelo alto cortado reto" (cabeça): preto, alto e reto em cima (a face de cima mais clara), com entradas na testa e costeletas curtas. Preso na base dos chapéus.
     - "Óculos escuros do Toguro" (rosto): em lâmina, as duas lentes formam uma faixa com reflexo prateado na borda de cima e afinam em ponta do lado de fora; o contorno claro faz os óculos aparecerem sobre o visor. O visor é pintado de novo por baixo, então os olhos somem e o rosto fica sem expressão; a boca continua falando.
     - "Paletó e regata" (pescoço): paletó verde-oliva aberto, com lapelas, ombreiras largas que passam da borda do corpo e um botão abaixo da tela; por baixo, regata verde-escura e um pouco do peito no decote. A tela `>_` fica por cima.
-  - **Echo, figurinos da "Vida de TI"** (também em `public/robo-roupas-echo.js`, no bloco `VidaTI`; feitos pelo Codex para o carrossel "Na cabeça dos outros, TI é…" e trazidos para o guarda-roupa em 20/10/2026; em teste): médico (espelho de testa e jaleco com estetoscópio, que passa pelos lados e por baixo da tela), mago (chapéu grande com a ponta caída e túnica com capa), mecânico (boné e macacão), adivinho (turbante e traje), bombeiro (capacete e jaqueta com faixas refletivas), arqueólogo (chapéu de exploração e colete), psicólogo (óculos de leitura e cardigã), detetive (chapéu e sobretudo xadrez de Sherlock) e hacker (capuz de moletom que cai nos ombros, com cordões, e moletom com o `>_` no bolso). Os chapéus ficam na base dos chapéus. O carrossel gerado com eles fica em `output/echo-carrossel-vida-ti/v2/`.
+  - **Echo, "Fantasia de Ultramarine"** (também em `public/robo-roupas-echo.js`, no bloco próprio do Ultramarine; Warhammer 40K, sem logotipo oficial; publicada no Echo em 08/11/2026):
+    - "Capacete do Ultramarine" (cabeça): elmo fechado no estilo Mk VII, com a mesma técnica da Mark 39 (o capacete cobre o rosto inteiro e desenha as próprias lentes acesas). Rosto montado como no passo a passo de desenho do Mk VII: painel em "M" (laterais retas e o V no meio), lentes azuis acesas logo abaixo das abas do "M", bico em arco do V até o queixo com grade de frestas verticais (a boca do Echo fica escondida; quando ele fala, as frestas acendem em ciano no ritmo da boca, como a grade do Ranger Branco no vídeo: usa a `voz` que o motor passa às peças e, em cópias antigas do motor nos kits de vídeo, o número `EchoGradeLuz.nivel`), tubo de respiro atravessando por baixo do rosto com anéis dos dois lados do bico e pontas entrando por baixo das placas laterais em degrau. Casco azul com luz no alto e sombra perto do pescoço e faixa vermelha do topo até a testa com filetes brancos, com uma caveira de metal na testa (caveira genérica, desenhada do zero, a pedido do usuário). Preso à cabeça (`anchor: 'robo'`, `top: 18`).
+    - "Rosto fechado do Ultramarine" (rosto): não desenha nada; só ocupa o lugar do rosto, para a troca de fantasia tirar óculos e máscaras (como a máscara da Mark 39).
+    - "Armadura do Ultramarine" (pescoço): placas azuis com gorjal e filete dourado, placas laterais com frestas, abdômen, cinto com fivela de frestas e duas bolsas, moldura dourada em volta da tela `>_` (a tela continua à mostra) e ombreiras grandes em domo, com aba escura, filete dourado e rebites, abaixo do capacete sem encostar nele. A mochila (`back`, pela referência de power pack do usuário) fica atrás do corpo; de frente aparecem as duas turbinas de escape, com grade e aro de aço, ao lado do capacete e acima das ombreiras, e quatro células escuras nas laterais de baixo do corpo. Sem o Ω do ombro e sem a águia do peito.
+    - Referências do usuário: artes de fã em estilo chibi, foto de boneco comercial, foto do capacete Mk VII, desenho a lápis da armadura e o elmo fechado da Mark 39 do Echo. A imagem com cara de IA e o capacete verde (outro capítulo) não entraram.
+    - Estado: publicada no Echo em 08/11/2026 (sem `lab`), com o visual aprovado pelo usuário. A decisão sobre a marca Warhammer valeu para o app; publicar o vídeo com a fantasia é outra decisão. As capturas das seis poses não foram conferidas nesta leva.
+  - **Echo, figurinos da "Vida de TI"** (também em `public/robo-roupas-echo.js`, no bloco `VidaTI`; feitos pelo Codex para o carrossel "Na cabeça dos outros, TI é…" e trazidos para o guarda-roupa em 20/10/2026; publicados no Echo em 08/11/2026): médico (espelho de testa e jaleco com estetoscópio, que passa pelos lados e por baixo da tela), mago (chapéu grande com a ponta caída e túnica com capa), mecânico (boné e macacão), adivinho (turbante e traje), bombeiro (capacete e jaqueta com faixas refletivas), arqueólogo (chapéu de exploração e colete), psicólogo (óculos de leitura e cardigã), detetive (chapéu e sobretudo xadrez de Sherlock) e hacker (capuz de moletom que cai nos ombros, com cordões, e moletom com o `>_` no bolso). Os chapéus ficam na base dos chapéus. O carrossel gerado com eles fica em `output/echo-carrossel-vida-ti/v2/`.
   - **Luna, "Fantasia de boneca de pano"** (`public/robo-roupas-luna.js`):
     - "Cabelo ruivo" (cabeça): comprido, com risca no meio. A parte de trás fica atrás da cabeça e do corpo e as pontas balançam. Fica preso à cabeça (`anchor: 'robo'`), não na base dos chapéus.
     - "Rosto de boneca" (rosto): cílios, sorriso costurado fino e costuras nas bochechas.
@@ -518,6 +527,7 @@ Página separada com o mesmo robô do Echo e botões para testar cada animação
   - **Funções comuns:** `robo-roupas.js` reúne as funções dos conjuntos (`SETS`, `toggleSet`, `itemsFor`, `outfitOf`) e as medidas do corpo usadas pelo terno e pelo vestido (`shape`).
 - **Desenho do motor:**
   - Peças podem ter parte de trás (`back`), desenhada antes do corpo.
+  - Todas as partes das peças recebem `(x, t, molas, voz)`: `voz` é a abertura da boca (`s.mouthOpen`), 0 calado e até 1 falando. Serve para peças que escondem a boca acenderem no ritmo da fala (ex.: o bico do Ultramarine); as outras ignoram. Sem estado de robô, a voz vale 0.
   - Peças do rosto podem ter parte por cima (`over`): mesmo referencial do rosto (acompanha o olhar e o giro), mas recortada só nas laterais da cabeça, então pode passar da borda de baixo e cair sobre o pescoço (ex.: a barba do Kratos). As outras partes do rosto continuam recortadas pelo contorno da cabeça.
   - O quadro `>_` da cabeça fica por cima das peças da cabeça.
   - As cores vêm do tema: `THEMES.echo`, o padrão, ciano e igual ao de antes; `THEMES.luna`, lavanda.
@@ -615,7 +625,7 @@ echo-companion/
 
 - **GitHub Oficial:** [https://github.com/tarenr/echo-companion](https://github.com/tarenr/echo-companion)
 - **Painel The Forge:** Projeto ID 10
-- **URL Local:** `http://localhost:4884`
+- **URL Local:** `http://localhost:5020`
 - **URL Cloudflare:** `https://echo.tfr-info.com.br`
 - **Categoria:** Assistente / Monitoramento
 
@@ -647,5 +657,5 @@ de Brasília. O dashboard informa cotas, não quantidades exatas de tokens. Prov
 exibem somente contagens continuam sem percentual; horários ausentes, snapshots antigos,
 autenticação pendente e consultas em espera são sinalizados. Nenhuma credencial é enviada
 ao Echo. O NERD OPS precisa estar disponível no endereço configurado em `NERDOPS_URL`
-(padrão: `http://127.0.0.1:5000`). Após alterar o código do servidor, reinicie o Echo para
+(padrão: `http://127.0.0.1:5030`). Após alterar o código do servidor, reinicie o Echo para
 carregar a versão atual. Validação automatizada: `node --test tests/pc-monitor.test.js`.
